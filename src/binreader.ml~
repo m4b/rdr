@@ -1,0 +1,46 @@
+open Printf
+open Elf
+open InputUtils
+open Utf8
+
+let read_all ic =
+  let byte = ref 0 in
+  try
+    while (true) do
+      byte := input_byte ic;
+      printf "%x " !byte
+    done
+  with End_of_file ->
+    printf "\n"
+
+exception Bad_binary of int * int
+
+let get_binary filename =
+  let ic = open_in_bin Sys.argv.(1) in
+  let magic = i32be ic in
+  printf "filesize: %d\n" @@ in_channel_length ic;
+  printf "magic: 0x%x\n" magic;
+  if (magic = kMAGIC_ELF) then
+    let len = in_channel_length ic in
+    let binary = Bytes.create len in
+    seek_in ic 0;
+    really_input ic binary 0 len;
+    close_in ic;
+    binary,magic
+  else
+    begin
+      close_in ic;
+      raise @@ Bad_binary (magic, -1)
+    end
+
+let main =
+  if (Array.length Sys.argv <> 2) then
+    begin
+      printf "usage: binreader <path_to_binary>";
+      exit 1
+    end
+  else
+    let binary,magic = get_binary Sys.argv.(1) in
+    let header = get_elf_header64 binary in
+    printf "read %d bytes\n" @@ Bytes.length binary;
+    print_elf_header64 header

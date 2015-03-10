@@ -1,0 +1,205 @@
+(* Legal values for e_type (object file type).  *)
+
+let kET_NONE =		0		(* No file type *)
+let kET_REL =		1		(* Relocatable file *)
+let kET_EXEC =		2		(* Executable file *)
+let kET_DYN =		3		(* Shared object file *)
+let kET_CORE =		4		(* Core file *)
+let kET_NUM =		5		(* Number of defined types *)
+let kET_LOOS =		0xfe00		(* OS-specific range start *)
+let kET_HIOS =		0xfeff		(* OS-specific range end *)
+let kET_LOPROC =	0xff00		(* Processor-specific range start *)
+let kET_HIPROC =	0xffff		(* Processor-specific range end *)
+
+(* Legal values for e_machine (architecture).  *)
+
+let kEM_NONE =		 0		(* No machine *)
+let kEM_M32 =		 1		(* AT&T WE 32100 *)
+let kEM_SPARC =	 2		(* SUN SPARC *)
+let kEM_386 =		 3		(* Intel 80386 *)
+let kEM_68K =		 4		(* Motorola m68k family *)
+let kEM_88K =		 5		(* Motorola m88k family *)
+let kEM_860 =		 7		(* Intel 80860 *)
+let kEM_MIPS =		 8		(* MIPS R3000 big-endian *)
+let kEM_S370 =		 9		(* IBM System/370 *)
+let kEM_MIPS_RS3_LE =	10		(* MIPS R3000 little-endian *)
+
+let kEM_PARISC =	15		(* HPPA *)
+let kEM_VPP500 =	17		(* Fujitsu VPP500 *)
+let kEM_SPARC32PLUS =	18		(* Sun's "v8plus" *)
+let kEM_960 =		19		(* Intel 80960 *)
+let kEM_PPC =		20		(* PowerPC *)
+let kEM_PPC64 =	21		(* PowerPC 64-bit *)
+let kEM_S390 =		22		(* IBM S390 *)
+
+let kEM_V800 =		36		(* NEC V800 series *)
+let kEM_FR20 =		37		(* Fujitsu FR20 *)
+let kEM_RH32 =		38		(* TRW RH-32 *)
+let kEM_RCE =		39		(* Motorola RCE *)
+let kEM_ARM =		40		(* ARM *)
+let kEM_FAKE_ALPHA =	41		(* Digital Alpha *)
+let kEM_SH =		42		(* Hitachi SH *)
+let kEM_SPARCV9 =	43		(* SPARC v9 64-bit *)
+let kEM_TRICORE	=       44		(* Siemens Tricore *)
+let kEM_ARC =		45		(* Argonaut RISC Core *)
+let kEM_H8_300 =	46		(* Hitachi H8/300 *)
+let kEM_H8_300H	=       47		(* Hitachi H8/300H *)
+let kEM_H8S =		48		(* Hitachi H8S *)
+let kEM_H8_500 =	49		(* Hitachi H8/500 *)
+let kEM_IA_64 =	50		(* Intel Merced *)
+let kEM_MIPS_X =	51		(* Stanford MIPS-X *)
+let kEM_COLDFIRE =	52		(* Motorola Coldfire *)
+let kEM_68HC12 =	53		(* Motorola M68HC12 *)
+let kEM_MMA =		54		(* Fujitsu MMA Multimedia Accelerator*)
+let kEM_PCP =		55		(* Siemens PCP *)
+let kEM_NCPU =		56		(* Sony nCPU embeeded RISC *)
+let kEM_NDR1 =		57		(* Denso NDR1 microprocessor *)
+let kEM_STARCORE =	58		(* Motorola Start*Core processor *)
+let kEM_ME16 =		59		(* Toyota ME16 processor *)
+let kEM_ST100 =	60		(* STMicroelectronic ST100 processor *)
+let kEM_TINYJ =	61		(* Advanced Logic Corp. Tinyj emb.fam*)
+let kEM_X86_64 =	62		(* AMD x86-64 architecture *)
+let kEM_PDSP =		63		(* Sony DSP Processor *)
+
+let kEM_FX66 =		66		(* Siemens FX66 microcontroller *)
+let kEM_ST9PLUS =	67		(* STMicroelectronics ST9+ 8/16 mc *)
+let kEM_ST7 =		68		(* STmicroelectronics ST7 8 bit mc *)
+let kEM_68HC16 =	69		(* Motorola MC68HC16 microcontroller *)
+let kEM_68HC11 =	70		(* Motorola MC68HC11 microcontroller *)
+let kEM_68HC08 =	71		(* Motorola MC68HC08 microcontroller *)
+let kEM_68HC05 =	72		(* Motorola MC68HC05 microcontroller *)
+let kEM_SVX =		73		(* Silicon Graphics SVx *)
+let kEM_ST19 =		74		(* STMicroelectronics ST19 8 bit mc *)
+let kEM_VAX =		75		(* Digital VAX *)
+let kEM_CRIS =		76		(* Axis Communications 32-bit embedded processor *)
+let kEM_JAVELIN =	77		(* Infineon Technologies 32-bit embedded processor *)
+let kEM_FIREPATH =	78		(* Element 14 64-bit DSP Processor *)
+let kEM_ZSP =		79		(* LSI Logic 16-bit DSP Processor *)
+let kEM_MMIX =		80		(* Donald Knuth's educational 64-bit processor *)
+let kEM_HUANY =	81		(* Harvard University machine-independent object files *)
+let kEM_PRISM =	82		(* SiTera Prism *)
+let kEM_AVR =		83		(* Atmel AVR 8-bit microcontroller *)
+let kEM_FR30 =		84		(* Fujitsu FR30 *)
+let kEM_D10V =		85		(* Mitsubishi D10V *)
+let kEM_D30V =		86		(* Mitsubishi D30V *)
+let kEM_V850 =		87		(* NEC v850 *)
+let kEM_M32R =		88		(* Mitsubishi M32R *)
+let kEM_MN10300 =	89		(* Matsushita MN10300 *)
+let kEM_MN10200 =	90		(* Matsushita MN10200 *)
+let kEM_PJ =		91		(* picoJava *)
+let kEM_OPENRISC =	92		(* OpenRISC 32-bit embedded processor *)
+let kEM_ARC_A5 =	93		(* ARC Cores Tangent-A5 *)
+let kEM_XTENSA =	94		(* Tensilica Xtensa Architecture *)
+let kEM_ALTERA_NIOS2 = 113		(* Altera Nios II *)
+let kEM_AARCH64 =	183		(* ARM AARCH64 *)
+let kEM_TILEPRO =	188		(* Tilera TILEPro *)
+let kEM_MICROBLAZE =	189		(* Xilinx MicroBlaze *)
+let kEM_TILEGX =	191		(* Tilera TILE-Gx *)
+let kEM_NUM =		192
+
+(* If it is necessary to assign new unofficial EM_* values, please
+   pick large random numbers (0x8523, 0xa7f2, etc.) to minimize the
+   chances of collision with official or non-GNU unofficial values.  *)
+
+let kEM_ALPHA =	0x9026
+
+let machine_to_string machine =
+  match machine with
+
+	      (* NEW *)
+	       | 0 -> "ET_NONE"
+	       | 1 -> "ET_REL"		
+	       | 2 -> "ET_EXEC" 		
+	       | 3 -> "ET_DYN"		
+	       | 4 -> "ET_CORE"		
+	       | 5 -> "ET_NUM"		
+	       | 0xfe00 -> "ET_LOOS"		
+	       | 0xfeff -> "ET_HIOS"		
+	       | 0xff00 -> "ET_LOPROC"	
+	       | 0xffff -> "ET_HIPROC"	
+	       | 0 -> "EM_NONE"		 
+	       | 1 -> "EM_M32"		 
+	       | 2 -> "EM_SPARC"	 
+	       | 3 -> "EM_386"		 
+	       | 4 -> "EM_68K"		 
+	       | 5 -> "EM_88K"		 
+	       | 7 -> "EM_860"		 
+	       | 8 -> "EM_MIPS"		 
+	       | 9 -> "EM_S370"		 
+	       | 10 -> EM_MIPS_RS3_LE	
+
+		       | 15 -> "EM_PARISC"	
+		       | 17 -> "EM_VPP500"	
+		       | 18 -> "EM_SPARC32PLUS"	
+		       | 19 -> "EM_960"		
+		       | 20 -> "EM_PPC"		
+		       | 21 -> "EM_PPC64"	
+		       | 22 -> "EM_S390"		
+
+		       | 36 -> "EM_V800"		
+		       | 37 -> "EM_FR20"		
+		       | 38 -> "EM_RH32"		
+		       | 39 -> "EM_RCE"		
+		       | 40 -> "EM_ARM"		
+		       | 41 -> "EM_FAKE_ALPHA"
+		       | 42 -> "EM_SH"		
+		       | 43 -> "EM_SPARCV9"	
+		       | 44 -> "EM_TRICORE"       
+		       | 45 -> "EM_ARC"		
+		       | 00 -> "EM_H8"
+		       | 47 -> "EM_H8_300H"
+		       | 48 -> "EM_H8S"		
+		       | 49 -> "EM_H8_500"
+		       | 50 -> "EM_IA_64"
+		       | 51 -> "EM_MIPS_X"
+		       | 52 -> "EM_COLDFIRE"	
+		       | 53 -> "EM_68HC12"	
+		       | 54 -> "EM_MMA"		
+		       | 55 -> "EM_PCP"		
+		       | 56 -> "EM_NCPU"		
+		       | 57 -> "EM_NDR1"		
+		       | 58 -> "EM_STARCORE"	
+		       | 59 -> "EM_ME16"		
+		       | 60 -> "EM_ST100"	
+		       | 61 -> "EM_TINYJ"	
+		       | 62 -> "EM_X86_64" 	
+		       | 63 -> "EM_PDSP"		
+
+		       | 66 -> "EM_FX66"		
+		       | 67 -> "EM_ST9PLUS"	
+		       | 68 -> "EM_ST7"		
+		       | 69 -> "EM_68HC16"	
+		       | 70 -> "EM_68HC11"	
+		       | 71 -> "EM_68HC08"	
+		       | 72 -> "EM_68HC05"	
+		       | 73 -> "EM_SVX"		
+		       | 74 -> "EM_ST19"		
+		       | 75 -> "EM_VAX"		
+		       | 76 -> "EM_CRIS"		
+		       | 77 -> "EM_JAVELIN"	
+		       | 78 -> "EM_FIREPATH"	
+		       | 79 -> "EM_ZSP"		
+		       | 80 -> "EM_MMIX"		
+		       | 81 -> "EM_HUANY"	
+		       | 82 -> "EM_PRISM"	
+		       | 83 -> "EM_AVR"		
+		       | 84 -> "EM_FR30"		
+		       | 85 -> "EM_D10V"		
+		       | 86 -> "EM_D30V"		
+		       | 87 -> "EM_V850"		
+		       | 88 -> "EM_M32R"		
+		       | 89 -> "EM_MN10300"	
+		       | 90 -> "EM_MN10200"	
+		       | 91 -> "EM_PJ"		
+		       | 92 -> "EM_OPENRISC"	
+		       | 93 -> "EM_ARC_A5"
+		       | 94 -> "EM_XTENSA"	
+		       | 113 -> "EM_ALTERA_NIOS2"
+		      | 183 -> "EM_AARCH64"	
+		      | 188 -> "EM_TILEPRO"	
+		      | 189 -> "EM_MICROBLAZE"	
+		      | 191 -> "EM_TILEGX"	
+		      | 192 -> "EM_NUM"		
+		      | 0x9026 -> "EM_ALPHA"	
+
+		  

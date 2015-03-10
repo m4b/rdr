@@ -1,0 +1,175 @@
+(*
+            typedef struct {
+               uint32_t   sh_name;
+               uint32_t   sh_type;
+               uint64_t   sh_flags;
+               Elf64_Addr sh_addr;
+               Elf64_Off  sh_offset;
+               uint64_t   sh_size;
+               uint32_t   sh_link;
+               uint32_t   sh_info;
+               uint64_t   sh_addralign;
+               uint64_t   sh_entsize;
+           } Elf64_Shdr;
+ *)
+
+type section_header =
+  {
+    sh_name: int; 		(* 4 *)
+    sh_type: int;		(* 4 *)
+    sh_flags: int;		(* 8 *)
+    sh_addr: int;		(* 8 *)
+    sh_offset: int;		(* 8 *)
+    sh_size: int;		(* 8 *)
+    sh_link: int;		(* 4 *)
+    sh_info: int;		(* 4 *)
+    sh_addralign: int;		(* 8 *)
+    sh_entsize: int;		(* 8 *)
+  }
+
+let sizeof_section_header = 64 	(* bytes *)    
+
+let kSHT_NULL=  0(* Section header table entry unused *)
+let kSHT_PROGBITS=  1(* Program data *)
+let kSHT_SYMTAB=  2(* Symbol table *)
+let kSHT_STRTAB=  3(* String table *)
+let kSHT_RELA=  4(* Relocation entries with addends *)
+let kSHT_HASH=  5(* Symbol hash table *)
+let kSHT_DYNAMIC=  6(* Dynamic linking information *)
+let kSHT_NOTE=  7(* Notes *)
+let kSHT_NOBITS=  8(* Program space with no data (bss) *)
+let kSHT_REL=  9(* Relocation entries, no addends *)
+let kSHT_SHLIB=  10(* Reserved *)
+let kSHT_DYNSYM=  11(* Dynamic linker symbol table *)
+let kSHT_INIT_ARRAY=  14(* Array of constructors *)
+let kSHT_FINI_ARRAY=  15(* Array of destructors *)
+let kSHT_PREINIT_ARRAY= 16(* Array of pre-constructors *)
+let kSHT_GROUP=  17(* Section group *)
+let kSHT_SYMTAB_SHNDX=  18(* Extended section indeces *)
+let kSHT_NUM=  19(* Number of defined types.  *)
+let kSHT_LOOS=  0x60000000(* Start OS-specific.  *)
+let kSHT_GNU_ATTRIBUTES= 0x6ffffff5(* Object attributes.  *)
+let kSHT_GNU_HASH=  0x6ffffff6(* GNU-style hash table.  *)
+let kSHT_GNU_LIBLIST=  0x6ffffff7(* Prelink library list *)
+let kSHT_CHECKSUM=  0x6ffffff8(* Checksum for DSO content.  *)
+let kSHT_LOSUNW=  0x6ffffffa(* Sun-specific low bound.  *)
+let kSHT_SUNW_move=  0x6ffffffa
+let kSHT_SUNW_COMDAT=   0x6ffffffb
+let kSHT_SUNW_syminfo=  0x6ffffffc
+let kSHT_GNU_verdef=  0x6ffffffd(* Version definition section.  *)
+let kSHT_GNU_verneed=  0x6ffffffe(* Version needs section.  *)
+let kSHT_GNU_versym=  0x6fffffff(* Version symbol table.  *)
+let kSHT_HISUNW=  0x6fffffff(* Sun-specific high bound.  *)
+let kSHT_HIOS=  0x6fffffff(* End OS-specific type *)
+let kSHT_LOPROC=  0x70000000(* Start of processor-specific *)
+let kSHT_HIPROC=  0x7fffffff(* End of processor-specific *)
+let kSHT_LOUSER=  0x80000000(* Start of application-specific *)
+let kSHT_HIUSER=  0x8fffffff(* End of application-specific *)
+
+let shtype_to_string shtype =
+  match shtype with 
+  | 0 -> "NULL"
+  | 1 -> "PROGBITS"
+  | 2 -> "SYMTAB"
+  | 3 -> "STRTAB"
+  | 4 -> "RELA"
+  | 5 -> "HASH"
+  | 6 -> "DYNAMIC"
+  | 7 -> "NOTE"
+  | 8 -> "NOBITS"
+  | 9 -> "REL"
+  | 10 -> "SHLIB"
+  | 11 -> "DYNSYM"
+  | 14 ->"INIT_ARRAY"
+  | 15 -> "FINI_ARRAY"  
+  | 16 -> "PREINIT_ARRAY" 
+  | 17 -> "GROUP"
+  | 18 ->  "SYMTAB_SHNDX"  
+  | 19 -> "NUM"
+  | 0x60000000 -> "LOOS"
+  | 0x6ffffff5 -> "GNU_ATTRIBUTES" 
+  | 0x6ffffff6 -> "GNU_HASH"  
+  | 0x6ffffff7 -> "GNU_LIBLIST"  
+  | 0x6ffffff8 -> "CHECKSUM"
+  | 0x6ffffffa -> "LOSUNW"
+  | 0x6ffffffa -> "SUNW_move"
+  | 0x6ffffffb ->"SUNW_COMDAT"   
+  | 0x6ffffffc -> "SHT_SUNW_syminfo"
+  | 0x6ffffffd -> "GNU_verdef"
+  | 0x6ffffffe -> "GNU_verneed"
+  | 0x6fffffff -> "GNU_versym"
+  | 0x6fffffff -> "HISUNW"
+  | 0x6fffffff -> "HIOS"
+  | 0x70000000 -> "LOPROC"
+  | 0x7fffffff -> "HIPROC"
+  | 0x80000000 -> "LOUSER"
+  | 0x8fffffff -> "HIUSER"
+  | _ -> "UNKNOWN SECTION HEADER TYPE"
+
+(* Legal values for sh_flags (section flags).  *)
+
+let kSHF_WRITE = (1 lsl 0)	(* Writable *)
+let kSHF_ALLOC = (1 lsl 1)	(* Occupies memory during execution *)
+let kSHF_EXECINSTR = (1 lsl 2)	(* Executable *)
+let kSHF_MERGE = (1 lsl 4)	(* Might be merged *)
+let kSHF_STRINGS = (1 lsl 5)	(* Contains nul-terminated strings *)
+let kSHF_INFO_LINK = (1 lsl 6)	(* `sh_info' contains SHT index *)
+let kSHF_LINK_ORDER =  (1 lsl 7)	(* Preserve order after combining *)
+let kSHF_OS_NONCONFORMING = (1 lsl 8)	(* Non-standard OS specific handling required *)
+let kSHF_GROUP = (1 lsl 9)	(* Section is member of a group.  *)
+let kSHF_TLS =  (1 lsl 10)	(* Section hold thread-local data.  *)
+let kSHF_MASKOS = 0x0ff00000	(* OS-specific.  *)
+let kSHF_MASKPROC = 0xf0000000	(* Processor-specific *)
+let kSHF_ORDERED = (1 lsl 30)	(* Special ordering requirement (Solaris).  *)
+let kSHF_EXCLUDE = (1 lsl 31)	(* Section is excluded unless referenced or allocated (Solaris).*)
+		     
+let to_string sh =
+  Printf.sprintf "name: 0x%02x type: %-11s flags: 0x%02x addr: 0x%08x offset 0x%04x size: 0x%03x link: %2d info: %2d addralign: %2d entsize: %d"
+		 sh.sh_name
+		 (shtype_to_string sh.sh_type)
+		 sh.sh_flags
+		 sh.sh_addr
+		 sh.sh_offset
+		 sh.sh_size
+		 sh.sh_link
+		 sh.sh_info
+		 sh.sh_addralign
+		 sh.sh_entsize
+
+let print shs =
+  Printf.printf "Section Headers (%d):\n" @@ List.length shs;
+  List.iter (fun sh -> Printf.printf "%s\n" @@ to_string sh) shs
+
+let get_section_header binary offset =
+  let sh_name = Binary.i32 binary offset in
+  let sh_type = Binary.i32 binary (offset + 4) in
+  let sh_flags = Binary.i64 binary (offset + 8) in
+  let sh_addr = Binary.i64 binary (offset + 16) in
+  let sh_offset = Binary.i64 binary (offset + 24) in
+  let sh_size = Binary.i64 binary (offset + 32) in
+  let sh_link = Binary.i32 binary (offset + 40) in
+  let sh_info = Binary.i32 binary (offset + 44) in
+  let sh_addralign = Binary.i64 binary (offset + 48) in
+  let sh_entsize = Binary.i64 binary (offset + 56) in      
+  {
+    sh_name;
+    sh_type;
+    sh_flags;
+    sh_addr;
+    sh_offset;
+    sh_size;
+    sh_link;
+    sh_info;
+    sh_addralign;
+    sh_entsize;
+  }
+
+(* TODO: use array? *)
+let get_section_headers binary shoff shentsize shnum =
+    let rec loop count offset acc =
+    if (count >= shnum) then
+      List.rev acc
+    else
+      let ph = get_section_header binary offset in
+      loop (count + 1) (offset + shentsize) (ph::acc)
+  in loop 0 shoff []
