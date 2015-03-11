@@ -106,8 +106,12 @@ let get_elf_header64 binary =
 let analyze binary =
   let header = get_elf_header64 binary in
   let program_headers = ProgramHeader.get_program_headers binary header.e_phoff header.e_phentsize header.e_phnum in
-  let phdr = ProgramHeader.get_main_program_header program_headers in
-  let vm_adjusted = phdr.ProgramHeader.p_vaddr - phdr.ProgramHeader.p_offset in
+  let vm_adjusted = 
+    try 
+      let phdr = ProgramHeader.get_main_program_header program_headers in
+      (* this is for reading the dynamic symbols, since the offsets and sizes returned in the dynamic section include the vmaddress, which can be different for each binary *)
+      phdr.ProgramHeader.p_vaddr - phdr.ProgramHeader.p_offset
+    with _ -> 0 in
   let section_headers = SectionHeader.get_section_headers binary header.e_shoff header.e_shentsize header.e_shnum in
   let symbol_table = SymbolTable.get_symbol_table binary section_headers in
   let dynamic_array = Dynamic.get_dynamic_array binary program_headers in
