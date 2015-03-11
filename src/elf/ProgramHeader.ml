@@ -141,8 +141,6 @@ let get_main_program_header phs =
   | Some phdr -> phdr
   | None ->
      begin
-       Printf.eprintf "Error in program headers:";
-       print_program_headers phs;
        raise @@ Elf_invalid_binary (Printf.sprintf "Elf binary has no PHDR")
      end
   	  
