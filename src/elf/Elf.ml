@@ -111,10 +111,10 @@ let analyze binary =
   let section_headers = SectionHeader.get_section_headers binary header.e_shoff header.e_shentsize header.e_shnum in
   let symbol_table = SymbolTable.get_symbol_table binary section_headers in
   let dynamic_array = Dynamic.get_dynamic_array binary program_headers in
+  let dynamic_symbols = Dynamic.get_dynamic_symbols binary vm_adjusted dynamic_array in
   print_elf_header64 header;
   ProgramHeader.print_program_headers program_headers;
   SectionHeader.print_section_headers section_headers;
   (* SymbolTable.print_symbol_table symbol_table; *)
   Dynamic.print_dynamic_array dynamic_array;
-  let dynamic_symbols = Dynamic.get_dynamic_symbols binary vm_adjusted dynamic_array in
   SymbolTable.print_symbol_table dynamic_symbols;
