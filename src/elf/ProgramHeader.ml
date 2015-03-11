@@ -127,7 +127,33 @@ let get_program_headers binary phoff phentsize phnum =
       let ph = get_program_header binary offset in
       loop (count + 1) (offset + phentsize) (ph::acc)
   in loop 0 phoff []
-  
+
+exception Elf_invalid_binary of string
+	  
+let get_main_program_header phs =
+  match 
+    List.fold_left (fun acc elem ->
+		    if (elem.p_type = kPT_PHDR) then
+		      Some elem
+		    else
+		      acc) None phs
+  with
+  | Some phdr -> phdr
+  | None ->
+     begin
+       Printf.eprintf "Error in program headers:";
+       print_program_headers phs;
+       raise @@ Elf_invalid_binary (Printf.sprintf "Elf binary has no PHDR")
+     end
+  	  
+(* probably raise an exception; would be extremely unusual for elf binary not to have a dynamic program header *)
+let get_dynamic_program_header phs =
+  List.fold_left (fun acc elem ->
+		  if (elem.p_type = kPT_DYNAMIC) then
+		    Some elem
+		  else
+		    acc) None phs
+	  
 (*		    
 let get_p_type p_type =
   match p_type with

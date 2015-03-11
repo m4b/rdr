@@ -1,3 +1,7 @@
+(* builds the debug symbol table; will be empty if stripped *)
+
+open SectionHeader
+
 (* Legal values for ST_BIND subfield of st_info (symbol binding).  *)
 let kSTB_LOCAL = 0  (* Local symbol *)
 let kSTB_GLOBAL = 1  (* Global symbol *)
@@ -32,8 +36,8 @@ let symbol_bind_to_string bind =
   | 1 -> "GLOBAL"
   | 2 -> "WEAK"
   | 3 -> "NUM "
-  | 10 -> "LOOS"
-  | 10 -> "GNU_UNIQUE"
+  (* | 10 -> "LOOS" *)
+  | 10 -> "GNU_UNIQUE" (* not sure what this is *)
   | 12 -> "HIOS"
   | 13 -> "LOPROC"
   | 15 -> "HIPROC"
@@ -49,8 +53,8 @@ let symbol_type_to_string sttype =
   | 5 -> "COMMON"
   | 6 -> "TLS "
   | 7 -> "NUM "
-  | 10 -> "LOOS"
-  | 10 -> "GNU_IFUNC"
+  (* | 10 -> "LOOS" *)
+  | 10 -> "GNU_IFUNC" (* this is an "indirect function" which chooses an implementation at runtime *)
   | 12 -> "HIOS"
   | 13 -> "LOPROC"
   | 15 -> "HIPROC"
@@ -99,7 +103,7 @@ let get_visibility other = other land 0x03
 
 type symbol_entry =
   {
-    resolved_name: string;
+    mutable name: string;
     st_name: int;   (* 4 *)
     st_info: int;  (* 1 *)
     st_other: int;  (* 1 *)
@@ -108,11 +112,64 @@ type symbol_entry =
     st_size: int;  (* 8 *)
   }
 
+let sizeof_symbol_entry = 24
+
 let symbol_to_string symbol =
   Printf.sprintf "%s 0x%x %s %s %s index: %d "
-   symbol.resolved_name
+   symbol.name
    symbol.st_value
    (get_bind symbol.st_info |> symbol_bind_to_string)
    (get_type symbol.st_info |> symbol_type_to_string)
    (get_visibility symbol.st_other |> symbol_visibility_to_string)
    symbol.st_shndx
+
+let get_symbol_entry bytes offset =
+    let name = "" in
+    let st_name = Binary.i32 bytes offset in
+    let st_info = Binary.i8 bytes (offset + 4) in 
+    let st_other = Binary.i8 bytes (offset + 5) in
+    let st_shndx = Binary.i16 bytes (offset + 6) in
+    let st_value = Binary.i64 bytes (offset + 8) in
+    let st_size = Binary.i64 bytes (offset + 16) in
+    {
+      name;
+      st_name;
+      st_info;
+      st_other;
+      st_shndx;
+      st_value;
+      st_size;
+    }
+   
+(* I should probably stop acc'ing lists then List.rev |> Array.of_list but yagni? *)
+let get_symtab bytes offset size =
+  let len = size + offset in
+  let rec loop pos acc =
+    if (pos >= len) then
+      List.rev acc |> Array.of_list
+    else
+      loop (pos + sizeof_symbol_entry) ((get_symbol_entry bytes pos)::acc)
+  in loop offset []
+
+let amend_symbol_table binary offset size symbol_table =
+  Array.iter (fun sym ->
+	      sym.name <- Binary.istring binary (offset + sym.st_name);
+	     ) symbol_table;
+  symbol_table
+	  
+let print_symbol_table entries =
+  Printf.printf "Symbol Table (%d):\n" @@ Array.length entries;
+  Array.iteri (fun i elem -> Printf.printf "%s\n" @@ symbol_to_string elem) entries
+
+let get_symbol_table binary section_headers =
+  match find_sections_by_type SectionHeader.kSHT_SYMTAB section_headers with
+  | [] -> [||]
+  | sh::shs ->
+     let offset = sh.sh_offset in
+     let size = sh.sh_size in
+     let strtab = section_headers.(sh.sh_link) in
+     get_symtab binary offset size |> amend_symbol_table binary strtab.sh_offset strtab.sh_size
+
+let get_symbol_table_with_offsets binary offset size strtab_offset strtab_size =
+     get_symtab binary offset size |> amend_symbol_table binary strtab_offset strtab_size
+							 

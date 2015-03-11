@@ -136,9 +136,9 @@ let to_string sh =
 		 sh.sh_addralign
 		 sh.sh_entsize
 
-let print shs =
-  Printf.printf "Section Headers (%d):\n" @@ List.length shs;
-  List.iter (fun sh -> Printf.printf "%s\n" @@ to_string sh) shs
+let print_section_headers shs =
+  Printf.printf "Section Headers (%d):\n" @@ Array.length shs;
+  Array.iter (fun sh -> Printf.printf "%s\n" @@ to_string sh) shs
 
 let get_section_header binary offset =
   let sh_name = Binary.i32 binary offset in
@@ -210,8 +210,31 @@ let update_section_headers_with_names binary shs =
 let get_section_headers binary shoff shentsize shnum =
     let rec loop count offset acc =
     if (count >= shnum) then
-      List.rev acc |> update_section_headers_with_names binary
+      List.rev acc |> update_section_headers_with_names binary |> Array.of_list
     else
       let ph = get_section_header binary offset in
       loop (count + 1) (offset + shentsize) (ph::acc)
   in loop 0 shoff []
+
+let find_section_by_type section_type shs =
+  let section = ref None in
+  for i = 0 to (Array.length shs) - 1 do
+    if (shs.(i).sh_type = section_type) then
+      section := Some shs.(i)
+  done;
+  section
+
+let find_sections_by_type section_type shs =
+  Array.fold_left (fun acc elem ->
+		   if (elem.sh_type = section_type) then
+		     (elem::acc)
+		   else
+		     acc) [] shs    
+
+let get_dynamic_section shs =
+  Array.fold_left (fun acc elem ->
+		  if (elem.sh_type = kSHT_DYNAMIC) then
+		     Some elem
+		   else
+		     acc) None shs 
+		  
