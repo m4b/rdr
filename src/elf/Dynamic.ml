@@ -258,7 +258,7 @@ let get_dynamic bytes offset size =
   in loop offset []
 
 (* we use program headers in case the section headers were stripped *)
-let get_dynamic_array binary program_headers =
+let get_DYNAMIC binary program_headers =
   match ProgramHeader.get_dynamic_program_header program_headers with
   | None -> []
   | Some section ->
@@ -267,7 +267,7 @@ let get_dynamic_array binary program_headers =
 let print_dyn64 dyn64 =
      dyn64_to_string dyn64 |> Printf.printf "%s\n"
 	  
-let print_dynamic_array dynamic =
+let print_DYNAMIC dynamic =
   Printf.printf "Dynamic (%d):\n" @@ List.length dynamic;
   List.iter print_dyn64 dynamic
 
@@ -286,12 +286,17 @@ let get_dynamic_symbol_offset_data dynamic =
        loop (x,y,z) dynamic
   in loop (-1,-1,-1) dynamic
 	    
-let get_dynamic_strtab dynamic =
-      List.fold_left (fun acc elem ->
+let get_dynamic_strtab binary offset size =
+  Bytes.sub binary offset size
+
+let get_dynamic_strtab_data dynamic =    
+      List.fold_left (fun (x,y) elem ->
 		    if (elem.d_tag = STRTAB) then
-		      Some elem
+		      elem.d_un,y
+		    else if (elem.d_tag = STRSZ) then
+		      x,elem.d_un
 		    else
-		      acc) None dynamic
+		      x,y) (-1,-1) dynamic
 
 let get_dynamic_symtab dynamic =
       List.fold_left (fun acc elem ->
@@ -302,15 +307,11 @@ let get_dynamic_symtab dynamic =
 	    
 (* build the symbol table from the vm_adjusted and the references to strtab and symtab, NOTE: vm_adjusted will be equal to 0 if it's a dylib like libc because offset = vaddr in phdr *)
 (* TODO: also probably change this to array? *)
-let get_dynamic_symbols binary vm_adjusted dynamic =
-  let symtab, strtab, strsz = get_dynamic_symbol_offset_data dynamic in
-  let symtab_offset = symtab - vm_adjusted in
-  let strtab_offset = strtab - vm_adjusted in
+let get_dynamic_symbols binary masks symtab_offset strtab_offset strtab_size =
   let symtab_size = strtab_offset - symtab_offset in
-  let strtab_size = strsz in
   (*   Printf.printf "DEBUG 0x%x 0x%x 0x%x 0x%x\n" symtab_offset strtab_offset symtab_size strtab_size; *)
-  SymbolTable.get_symbol_table_with_offsets binary symtab_offset symtab_size strtab_offset strtab_size
-					      
+  SymbolTable.get_symbol_table_adjusted binary masks symtab_offset symtab_size strtab_offset strtab_size
+					    
 let kDT_NULL =  0  (* Marks end of dynamic section *)
 let kDT_NEEDED = 1  (* Name of needed library *)
 let kDT_PLTRELSZ = 2  (* Size in bytes of PLT relocs *)

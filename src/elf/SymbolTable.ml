@@ -115,12 +115,13 @@ type symbol_entry =
 let sizeof_symbol_entry = 24
 
 let symbol_to_string symbol =
-  Printf.sprintf "%s 0x%x %s %s %s index: %d "
+  Printf.sprintf "%s 0x%x %s %s %s size: %d index: %d "
    symbol.name
    symbol.st_value
    (get_bind symbol.st_info |> symbol_bind_to_string)
    (get_type symbol.st_info |> symbol_type_to_string)
    (get_visibility symbol.st_other |> symbol_visibility_to_string)
+   symbol.st_size
    symbol.st_shndx
 
 let get_symbol_entry bytes offset =
@@ -140,7 +141,26 @@ let get_symbol_entry bytes offset =
       st_value;
       st_size;
     }
-   
+
+let get_symbol_entry_adjusted bytes masks offset =
+    let name = "" in
+    let st_name = Binary.i32 bytes offset in
+    let st_info = Binary.i8 bytes (offset + 4) in 
+    let st_other = Binary.i8 bytes (offset + 5) in
+    let st_shndx = Binary.i16 bytes (offset + 6) in
+    let st_value = Binary.i64 bytes (offset + 8) |> ProgramHeader.adjust masks in
+    let st_size = Binary.i64 bytes (offset + 16) in
+    {
+      name;
+      st_name;
+      st_info;
+      st_other;
+      st_shndx;
+      st_value;
+      st_size;
+    }
+      
+      
 (* I should probably stop acc'ing lists then List.rev |> Array.of_list but yagni? *)
 let get_symtab bytes offset size =
   let len = size + offset in
@@ -151,6 +171,15 @@ let get_symtab bytes offset size =
       loop (pos + sizeof_symbol_entry) ((get_symbol_entry bytes pos)::acc)
   in loop offset []
 
+let get_symtab_adjusted bytes masks offset size =
+  let len = size + offset in
+  let rec loop pos acc =
+    if (pos >= len) then
+      List.rev acc |> Array.of_list
+    else
+      loop (pos + sizeof_symbol_entry) ((get_symbol_entry_adjusted bytes masks pos)::acc)
+  in loop offset []
+	  
 let amend_symbol_table binary offset size symbol_table =
   Array.iter (fun sym ->
 	      sym.name <- Binary.istring binary (offset + sym.st_name);
@@ -172,4 +201,6 @@ let get_symbol_table binary section_headers =
 
 let get_symbol_table_with_offsets binary offset size strtab_offset strtab_size =
      get_symtab binary offset size |> amend_symbol_table binary strtab_offset strtab_size
-							 
+
+let get_symbol_table_adjusted binary masks offset size strtab_offset strtab_size =
+     get_symtab_adjusted binary masks offset size |> amend_symbol_table binary strtab_offset strtab_size

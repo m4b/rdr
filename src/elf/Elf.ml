@@ -102,23 +102,24 @@ let get_elf_header64 binary =
     e_shoff; e_flags; e_ehsize; e_phentsize; e_phnum;
     e_shentsize; e_shnum; e_shstrndx;
   }
-
+    
 let analyze binary =
   let header = get_elf_header64 binary in
   let program_headers = ProgramHeader.get_program_headers binary header.e_phoff header.e_phentsize header.e_phnum in
-  let vm_adjusted = 
-    try 
-      let phdr = ProgramHeader.get_main_program_header program_headers in
-      (* this is for reading the dynamic symbols, since the offsets and sizes returned in the dynamic section include the vmaddress, which can be different for each binary *)
-      phdr.ProgramHeader.p_vaddr - phdr.ProgramHeader.p_offset
-    with _ -> 0 in
+  let vaddr_masks = ProgramHeader.get_vaddr_masks program_headers in
+  (*   List.iter (fun x -> Printf.printf "0x%x\n" x) vaddr_masks; *)
   let section_headers = SectionHeader.get_section_headers binary header.e_shoff header.e_shentsize header.e_shnum in
   let symbol_table = SymbolTable.get_symbol_table binary section_headers in
-  let dynamic_array = Dynamic.get_dynamic_array binary program_headers in
-  let dynamic_symbols = Dynamic.get_dynamic_symbols binary vm_adjusted dynamic_array in
+  let _DYNAMIC = Dynamic.get_DYNAMIC binary program_headers in
+  let symtab_offset, strtab_offset, strtab_size = Dynamic.get_dynamic_symbol_offset_data _DYNAMIC in
+  let symtab_offset = ProgramHeader.adjust vaddr_masks symtab_offset in
+  let strtab_offset = ProgramHeader.adjust vaddr_masks strtab_offset in
+  (*   Printf.printf "0x%x 0x%x 0x%x\n" symtab_offset strtab_offset strtab_size; *)
+  let dynamic_strtab = Dynamic.get_dynamic_strtab binary strtab_offset strtab_size in
+  let dynamic_symbols = Dynamic.get_dynamic_symbols binary vaddr_masks symtab_offset strtab_offset strtab_size in
   print_elf_header64 header;
   ProgramHeader.print_program_headers program_headers;
   SectionHeader.print_section_headers section_headers;
   (* SymbolTable.print_symbol_table symbol_table; *)
-  Dynamic.print_dynamic_array dynamic_array;
+  Dynamic.print_DYNAMIC _DYNAMIC;
   SymbolTable.print_symbol_table dynamic_symbols;

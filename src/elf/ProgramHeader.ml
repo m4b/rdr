@@ -143,15 +143,35 @@ let get_main_program_header phs =
      begin
        raise @@ Elf_invalid_binary (Printf.sprintf "Elf binary has no PHDR")
      end
-  	  
-(* probably raise an exception; would be extremely unusual for elf binary not to have a dynamic program header *)
+
+(* optional return because binary can be statically linked... ewww *)
 let get_dynamic_program_header phs =
   List.fold_left (fun acc elem ->
 		  if (elem.p_type = kPT_DYNAMIC) then
 		    Some elem
 		  else
 		    acc) None phs
-	  
+
+module IntSet = Set.Make(struct type t = int let compare = Pervasives.compare end)
+
+(* finds the vaddr masks *)
+let get_vaddr_masks phs =
+  List.fold_left (fun acc ph ->
+		  if (ph.p_type = kPT_LOAD) then
+		    let adjusted:int = ph.p_vaddr - ph.p_offset in
+		    IntSet.add adjusted acc
+		  else
+		    acc
+		 ) IntSet.empty phs |> IntSet.elements
+
+(* returns the adjusted offset with the vm addr mask list*)
+let adjust masks offset =
+  List.fold_left (fun acc mask ->
+		  if ((mask land offset) = mask) then
+		    offset - mask
+		  else
+		    acc) offset masks
+
 (*		    
 let get_p_type p_type =
   match p_type with
