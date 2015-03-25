@@ -103,7 +103,7 @@ let get_elf_header64 binary =
     e_shentsize; e_shnum; e_shstrndx;
   }
     
-let analyze binary =
+let analyze ~verbose binary =
   let header = get_elf_header64 binary in
   let program_headers = ProgramHeader.get_program_headers binary header.e_phoff header.e_phentsize header.e_phnum in
   let vaddr_masks = ProgramHeader.get_vaddr_masks program_headers in
@@ -121,5 +121,8 @@ let analyze binary =
   ProgramHeader.print_program_headers program_headers;
   SectionHeader.print_section_headers section_headers;
   (* SymbolTable.print_symbol_table symbol_table; *)
-  Dynamic.print_DYNAMIC _DYNAMIC;
-  SymbolTable.print_symbol_table dynamic_symbols;
+  if (verbose) then
+    begin
+      Dynamic.print_DYNAMIC _DYNAMIC;
+      SymbolTable.print_symbol_table dynamic_symbols
+    end;

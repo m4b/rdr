@@ -171,6 +171,7 @@ let get_symtab bytes offset size =
       loop (pos + sizeof_symbol_entry) ((get_symbol_entry bytes pos)::acc)
   in loop offset []
 
+(* adjusted by vm addr mask list offsets *)
 let get_symtab_adjusted bytes masks offset size =
   let len = size + offset in
   let rec loop pos acc =
@@ -179,7 +180,8 @@ let get_symtab_adjusted bytes masks offset size =
     else
       loop (pos + sizeof_symbol_entry) ((get_symbol_entry_adjusted bytes masks pos)::acc)
   in loop offset []
-	  
+
+(* update the symbol name using the symbol table data offset into the binary *)
 let amend_symbol_table binary offset size symbol_table =
   Array.iter (fun sym ->
 	      sym.name <- Binary.istring binary (offset + sym.st_name);
@@ -204,3 +206,20 @@ let get_symbol_table_with_offsets binary offset size strtab_offset strtab_size =
 
 let get_symbol_table_adjusted binary masks offset size strtab_offset strtab_size =
      get_symtab_adjusted binary masks offset size |> amend_symbol_table binary strtab_offset strtab_size
+
+(* goblin *)
+
+(* polymorphic variants don't need to be qualified by module
+ since they are open and the symbol is unique *)
+let symbol_entry_to_goblin_symbol entry =
+  let name   = `Name entry.name in
+  let offset = `Offset entry.st_value in
+  let size   = `Size entry.st_size in
+  let kind   = `Kind (if (entry.st_value = 0x0 && entry.st_shndx = 0) then GoblinSymbol.Import else GoblinSymbol.Export) in
+  let data   = `PrintableData
+			 (Printf.sprintf
+			    "%s %s"
+			    (get_bind entry.st_info |> symbol_bind_to_string)
+			    (get_type entry.st_info |> symbol_type_to_string)) in
+  [name; offset; size; kind; data]
+

@@ -1,0 +1,350 @@
+(* 
+TODO:
+(1) create sorted output, by sending in a polymorphic list instead of a map, sorted by address, etc. this will be easy with arrays of exports/imports
+ *)
+
+(*
+for testing
+
+#directory "/Users/matthewbarney/projects/binreader/_build/src/utils/";;
+#directory "/Users/matthewbarney/projects/binreader/_build/src/mach/";;
+#load "Binary.cmo";;
+#load "InputUtils.cmo";;
+#load "Version.cmo";;
+#load "Nlist.cmo";;
+#load "LoadCommand.cmo";;
+#load "BindOpcodes.cmo";;
+#load "Leb128.cmo";;
+#load "Imports.cmo";;
+#load "MachExports.cmo";;
+#load "Macho.cmo";;
+*)
+
+open Binary
+open MachImports
+open MachExports
+open Mach
+
+(* 
+digraph structs { 
+node [shape=plaintext] 
+struct1 [label=< 
+<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0"> 
+<TR>
+<TD>left</TD><TD PORT="f1">mid dle</TD><TD PORT="f2">right</TD>
+</TR> </TABLE>>]; struct2 [label=< <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0"> <TR><TD PORT="f0">one</TD><TD>two</TD></TR> </TABLE>>]; struct3 [label=< <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4"> <TR> <TD ROWSPAN="3">hello<BR/>world</TD> <TD COLSPAN="3">b</TD> <TD ROWSPAN="3">g</TD> <TD ROWSPAN="3">h</TD> </TR> <TR> <TD>c</TD><TD PORT="here">d</TD><TD>e</TD> </TR> <TR> <TD COLSPAN="3">f</TD> </TR> </TABLE>>]; struct1:f1 -> struct2:f0; struct1:f2 -> struct3:here; }
+ *)
+
+(* helper functions to avoid syntax errors in dot *)
+let to_dot_name = 
+  String.map (fun c -> 
+      match c with 
+      | '.' | '-' -> '_' 
+      | '+' -> 'p' 
+      | c' -> c')
+
+let from_dot_name = 
+  String.map (fun c -> match c with | '_' -> '.' | c' -> c')
+(* end helper *)
+
+(* exports *)
+
+let get_html_exports_header name fullname nexports = 
+  (* multiline strings whitespace significant *)
+  Printf.sprintf "
+%s [label=<
+  <TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\">
+   <TR >
+    <TD BGCOLOR=\"#d23939\" COLSPAN=\"2\">%s Exported Symbols (%d)</TD>
+   </TR>
+   <TR>
+    <TD BGCOLOR=\"#ff6363\">SYMBOL</TD><TD BGCOLOR=\"#ff6363\">ADDRESS</TD>
+   </TR>
+" name fullname nexports
+
+let html_footer = "  </TABLE>\n>];\n"
+
+
+(* uses export_info *)
+(* let get_html_export_row symbol_name export_info libraries = 
+  match export_info with
+  | Regular info ->
+    Printf.sprintf "   <TR>
+    <TD PORT=\"%s\">%s</TD><TD>0x%x</TD>
+   </TR>
+" symbol_name symbol_name info.address
+  | Reexport info -> 
+    begin
+      match info.lib_symbol_name with
+      | Some str ->
+        Printf.sprintf "   <TR>
+    <TD PORT=\"%s\">%s</TD><TD>%s <BR/>@ %s</TD>
+   </TR>
+" symbol_name symbol_name str info.lib
+      | None -> 
+        Printf.sprintf "   <TR>
+    <TD PORT=\"%s\">%s</TD><TD>@ %s</TD>
+   </TR>
+" symbol_name symbol_name info.lib
+    end
+  | Stub info -> 
+    Printf.sprintf "   <TR>
+    <TD PORT=\"%s\">%s</TD><TD>0x%x , 0x%x</TD>
+   </TR>
+" symbol_name symbol_name info.stub_offset info.resolver_offset
+ *)
+
+
+
+let get_html_export_row symbol_name export libraries = 
+  (* i'm being lazy as shit and converting it back *)
+  match MachExports.mach_export_data_to_export_info export with
+  | Regular info ->
+    Printf.sprintf "   <TR>
+    <TD PORT=\"%s\">%s</TD><TD>0x%x</TD>
+   </TR>
+" symbol_name symbol_name info.address
+  | Reexport info -> 
+    begin
+      match info.lib_symbol_name with
+      | Some str ->
+        Printf.sprintf "   <TR>
+    <TD PORT=\"%s\">%s</TD><TD>%s <BR/>@ %s</TD>
+   </TR>
+" symbol_name symbol_name str info.lib
+      | None -> 
+        Printf.sprintf "   <TR>
+    <TD PORT=\"%s\">%s</TD><TD>@ %s</TD>
+   </TR>
+" symbol_name symbol_name info.lib
+    end
+  | Stub info -> 
+    Printf.sprintf "   <TR>
+    <TD PORT=\"%s\">%s</TD><TD>0x%x , 0x%x</TD>
+   </TR>
+" symbol_name symbol_name info.stub_offset info.resolver_offset
+
+(* libs *)
+
+let get_html_libs_header name fullname nlibs = 
+  (* multiline strings whitespace significant *)
+  Printf.sprintf "
+%s [label=<
+  <TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\">
+   <TR>
+    <TD BGCOLOR=\"lightblue\">%s Libraries (%d)</TD>
+   </TR>
+" name fullname nlibs
+
+let get_html_lib_row name index libname =
+  Printf.sprintf "   <TR>
+    <TD ALIGN=\"LEFT\" PORT=\"%d\">(%d) %s</TD>
+   </TR>
+" (index+1) (index+1) libname
+
+(* imports *)
+let get_html_imports_header name fullname nimports = 
+  Printf.sprintf "
+%s [label=<
+  <TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\">
+   <TR >
+    <TD BGCOLOR=\"#67e14f\" COLSPAN=\"2\">%s Imported Symbols (%d)</TD>
+   </TR>
+   <TR>
+    <TD BGCOLOR=\"#8efd78\">SYMBOL</TD><TD BGCOLOR=\"#8efd78\">LIBRARY</TD>
+   </TR>
+" name fullname nimports
+
+let get_html_import_row name import = 
+  let color = if (import.is_lazy) then "#e0ffda" else "#ffffff" in
+  Printf.sprintf "   <TR>
+    <TD BGCOLOR=\"%s\" PORT=\"%s\">%s</TD><TD BGCOLOR=\"%s\">%s</TD>
+   </TR>
+" color import.bi.symbol_name import.bi.symbol_name color import.dylib
+
+(* end *)
+
+(* todo: add header and footer to a wrapper function? *)
+let mach_to_html_dot (binary:mach_binary) draw_imports draw_libs = 
+  let b = Buffer.create @@ binary.nexports * 16 in
+  let name = to_dot_name binary.name in
+  let header = Printf.sprintf "digraph %s {\n" name in
+  Buffer.add_string b header;
+  (*   Buffer.add_string b "rankdir=LR\n"; *)
+  Buffer.add_string b "
+rankdir=LR;
+0, 1, 2, 3 [style=invis]
+0->1->2->3 [style=invis]
+node [shape=plaintext]\n";
+  (* begin libs *)
+  if (draw_libs) then
+    begin
+      let nodename = Printf.sprintf "%s_libs" name in
+      Buffer.add_string b @@ Printf.sprintf "{ rank=same; 0->%s [style=invis]}" nodename;
+      Buffer.add_string b @@ get_html_libs_header nodename binary.name binary.nlibs;
+      Array.iteri (fun i lib -> Buffer.add_string b @@ get_html_lib_row name i lib) binary.libs;
+      Buffer.add_string b html_footer;
+    end;
+  (* end libs *)
+  (* begin exports *)
+  let nodename = Printf.sprintf "%s_exports" name in
+  Buffer.add_string b @@ Printf.sprintf "{ rank=same; 1->%s [style=invis]}" nodename;
+  Buffer.add_string b @@ get_html_exports_header nodename binary.name binary.nexports;
+  Array.iter (fun mach_export_data ->
+      let name = GoblinSymbol.find_symbol_name mach_export_data in
+      Buffer.add_string b @@ get_html_export_row name mach_export_data binary.libs
+    ) binary.exports;
+  Buffer.add_string b html_footer;
+  (* end exports *)
+  (* begin imports *)
+  if (draw_imports) then
+    begin
+      let nodename = Printf.sprintf "%s_imports" name in
+      Buffer.add_string b @@ Printf.sprintf "{ rank=same; 2->%s [style=invis]}" nodename;
+      Buffer.add_string b @@ get_html_imports_header nodename binary.name binary.nimports;
+      Array.iteri (fun i import -> Buffer.add_string b @@ get_html_import_row name import) binary.imports;
+      Buffer.add_string b html_footer;
+    end;  
+  (* end imports *)
+  Buffer.add_string b "}\n";
+  Buffer.contents b
+
+let graph_mach_binary ?draw_imports:(draw_imports=true) ?draw_libs:(draw_libs=true) binary filename = 
+  let call_graph = mach_to_html_dot binary draw_imports draw_libs in
+  (*   print_string call_graph; *)
+  let oc = open_out @@ filename ^ ".gv" in
+  Printf.fprintf oc "%s" call_graph;
+  close_out oc
+
+(* lib dependency graph *)
+(* [binary, [libs]] *)
+
+let lib_header = "digraph lib_deps {
+rankdir=BT;
+overlap=false;
+node[shape=\"rect\"];
+"
+
+let lib_footer = "}\n"
+
+let get_lib_nodes binary_name color libs =
+  let b = Buffer.create (Array.length libs * 5) in
+  Array.iter (fun lib -> 
+      let node = Printf.sprintf "%s -> %s[color=\"%s\"];\n" (to_dot_name binary_name) (to_dot_name lib |> Filename.basename) color in
+      Buffer.add_string b node
+    ) libs;
+  Buffer.contents b
+
+let lib_graph (binary_name, libs) color =
+  if (Array.length libs = 0) then
+    ""
+  else
+    Printf.sprintf "
+%s [label=\"%s\"]
+%s
+" (to_dot_name binary_name) binary_name (get_lib_nodes binary_name color libs)
+
+let get_color color =
+  let r = Printf.sprintf "%x" @@ int_of_float @@ color *. 255. in
+  let g = Printf.sprintf "%x" @@ int_of_float @@ Random.float 1.0 *. 255. in
+  let b = Printf.sprintf "%x" @@ int_of_float @@ Random.float 1.0 *. 255. in
+  "#" ^ r ^ g ^ b
+
+(* this should be binary independent *)
+(* input: (binary name, lib dependency array) list *)
+let graph_lib_dependencies lib_deps =
+  let b = Buffer.create 0 in
+  Buffer.add_string b lib_header;
+  let color_ratio = 1. /. (float_of_int @@ List.length lib_deps) in
+  let color_counter = ref 1 in 
+  let rec loop deps =
+    match deps with
+    | [] ->
+      Buffer.add_string b lib_footer;
+      (* Printf.printf "%s" @@ Buffer.contents b; *)
+      let oc = open_out "lib_dependency_graph.gv" in
+      Printf.fprintf oc "%s" @@ Buffer.contents b;
+      close_out oc 
+    | d::deps ->
+      lib_graph d (get_color ((float_of_int !color_counter) *. color_ratio)) |> Buffer.add_string b;
+      incr color_counter;
+      loop deps
+  in loop lib_deps
+
+(* testing
+   let b1 = ("mydylib",   [ "isawesome"; "more"; "other"])
+   let b2 = ("other",     [ "more"; "isawesome"])
+   let b3 = ("more",      [ "isawsome"])
+   let b4 = ("isawesome", [])
+
+   let unit0 = [b1; b2; b3; b4]
+*)
+
+
+(* ================================ *)
+(* abstract binary (goblin) printer *)
+(* ================================ *)
+
+let get_goblin_html_export_row symbol_name export libraries = 
+    Printf.sprintf "   <TR>
+    <TD PORT=\"%s\">%s</TD><TD>0x%x</TD>
+   </TR>
+" symbol_name symbol_name export.Goblin.Export.offset
+
+let get_goblin_html_import_row name import = 
+  let color = if (import.Goblin.Import.is_lazy) then "#e0ffda" else "#ffffff" in
+  Printf.sprintf "   <TR>
+    <TD BGCOLOR=\"%s\" PORT=\"%s\">%s</TD><TD BGCOLOR=\"%s\">%s</TD>
+   </TR>
+" color import.Goblin.Import.name import.Goblin.Import.name color import.Goblin.Import.lib
+
+(* end *)
+
+let goblin_to_html_dot (binary:Goblin.t) draw_imports draw_libs = 
+  let b = Buffer.create @@ binary.Goblin.nexports * 16 in
+  let name = to_dot_name binary.Goblin.name in
+  let header = Printf.sprintf "digraph %s {\n" name in
+  Buffer.add_string b header;
+  (*   Buffer.add_string b "rankdir=LR\n"; *)
+  Buffer.add_string b "
+rankdir=LR;
+0, 1, 2, 3 [style=invis]
+0->1->2->3 [style=invis]
+node [shape=plaintext]\n";
+  (* begin libs *)
+  if (draw_libs) then
+    begin
+      let nodename = Printf.sprintf "%s_libs" name in
+      Buffer.add_string b @@ Printf.sprintf "{ rank=same; 0->%s [style=invis]}" nodename;
+      Buffer.add_string b @@ get_html_libs_header nodename binary.Goblin.name binary.Goblin.nlibs; (* goblin? *)
+      Array.iteri (fun i lib -> Buffer.add_string b @@ get_html_lib_row name i lib) binary.Goblin.libs;
+      Buffer.add_string b html_footer;
+    end;
+  (* end libs *)
+  (* begin exports *)
+  let nodename = Printf.sprintf "%s_exports" name in
+  Buffer.add_string b @@ Printf.sprintf "{ rank=same; 1->%s [style=invis]}" nodename;
+  Buffer.add_string b @@ get_html_exports_header nodename binary.Goblin.name binary.Goblin.nexports;
+  Goblin.iter (fun key export ->
+      Buffer.add_string b @@ get_goblin_html_export_row key export binary.Goblin.libs
+    ) binary.Goblin.exports;
+  Buffer.add_string b html_footer;
+  (* end exports *)
+  (* begin imports *)
+  if (draw_imports) then
+    begin
+      let nodename = Printf.sprintf "%s_imports" name in
+      Buffer.add_string b @@ Printf.sprintf "{ rank=same; 2->%s [style=invis]}" nodename;
+      Buffer.add_string b @@ get_html_imports_header nodename binary.Goblin.name binary.Goblin.nimports;
+      Goblin.iter (fun key import -> Buffer.add_string b @@ get_goblin_html_import_row name import) binary.Goblin.imports;
+      Buffer.add_string b html_footer;
+    end;  
+  (* end imports *)
+  Buffer.add_string b "}\n";
+  Buffer.contents b
+
+let graph_goblin ?draw_imports:(draw_imports=true) ?draw_libs:(draw_libs=true) binary filename = 
+  let graph = goblin_to_html_dot binary draw_imports draw_libs in
+  let oc = open_out @@ filename ^ ".gv" in
+  Printf.fprintf oc "%s" graph;
+  close_out oc

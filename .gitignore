@@ -1,2 +1,6 @@
 *~
 _build
+bin/*
+old/*
+graph/*
+darwin/*

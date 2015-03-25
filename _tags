@@ -1,2 +1,10 @@
-<src/**>: include
-<**/*.ml>: bin_annot
+#<src/Rdr.ml> : link, native, ocaml, library, use_unix
+#true: native, use_unix
+<pwd.{native,byte}>: use_unix, use_str
+<src/{mach,elf,goblin,utils}> : include
+<src/old> : -traverse
+<bin> : -traverse
+<graph> : -traverse
+<doc> : -traverse
+<darwin> : -traverse
+true : bin_annot

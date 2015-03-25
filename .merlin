@@ -1,8 +1,7 @@
-S src/elf
-S src/utils
-S src/lib
 S src
+S src/mach
+S src/elf
+S src/goblin
+S src/utils
 
 B _build/src/*
-
-
