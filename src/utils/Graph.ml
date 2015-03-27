@@ -39,8 +39,8 @@ struct1 [label=<
 let to_dot_name = 
   String.map (fun c -> 
       match c with 
-      | '.' | '-' -> '_' 
-      | '+' -> 'p' 
+      | '.' | '-' | '/' -> '_' 
+      | '+' -> 'p'
       | c' -> c')
 
 let from_dot_name = 

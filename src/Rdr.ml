@@ -166,7 +166,6 @@ let main =
     (* ===================== *)
     | Object.Elf binary ->
        let binary = Elf.analyze ~verbose:!verbose ~filename:filename binary in
-       ignore binary;
-       ()
+       if (!graph) then Graph.graph_goblin binary @@ Filename.basename filename;
     | Object.Unknown ->
       raise @@ Unimplemented_binary_type "Unknown binary"
