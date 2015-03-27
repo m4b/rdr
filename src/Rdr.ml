@@ -138,7 +138,7 @@ let main =
       let binary = Mach.analyze ~print_nlist:!print_nlist ~lc:analyze ~verbose:!verbose bytes filename in
       if (not !verbose && analyze) then
       begin
-        Printf.printf "Libraries (%d)\n" @@ binary.Mach.nlibs;
+        Printf.printf "Libraries (%d)\n" @@ (binary.Mach.nlibs - 1); (* because 0th element is binary itself *)
         Printf.printf "Exports (%d)\n" @@ binary.Mach.nexports;
         Printf.printf "Imports (%d)\n" @@ binary.Mach.nimports
       end;
@@ -165,7 +165,7 @@ let main =
     (* ELF *)
     (* ===================== *)
     | Object.Elf binary ->
-       let binary = Elf.analyze ~verbose:!verbose binary in
+       let binary = Elf.analyze ~verbose:!verbose ~filename:filename binary in
        ignore binary;
        ()
     | Object.Unknown ->

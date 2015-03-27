@@ -635,9 +635,10 @@ exception Impossible of string
 let print_libraries libs =
   if ((Array.length libs) <> 0) then
     begin
-      Printf.printf "Libraries (%d)\n" @@ Array.length libs;
-      Array.iter (fun lib -> 
-          Printf.printf "%s\n" lib) libs
+      Printf.printf "Libraries (%d)\n" @@ (Array.length libs - 1);
+      Array.iteri (fun i lib ->
+		  if (i <> 0) then
+		    Printf.printf "%s\n" lib) libs
     end
 
 (* seems to be printing duplicates *)

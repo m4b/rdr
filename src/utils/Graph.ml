@@ -55,74 +55,43 @@ let get_html_exports_header name fullname nexports =
 %s [label=<
   <TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\">
    <TR >
-    <TD BGCOLOR=\"#d23939\" COLSPAN=\"2\">%s Exported Symbols (%d)</TD>
+    <TD BGCOLOR=\"#d23939\" COLSPAN=\"3\">%s Exported Symbols (%d)</TD>
    </TR>
    <TR>
-    <TD BGCOLOR=\"#ff6363\">SYMBOL</TD><TD BGCOLOR=\"#ff6363\">ADDRESS</TD>
+    <TD BGCOLOR=\"#ff6363\">SYMBOL</TD><TD BGCOLOR=\"#ff6363\">SIZE</TD><TD BGCOLOR=\"#ff6363\">ADDRESS</TD>
    </TR>
 " name fullname nexports
 
 let html_footer = "  </TABLE>\n>];\n"
 
-
-(* uses export_info *)
-(* let get_html_export_row symbol_name export_info libraries = 
-  match export_info with
-  | Regular info ->
-    Printf.sprintf "   <TR>
-    <TD PORT=\"%s\">%s</TD><TD>0x%x</TD>
-   </TR>
-" symbol_name symbol_name info.address
-  | Reexport info -> 
-    begin
-      match info.lib_symbol_name with
-      | Some str ->
-        Printf.sprintf "   <TR>
-    <TD PORT=\"%s\">%s</TD><TD>%s <BR/>@ %s</TD>
-   </TR>
-" symbol_name symbol_name str info.lib
-      | None -> 
-        Printf.sprintf "   <TR>
-    <TD PORT=\"%s\">%s</TD><TD>@ %s</TD>
-   </TR>
-" symbol_name symbol_name info.lib
-    end
-  | Stub info -> 
-    Printf.sprintf "   <TR>
-    <TD PORT=\"%s\">%s</TD><TD>0x%x , 0x%x</TD>
-   </TR>
-" symbol_name symbol_name info.stub_offset info.resolver_offset
- *)
-
-
-
-let get_html_export_row symbol_name export libraries = 
+let get_html_export_row symbol_name export libraries =
+  let size = try GoblinSymbol.find_symbol_size export |> Printf.sprintf "%d" with Not_found -> "" in
   (* i'm being lazy as shit and converting it back *)
   match MachExports.mach_export_data_to_export_info export with
   | Regular info ->
     Printf.sprintf "   <TR>
-    <TD PORT=\"%s\">%s</TD><TD>0x%x</TD>
+    <TD PORT=\"%s\">%s</TD><TD>%s</TD><TD>0x%x</TD>
    </TR>
-" symbol_name symbol_name info.address
+" symbol_name symbol_name size info.address
   | Reexport info -> 
     begin
       match info.lib_symbol_name with
       | Some str ->
         Printf.sprintf "   <TR>
-    <TD PORT=\"%s\">%s</TD><TD>%s <BR/>@ %s</TD>
+    <TD PORT=\"%s\">%s</TD><TD>%s</TD><TD>%s <BR/>@ %s</TD>
    </TR>
-" symbol_name symbol_name str info.lib
+" symbol_name symbol_name size str info.lib
       | None -> 
         Printf.sprintf "   <TR>
-    <TD PORT=\"%s\">%s</TD><TD>@ %s</TD>
+    <TD PORT=\"%s\">%s</TD><TD>%s</TD><TD>@ %s</TD>
    </TR>
-" symbol_name symbol_name info.lib
+" symbol_name symbol_name size info.lib
     end
   | Stub info -> 
     Printf.sprintf "   <TR>
-    <TD PORT=\"%s\">%s</TD><TD>0x%x , 0x%x</TD>
+    <TD PORT=\"%s\">%s</TD><TD>%s</TD><TD>0x%x , 0x%x</TD>
    </TR>
-" symbol_name symbol_name info.stub_offset info.resolver_offset
+" symbol_name symbol_name size info.stub_offset info.resolver_offset
 
 (* libs *)
 
@@ -134,7 +103,7 @@ let get_html_libs_header name fullname nlibs =
    <TR>
     <TD BGCOLOR=\"lightblue\">%s Libraries (%d)</TD>
    </TR>
-" name fullname nlibs
+" name fullname (nlibs - 1)
 
 let get_html_lib_row name index libname =
   Printf.sprintf "   <TR>
@@ -182,7 +151,8 @@ node [shape=plaintext]\n";
       let nodename = Printf.sprintf "%s_libs" name in
       Buffer.add_string b @@ Printf.sprintf "{ rank=same; 0->%s [style=invis]}" nodename;
       Buffer.add_string b @@ get_html_libs_header nodename binary.name binary.nlibs;
-      Array.iteri (fun i lib -> Buffer.add_string b @@ get_html_lib_row name i lib) binary.libs;
+      (* was a stupid idea to include the binary in the libraries... *)
+      Array.iteri (fun i lib -> if (i <> 0) then Buffer.add_string b @@ get_html_lib_row name (i - 1) lib) binary.libs;
       Buffer.add_string b html_footer;
     end;
   (* end libs *)
@@ -229,10 +199,12 @@ let lib_footer = "}\n"
 
 let get_lib_nodes binary_name color libs =
   let b = Buffer.create (Array.length libs * 5) in
-  Array.iter (fun lib -> 
-      let node = Printf.sprintf "%s -> %s[color=\"%s\"];\n" (to_dot_name binary_name) (to_dot_name lib |> Filename.basename) color in
-      Buffer.add_string b node
-    ) libs;
+  Array.iteri (fun i lib ->
+	       (* stupid matt putting the binary in the libs... *)
+	       if (i <> 0) then
+		 let node = Printf.sprintf "%s -> %s[color=\"%s\"];\n" (to_dot_name binary_name) (to_dot_name lib |> Filename.basename) color in
+		 Buffer.add_string b node
+	      ) libs;
   Buffer.contents b
 
 let lib_graph (binary_name, libs) color =

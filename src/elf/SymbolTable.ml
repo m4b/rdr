@@ -211,15 +211,22 @@ let get_symbol_table_adjusted binary masks offset size strtab_offset strtab_size
 
 (* polymorphic variants don't need to be qualified by module
  since they are open and the symbol is unique *)
-let symbol_entry_to_goblin_symbol entry =
+let symbol_entry_to_goblin_symbol soname entry =
+  let lib = `Lib soname in
+  let bind = (get_bind entry.st_info |> symbol_bind_to_string) in
+  let stype = (get_type entry.st_info |> symbol_type_to_string) in
   let name   = `Name entry.name in
   let offset = `Offset entry.st_value in
   let size   = `Size entry.st_size in
-  let kind   = `Kind (if (entry.st_value = 0x0 && entry.st_shndx = 0) then GoblinSymbol.Import else GoblinSymbol.Export) in
+  let kind   = `Kind
+		(if (entry.st_value = 0x0 && entry.st_shndx = 0) then
+		   GoblinSymbol.Import
+		 else if (bind = "LOCAL") then (* this is a little dubious, could be local section, etc. *)
+		   GoblinSymbol.Local
+		 else GoblinSymbol.Export) in
   let data   = `PrintableData
 			 (Printf.sprintf
-			    "%s %s"
-			    (get_bind entry.st_info |> symbol_bind_to_string)
-			    (get_type entry.st_info |> symbol_type_to_string)) in
-  [name; offset; size; kind; data]
+			    "%s %s" bind stype) in
+  [name; lib; offset; size; kind; data]
 
+let symbols_to_goblin soname arr = Array.map (symbol_entry_to_goblin_symbol soname) arr

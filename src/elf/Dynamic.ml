@@ -285,6 +285,15 @@ let get_dynamic_symbol_offset_data dynamic =
      else
        loop (x,y,z) dynamic
   in loop (-1,-1,-1) dynamic
+
+let rec get_soname_offset dynamic =
+  match dynamic with
+  | [] -> raise Not_found
+  | elem::dynamic ->
+     if (elem.d_tag = SONAME) then
+       elem.d_un
+     else
+       get_soname_offset dynamic
 	    
 let get_dynamic_strtab binary offset size =
   Bytes.sub binary offset size

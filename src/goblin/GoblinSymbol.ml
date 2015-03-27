@@ -138,7 +138,11 @@ let print_symbol_data ?like_nlist:(like_nlist=false) data =
     let name = find_symbol_name data in
     Printf.printf "%s %s %s\n" offset kind name
   else
-    Printf.printf "unimplemented\n"
+    let offset = try Printf.sprintf "%016x" @@ find_symbol_offset data with Not_found -> Printf.sprintf "%16d" 0 in
+    let size = try Printf.sprintf " (%d)" @@ find_symbol_size data with Not_found -> "" in
+    let kind = find_symbol_kind data |> symbol_kind_to_string in
+    let name = find_symbol_name data in
+    Printf.printf "%s%s @ %s %s\n" name size offset kind
 
 let sort_symbols list =
   (* symbol -> [[datum]] *)
@@ -159,7 +163,28 @@ let sort_symbols list =
             -1
       else
         Pervasives.compare l1 l2
-    ) list
+	    ) list
+
+let sort_symbols_with sortf listorarray =
+  (* symbol -> [[datum]] *)
+  sortf (fun a b ->       (* [[datum]] , [[datum]] *)
+      (* such needs of monads right now *)
+      (* first compare libs, export must have a lib *)
+      let l1 = find_symbol_lib a in
+      let l2 = find_symbol_lib b in
+      if (l1 = l2) then
+        try 
+          let o1 = find_symbol_offset a in
+          try 
+            let o2 = find_symbol_offset b in
+            Pervasives.compare o1 o2
+          with Not_found ->
+            1
+          with Not_found ->
+            -1
+      else
+        Pervasives.compare l1 l2
+    ) listorarray
 
 (* TODO: needs extra data for more accurate calculation *)
 (* @invariant (sorted list) *)

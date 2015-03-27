@@ -63,8 +63,8 @@ let print_verbose_elf_header64 header =
 
 let print_elf_header64 header =
   Printf.printf "ELF %s %s\n"
-		(Constants.machine_to_string header.e_machine)
-		(Constants.etype_to_string header.e_type)
+		(ElfConstants.machine_to_string header.e_machine)
+		(ElfConstants.etype_to_string header.e_type)
 
 	 
 let get_e_ident bytes =
@@ -103,7 +103,7 @@ let get_elf_header64 binary =
     e_shentsize; e_shnum; e_shstrndx;
   }
     
-let analyze ~verbose binary =
+let analyze ~verbose ~filename binary =
   let header = get_elf_header64 binary in
   let program_headers = ProgramHeader.get_program_headers binary header.e_phoff header.e_phentsize header.e_phnum in
   let vaddr_masks = ProgramHeader.get_vaddr_masks program_headers in
@@ -117,12 +117,26 @@ let analyze ~verbose binary =
   (*   Printf.printf "0x%x 0x%x 0x%x\n" symtab_offset strtab_offset strtab_size; *)
   let dynamic_strtab = Dynamic.get_dynamic_strtab binary strtab_offset strtab_size in
   let dynamic_symbols = Dynamic.get_dynamic_symbols binary vaddr_masks symtab_offset strtab_offset strtab_size in
+  let soname =
+    try 
+      let offset = Dynamic.get_soname_offset _DYNAMIC in
+      Binary.istring binary offset 
+    with Not_found -> filename
+  in
   print_elf_header64 header;
   ProgramHeader.print_program_headers program_headers;
   SectionHeader.print_section_headers section_headers;
+  let goblin_symbols =
+    SymbolTable.symbols_to_goblin soname dynamic_symbols
+  in
+  (* *)
+   GoblinSymbol.sort_symbols_with Array.sort goblin_symbols;
   (* SymbolTable.print_symbol_table symbol_table; *)
   if (verbose) then
     begin
       Dynamic.print_DYNAMIC _DYNAMIC;
-      SymbolTable.print_symbol_table dynamic_symbols
+      (* SymbolTable.print_symbol_table dynamic_symbols; *)
+      Array.iter (GoblinSymbol.print_symbol_data) goblin_symbols
     end;
+
+   (* TODO: use the stripable symbol table data when available; for example, putwchar doesn't return, but calls _Unwind_Resume, a local symbol, at it's terminus instruction, byte 343 + 4 for instruction size = 347 (it's reported size - 1); *)
