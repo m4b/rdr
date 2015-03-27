@@ -322,7 +322,7 @@ let rec get_exports_it bytes base size libs current_symbol pos acc =
          but pulling out the uleb regardless should work just fine... *)
       let terminal_size,pos = Leb128.get_uleb128 bytes pos in
       if (interp) then ignore @@ read_line ();
-      if (debug) then Printf.printf "@ 0x%x node: 0x%x current_symbol: %s\n" (pos-1) size current_symbol;
+      if (debug) then Printf.printf "@ 0x%x node: 0x%x current_symbol: %s\n" (pos-1) terminal_size current_symbol;
       if (terminal_size = 0) then (* node with no symbol info with num branches following *)
         let num_branches,pos = Leb128.get_uleb128 bytes pos in
         if (debug) then Printf.printf "\tBRAN %d\n" num_branches;
@@ -362,7 +362,7 @@ and get_branches bytes base count current_symbol curr pos branches =
     let string,pos = Binary.stringo bytes pos in
     let key = current_symbol ^ string in
     let next_node,pos = Leb128.get_uleb128 bytes pos in
-    if (debug) then Printf.printf "\t(%d) string: %s pos: 0x%x next_node: 0x%x\n" curr key pos (base + next_node);
+    if (debug) then Printf.printf "\t(%d) string: %s next_node: 0x%x\n" curr key (base + next_node);
     get_branches bytes base count current_symbol (curr+1) pos ((key, (base + next_node))::branches)
 
 (* TODO: see todos above *)

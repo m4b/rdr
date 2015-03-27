@@ -139,4 +139,4 @@ let analyze ~verbose ~filename binary =
       Array.iter (GoblinSymbol.print_symbol_data) goblin_symbols
     end;
 
-   (* TODO: use the stripable symbol table data when available; for example, putwchar doesn't return, but calls _Unwind_Resume, a local symbol, at it's terminus instruction, byte 343 + 4 for instruction size = 347 (it's reported size - 1); *)
+   (* TODO: use the strippable symbol table data when available; for example, putwchar doesn't return, but calls _Unwind_Resume, a local symbol, at it's terminus instruction, byte 343 + 4 for instruction size = 347 (it's reported size - 1); *)
