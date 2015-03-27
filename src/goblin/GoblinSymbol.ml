@@ -1,5 +1,6 @@
 (* 
 TODO: 
+(0) finish implementation of to_goblin_import
 (1) size computation requires load command segment details (where stubs/text end, etc.) and/or nlist data in order to be precise, otherwise:
   a. the final symbol's boundary isn't known,
   b. non-exported locals' size is accidentally taken into consideration when computing a symbol
@@ -104,7 +105,7 @@ let rec find_symbol_printable =
 
 let rec find_symbol_size = 
   function
-  | [] -> raise Not_found
+  | [] -> 0
   | `Size size :: _ ->
     size
   | _::rest -> find_symbol_size rest
@@ -131,17 +132,16 @@ let symbol_data_to_string ?basic_export:(basic_export=false) data =
       ) data;
     Buffer.contents b
 
-let print_symbol_data ?like_nlist:(like_nlist=false) data =
+let print_symbol_data ?like_export:(like_export=false) ?like_nlist:(like_nlist=false) data =
+  let offset = try Printf.sprintf "%16x" @@ find_symbol_offset data with Not_found -> Printf.sprintf "                " in
+  let size = try Printf.sprintf " (%d)" @@ find_symbol_size data with Not_found -> "" in
+  let kind = find_symbol_kind data |> symbol_kind_to_string in
+  let name = find_symbol_name data in
   if (like_nlist) then
-    let offset = try Printf.sprintf "%016x" @@ find_symbol_offset data with Not_found -> Printf.sprintf "%16d" 0 in
-    let kind = find_symbol_kind data |> symbol_kind_to_string in
-    let name = find_symbol_name data in
     Printf.printf "%s %s %s\n" offset kind name
+  else if (like_export) then
+    Printf.printf "%s %s%s\n" offset name size 
   else
-    let offset = try Printf.sprintf "%016x" @@ find_symbol_offset data with Not_found -> Printf.sprintf "%16d" 0 in
-    let size = try Printf.sprintf " (%d)" @@ find_symbol_size data with Not_found -> "" in
-    let kind = find_symbol_kind data |> symbol_kind_to_string in
-    let name = find_symbol_name data in
     Printf.printf "%s%s @ %s %s\n" name size offset kind
 
 let sort_symbols list =
@@ -216,3 +216,13 @@ let to_goblin_export symbol =
   let offset = try find_symbol_offset symbol with Not_found -> 0x0 in
   let size = try find_symbol_size symbol with Not_found -> 0x0 in
   {Goblin.Export.name; offset; size}
+
+(* TODO: holy shit this is half-implemented *)
+let to_goblin_import symbol =
+  let name = find_symbol_name symbol in
+  let lib = try find_symbol_lib symbol with Not_found -> "" in
+  let is_lazy = false in
+  let idx = 0x0 in
+  let size = find_symbol_size symbol in
+  let offset = try find_symbol_offset symbol with Not_found -> 0 in
+  {Goblin.Import.name; lib; is_lazy; idx; offset; size}

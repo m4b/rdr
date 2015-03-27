@@ -1,3 +1,8 @@
+(* 
+TODO:
+(1) MAJOR TODO: change the exports and imports from maps to arrays or lists --- terrible mistake to use maps in first place...
+ *)
+
 (*
  GOBLIN:
  Generic Object Binary Logical Information Node
@@ -24,7 +29,7 @@ module Import = struct
       name: string;        (* name of the imported symbol *)
       lib: string;         (* library which contains the binary *)
       is_lazy: bool;
-      mutable idx: int;    (* the index into some ab's export code section, typically generated via the dynamic linker *)
+      mutable idx: int;    (* the index into some goblin's export code section, typically generated via the dynamic linker *)
       mutable offset: int; (* offset into (tol#find import.lib).code *)
       size: int;           (* size of the imported symbol, in bytes *)
     }

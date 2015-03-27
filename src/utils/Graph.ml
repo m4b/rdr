@@ -257,11 +257,11 @@ let graph_lib_dependencies lib_deps =
 (* abstract binary (goblin) printer *)
 (* ================================ *)
 
-let get_goblin_html_export_row symbol_name export libraries = 
+let get_goblin_html_export_row symbol_name export libraries =
     Printf.sprintf "   <TR>
-    <TD PORT=\"%s\">%s</TD><TD>0x%x</TD>
+    <TD PORT=\"%s\">%s</TD><TD>%d</TD><TD>0x%x</TD>
    </TR>
-" symbol_name symbol_name export.Goblin.Export.offset
+" symbol_name symbol_name export.Goblin.Export.size export.Goblin.Export.offset
 
 let get_goblin_html_import_row name import = 
   let color = if (import.Goblin.Import.is_lazy) then "#e0ffda" else "#ffffff" in
@@ -269,8 +269,6 @@ let get_goblin_html_import_row name import =
     <TD BGCOLOR=\"%s\" PORT=\"%s\">%s</TD><TD BGCOLOR=\"%s\">%s</TD>
    </TR>
 " color import.Goblin.Import.name import.Goblin.Import.name color import.Goblin.Import.lib
-
-(* end *)
 
 let goblin_to_html_dot (binary:Goblin.t) draw_imports draw_libs = 
   let b = Buffer.create @@ binary.Goblin.nexports * 16 in

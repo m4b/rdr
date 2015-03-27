@@ -44,7 +44,7 @@ let get_bytes ?verbose:(verbose=false) filename =
       close_in ic;
       Mach binary
     end 
-  else if (magic = Elf.kMAGIC_ELF) then
+  else if (magic = ElfHeader.kMAGIC_ELF) then
     begin
       seek_in ic 0;  
       let binary = Bytes.create (in_channel_length ic) in
