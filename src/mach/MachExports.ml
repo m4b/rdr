@@ -1,22 +1,8 @@
 (* TODO:
 
- (1) in ./rdr -s bin/dllvmthreads.so the symbol _thread_initialize_preemption @ 0x18e8 is not pulled out of the tree; this could be  a bad binary, or the algorithm isn't quite right;
-
-   TODO: ABSOLUTE TODO: convert this to a list; the system map can use a map if it wants; the to-from conversion is silly, and the offset ordering gets lost every time
-   convert this to a list to print it sorted; should i just say fuck this map business for regular binaries? probably only necessary for the symbol map since it's huge, and converting back and forth is killing me i think... more api changes though
-
    (* TOOO: make export data more generic, in a higher up module *)
-   (0) Fix up the export map nonsense, pretty broken?
    (1) Weak of regular_symbol_info type probably needs to be added ?
-   (2) /usr/lib/libobjc.A.dylib has flag 2 at offset 331; 
-   (3) /usr/lib/libstdc++.6.0.9.dylib has flag 0xc at many offsets... they're weak maybe?
-
-   TODO: implement this in LoadCommand?
-   but this might only be relevant in an actual running binary, since I believe the slide is for offsets wrt the binary image in memory
-   uintptr_t ImageLoaderMachO::segActualLoadAddress(unsigned int segIndex) const
-   {
-   return segLoadCommand(segIndex)->vmaddr + fSlide;
-   }
+   (3) /usr/lib/libstdc++.6.0.9.dylib has flag 0xc at many offsets... they're weak 
 *)
 
 (*
@@ -221,7 +207,7 @@ let mach_export_data_to_symbol_data list =
     (
       function
       (* this is sweet *)
-      | #GoblinSymbol.symbol_datum as datum -> true
+      | #GoblinSymbol.symbol_datum as datum -> ignore datum; true (* ignore the warning, can't use _ :( we just need to see if it's a subset of goblin symbols, is all *)
       | _ -> false
     ) list
 
@@ -316,14 +302,16 @@ let get_symbol_type bytes libs flags offset =
       let address, _ = Leb128.get_uleb128 bytes offset in
       Regular {address; flags}
   | UNKNOWN_SYMBOL_KIND kind ->
-    Printf.printf "DANGER: unknown kind 0x%x from flags 0x%x in get_symbol_type at offset %d\n" kind flags offset;
+    Printf.printf "WARNING: unknown kind 0x%x from flags 0x%x in get_symbol_type at offset %d\n" kind flags offset;
     let address, _ = Leb128.get_uleb128 bytes offset in
     Regular {address; flags}
 
 
 let interp = false
 let debug = interp
-(* current_symbol accumulates the symbol name until we hit a terminal, which we then add to the map as a key to the flags and location *)
+(* current_symbol accumulates the symbol name until we hit a terminal, which we then add to the list as a key to the flags and location *)
+(* this is the meat of the binary work, 
+   reads out the trie encoded and builds the export list *)
 let rec get_exports_it bytes base size libs current_symbol pos acc = 
   if (pos >= size) then
     (* shouldn't happen because we terminate based on the trie structure itself, not pos *)
@@ -378,8 +366,7 @@ and get_branches bytes base count current_symbol curr pos branches =
     get_branches bytes base count current_symbol (curr+1) pos ((key, (base + next_node))::branches)
 
 (* TODO: see todos above *)
-(* this is the meat of the binary work, 
-   reads out the trie encoded and builds the export map *)
+(* entry point for doing the work *)
 let get_exports binary dyld_info libs  = 
   let boundary = (dyld_info.LoadCommand.export_size + dyld_info.LoadCommand.export_off) in
   let base = dyld_info.LoadCommand.export_off in
