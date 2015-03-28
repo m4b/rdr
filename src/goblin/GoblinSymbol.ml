@@ -149,6 +149,7 @@ let sort_symbols_with sortf listorarray =
   sortf (fun a b ->       (* [[datum]] , [[datum]] *)
 	 (* such needs of monads right now *)
 	 (* first compare libs, export must have a lib *)
+	 (* yea... but not just for exports anymore, so either need to return empty lib or check for Not_found... *)
 	 let l1 = find_symbol_lib a in
 	 let l2 = find_symbol_lib b in
 	 let n1 = find_symbol_name a in
