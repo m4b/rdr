@@ -53,9 +53,9 @@ type t =
       islib: bool;                   (* are we a library? *)
       libs: string array;            (* lib string array *)
       nlibs: int;                    (* number of libs *)
-      imports: Import.t StringMap.t; (* the import map *) (* if this is an array much simpler *)
+      imports: Import.t array; (* the import map *) (* if this is an array much simpler *)
       nimports: int;                 (* number of imports *)
-      exports: Export.t StringMap.t; (* the export map *) (* if this is an array much simpler *)
+      exports: Export.t array; (* the export map *) (* if this is an array much simpler *)
       nexports: int;                 (* number of exports *)
       code: bytes;                   (* to bytes array or not to bytes array *)
     }
@@ -65,20 +65,18 @@ type t =
          similarly: Bytes.sub (tol#find import.lib).code import.offset import.size = the symbol's routine
       *)
 
-let get_import import =
-  StringMap.find import
+let get_symbol collection i = Array.get collection i
+      
+let get_import import  =
+  Generics.find (fun symbol -> symbol.Import.name = import) 
 
 let get_export export =
-  StringMap.find export
+  Generics.find (fun symbol -> symbol.Export.name = export)
 
 let iter = 
-  StringMap.iter
+  Array.iter
 
-let empty = 
-  StringMap.empty
-
-let add =
-  StringMap.add
+let empty = [||]
 
 let libs_to_string libs = 
   let b = Buffer.create @@ Array.length libs in
@@ -87,15 +85,15 @@ let libs_to_string libs =
   Buffer.contents b
 
 let imports_to_string imports = 
-  let b = Buffer.create @@ (StringMap.cardinal imports) * 15 in (* just ballpark *)
-  StringMap.iter (fun key import -> 
+  let b = Buffer.create @@ (Array.length imports) * 15 in (* just ballpark *)
+  Array.iter (fun import -> 
       let squiggle = if (import.Import.is_lazy) then "~>" else "->" in
       Buffer.add_string b @@ Printf.sprintf "%s (%d) %s %s\n" import.Import.name import.Import.size squiggle import.Import.lib) imports;
   Buffer.contents b
 
 let exports_to_string exports = 
-  let b = Buffer.create @@ (StringMap.cardinal exports) * 15 in (* just ballpark *)
-  StringMap.iter (fun key export -> 
+  let b = Buffer.create @@ (Array.length exports) * 15 in (* just ballpark *)
+  Array.iter (fun export -> 
       Buffer.add_string b @@ Printf.sprintf "%s (%d) -> 0x%x\n" export.Export.name export.Export.size export.Export.offset) exports;
   Buffer.contents b
 

@@ -37,19 +37,20 @@ let analyze ~verbose ~filename binary =
       Array.iter (GoblinSymbol.print_symbol_data ~like_export:true) goblin_symbols
     end;
    (* TODO: use the strippable symbol table data when available; for example, putwchar doesn't return, but calls _Unwind_Resume, a local symbol, at it's terminus instruction, byte 343 + 4 for instruction size = 347 (it's reported size - 1); *)
+   
    (* ============== *)
    (* create goblin binary *)
   let name = filename in
   let soname = soname in
   let libs = [||] in
   let nlibs = 0 in
+  let nexports = Array.length goblin_symbols in
   let exports =  
-    Array.fold_left (fun acc export -> 
-        let name = GoblinSymbol.find_symbol_name export in
-        Goblin.add name (GoblinSymbol.to_goblin_export export) acc
-      ) Goblin.empty goblin_symbols
+    Array.init nexports (fun i ->
+		let export = goblin_symbols.(i) in
+		GoblinSymbol.to_goblin_export export
+	       )
   in
-  let nexports = Goblin.StringMap.cardinal exports in
   let imports = 		(* 
     Array.fold_left (fun acc import -> 
         let import' = {Goblin.Import.name = import.bi.symbol_name; lib = import.dylib; is_lazy = import.is_lazy; idx = 0x0; offset = 0x0; size = 0x0 } in
@@ -57,7 +58,7 @@ let analyze ~verbose ~filename binary =
       ) Goblin.empty elf.imports *)
     Goblin.empty
   in
-  let nimports = Goblin.StringMap.cardinal imports in
+  let nimports = 0 in
   let islib = is_lib in
   let code = Bytes.empty in
   {Goblin.name; soname; islib; libs; nlibs; exports; nexports; imports; nimports; code}

@@ -102,27 +102,19 @@ let to_goblin mach =
   let soname = mach.soname in
   let libs = mach.libs in
   let nlibs = mach.nlibs in
-  let exports =  
-    (* todo, make goblin use arrays or lists *)
-    Array.fold_left (fun acc export -> 
-        (* 
-        match export with
-        | Regular export ->
-          let export' = {Goblin.Export.name = key; offset = export.MachExports.address; size = 0x0} in
-        | _ ->
-
-          acc
- *)
-        let name = GoblinSymbol.find_symbol_name export in
-        Goblin.add name (MachExports.mach_export_data_to_symbol_data export |> GoblinSymbol.to_goblin_export) acc
-      ) Goblin.empty mach.exports
+  let exports =
+    Array.init (mach.nexports)
+	       (fun i ->
+		let export = mach.exports.(i) in
+		(MachExports.mach_export_data_to_symbol_data export
+		 |> GoblinSymbol.to_goblin_export))
   in
   let nexports = mach.nexports in
-  let imports = 
-    Array.fold_left (fun acc import -> 
-        let import' = {Goblin.Import.name = import.bi.symbol_name; lib = import.dylib; is_lazy = import.is_lazy; idx = 0x0; offset = 0x0; size = 0x0 } in
-        Goblin.add import.bi.symbol_name import' acc
-      ) Goblin.empty mach.imports
+  let imports =
+    Array.init (mach.nimports)    
+	       (fun i ->
+		let import = mach.imports.(i) in
+		{Goblin.Import.name = import.bi.symbol_name; lib = import.dylib; is_lazy = import.is_lazy; idx = 0x0; offset = 0x0; size = 0x0 })
   in
   let nimports = mach.nimports in
   let islib = mach.islib in

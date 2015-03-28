@@ -46,3 +46,17 @@ let string_tuple_list_to_string list =
         Buffer.add_string b ", ";
         loop ss
     in loop list      
+
+
+let find pred arr =
+  let size = Array.length arr in
+  let rec loop i =
+    if (i >= size) then raise Not_found
+    else
+      if (pred arr.(i)) then
+	arr.(i)
+      else
+	loop (i + 1)
+  in loop 0
+      
+  

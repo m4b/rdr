@@ -186,7 +186,7 @@ let get_tag =
   | 28 -> FINI_ARRAYSZ
   | 29 -> RUNPATH
   | 30 -> FLAGS
-  | 32 -> ENCODING
+  (*   | 32 -> ENCODING *)
   | 32 -> PREINIT_ARRAY
   | 33 -> PREINIT_ARRAYSZ
   | 34 -> NUM

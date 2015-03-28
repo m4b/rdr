@@ -287,7 +287,7 @@ node [shape=plaintext]\n";
       let nodename = Printf.sprintf "%s_libs" name in
       Buffer.add_string b @@ Printf.sprintf "{ rank=same; 0->%s [style=invis]}" nodename;
       Buffer.add_string b @@ get_html_libs_header nodename binary.Goblin.name binary.Goblin.nlibs; (* goblin? *)
-      Array.iteri (fun i lib -> Buffer.add_string b @@ get_html_lib_row name i lib) binary.Goblin.libs;
+      Array.iteri (fun i lib -> if (i <> 0) then Buffer.add_string b @@ get_html_lib_row name (i - 1) lib) binary.Goblin.libs;
       Buffer.add_string b html_footer;
     end;
   (* end libs *)
@@ -295,8 +295,8 @@ node [shape=plaintext]\n";
   let nodename = Printf.sprintf "%s_exports" name in
   Buffer.add_string b @@ Printf.sprintf "{ rank=same; 1->%s [style=invis]}" nodename;
   Buffer.add_string b @@ get_html_exports_header nodename binary.Goblin.name binary.Goblin.nexports;
-  Goblin.iter (fun key export ->
-      Buffer.add_string b @@ get_goblin_html_export_row key export binary.Goblin.libs
+  Goblin.iter (fun export ->
+      Buffer.add_string b @@ get_goblin_html_export_row export.Goblin.Export.name export binary.Goblin.libs
     ) binary.Goblin.exports;
   Buffer.add_string b html_footer;
   (* end exports *)
@@ -306,7 +306,7 @@ node [shape=plaintext]\n";
       let nodename = Printf.sprintf "%s_imports" name in
       Buffer.add_string b @@ Printf.sprintf "{ rank=same; 2->%s [style=invis]}" nodename;
       Buffer.add_string b @@ get_html_imports_header nodename binary.Goblin.name binary.Goblin.nimports;
-      Goblin.iter (fun key import -> Buffer.add_string b @@ get_goblin_html_import_row name import) binary.Goblin.imports;
+      Goblin.iter (fun import -> Buffer.add_string b @@ get_goblin_html_import_row name import) binary.Goblin.imports;
       Buffer.add_string b html_footer;
     end;  
   (* end imports *)

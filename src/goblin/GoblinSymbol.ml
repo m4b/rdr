@@ -20,12 +20,12 @@ type symbol_kind =
 
 type symbol_datum = 
   [ 
-    | `Name of string
-    | `Offset of int 
-    | `Size of int
-    | `Lib of string
-    | `Kind of symbol_kind
-    | `PrintableData of string
+  | `Name of string
+  | `Offset of int 
+  | `Size of int
+  | `Lib of string
+  | `Kind of symbol_kind
+  | `PrintableData of string
   ]
 
 let kORDINAL_LEFT = 1
@@ -67,17 +67,17 @@ let symbol_datum_to_string ?use_kind:(use_kind=false) ?use_lib:(use_lib=true) ?u
 (* data = [datum] *)
 let sort_symbol_data data =
   List.sort (fun a b ->
-      let e1 = symbol_datum_ordinal a in
-      let e2 = symbol_datum_ordinal b in
-      Pervasives.compare e1 e2
-    ) data
+	     let e1 = symbol_datum_ordinal a in
+	     let e2 = symbol_datum_ordinal b in
+	     Pervasives.compare e1 e2
+	    ) data
 
 (* assuming we receive symbol_datum list *)
 let rec find_symbol_name = 
   function
   | [] -> raise Not_found
   | `Name string :: _ ->
-    string
+     string
   | _::rest -> find_symbol_name rest
 
 (* assuming we receive symbol_datum list *)
@@ -85,7 +85,7 @@ let rec find_symbol_lib =
   function
   | [] -> raise Not_found
   | `Lib string :: _ ->
-    string
+     string
   | _::rest -> find_symbol_lib rest
 
 (* this definitely can be _not_ found, especially with mach *)
@@ -93,28 +93,28 @@ let rec find_symbol_offset =
   function
   | [] -> raise Not_found
   | `Offset o :: _ ->
-    o
+     o
   | _::rest -> find_symbol_offset rest
 
 let rec find_symbol_printable = 
   function
   | [] -> raise Not_found
   | `PrintableData data :: _ ->
-    data
+     data
   | _::rest -> find_symbol_printable rest
 
 let rec find_symbol_size = 
   function
   | [] -> 0
   | `Size size :: _ ->
-    size
+     size
   | _::rest -> find_symbol_size rest
 
 let rec find_symbol_kind = 
   function
   | [] -> raise Not_found
   | `Kind kind :: _ ->
-    kind
+     kind
   | _::rest -> find_symbol_kind rest
 
 let symbol_data_to_string ?basic_export:(basic_export=false) data =
@@ -127,9 +127,9 @@ let symbol_data_to_string ?basic_export:(basic_export=false) data =
     let data = sort_symbol_data data in
     let b = Buffer.create ((List.length data) * 15) in
     List.iter (fun elem ->
-        Buffer.add_string b @@ symbol_datum_to_string elem;
-        Buffer.add_string b " "
-      ) data;
+               Buffer.add_string b @@ symbol_datum_to_string elem;
+               Buffer.add_string b " "
+	      ) data;
     Buffer.contents b
 
 let print_symbol_data ?like_export:(like_export=false) ?like_nlist:(like_nlist=false) data =
@@ -144,47 +144,34 @@ let print_symbol_data ?like_export:(like_export=false) ?like_nlist:(like_nlist=f
   else
     Printf.printf "%s%s @ %s %s\n" name size offset kind
 
-let sort_symbols list =
-  (* symbol -> [[datum]] *)
-  List.sort (fun a b ->       (* [[datum]] , [[datum]] *)
-      (* such needs of monads right now *)
-      (* first compare libs, export must have a lib *)
-      let l1 = find_symbol_lib a in
-      let l2 = find_symbol_lib b in
-      if (l1 = l2) then
-        try 
-          let o1 = find_symbol_offset a in
-          try 
-            let o2 = find_symbol_offset b in
-            Pervasives.compare o1 o2
-          with Not_found ->
-            1
-          with Not_found ->
-            -1
-      else
-        Pervasives.compare l1 l2
-	    ) list
-
 let sort_symbols_with sortf listorarray =
   (* symbol -> [[datum]] *)
   sortf (fun a b ->       (* [[datum]] , [[datum]] *)
-      (* such needs of monads right now *)
-      (* first compare libs, export must have a lib *)
-      let l1 = find_symbol_lib a in
-      let l2 = find_symbol_lib b in
-      if (l1 = l2) then
-        try 
-          let o1 = find_symbol_offset a in
-          try 
-            let o2 = find_symbol_offset b in
-            Pervasives.compare o1 o2
-          with Not_found ->
-            1
-          with Not_found ->
-            -1
-      else
-        Pervasives.compare l1 l2
-    ) listorarray
+	 (* such needs of monads right now *)
+	 (* first compare libs, export must have a lib *)
+	 let l1 = find_symbol_lib a in
+	 let l2 = find_symbol_lib b in
+	 let n1 = find_symbol_name a in
+	 let n2 = find_symbol_name b in
+	 if (l1 = l2) then
+           try 
+             let o1 = find_symbol_offset a in
+             try 
+               let o2 = find_symbol_offset b in
+	       if (o1 = o2) then
+		 Pervasives.compare n1 n2
+	       else
+		 Pervasives.compare o1 o2
+             with Not_found ->
+               1
+           with Not_found ->
+             -1
+	 else
+           Pervasives.compare l1 l2
+	) listorarray
+
+let sort_symbols list =
+  sort_symbols_with List.sort list
 
 (* TODO: needs extra data for more accurate calculation *)
 (* @invariant (sorted list) *)
@@ -193,22 +180,22 @@ let compute_size text_boundary symbols =
     match symbols with
     | [] -> acc
     | symbol::[] ->
-      begin
-        try 
-          let offset = find_symbol_offset symbol in
-          ((`Size (text_boundary - offset)::symbol)::acc)
-        with
-        | Not_found -> (symbol::acc)
-      end
+       begin
+         try 
+           let offset = find_symbol_offset symbol in
+           ((`Size (text_boundary - offset)::symbol)::acc)
+         with
+         | Not_found -> (symbol::acc)
+       end
     | symbol1::symbol2::symbols ->
-      begin
-        try 
-          let offset = find_symbol_offset symbol1 in
-          let next_boundary = find_symbol_offset symbol2 in
-          loop (symbol2::symbols) ((`Size (next_boundary - offset)::symbol1)::acc)
-        with
-        | Not_found -> loop (symbol2::symbols) (symbol1::acc)
-      end
+       begin
+         try 
+           let offset = find_symbol_offset symbol1 in
+           let next_boundary = find_symbol_offset symbol2 in
+           loop (symbol2::symbols) ((`Size (next_boundary - offset)::symbol1)::acc)
+         with
+         | Not_found -> loop (symbol2::symbols) (symbol1::acc)
+       end
   in loop symbols []
 
 let to_goblin_export symbol =
