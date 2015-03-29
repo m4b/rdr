@@ -160,13 +160,11 @@ let get_symbol_entry_adjusted bytes masks offset =
       st_size;
     }
       
-      
-(* I should probably stop acc'ing lists then List.rev |> Array.of_list but yagni? *)
 let get_symtab bytes offset size =
   let len = size + offset in
   let rec loop pos acc =
     if (pos >= len) then
-      List.rev acc |> Array.of_list
+      acc
     else
       loop (pos + sizeof_symbol_entry) ((get_symbol_entry bytes pos)::acc)
   in loop offset []
@@ -176,25 +174,25 @@ let get_symtab_adjusted bytes masks offset size =
   let len = size + offset in
   let rec loop pos acc =
     if (pos >= len) then
-      List.rev acc |> Array.of_list
+      acc
     else
       loop (pos + sizeof_symbol_entry) ((get_symbol_entry_adjusted bytes masks pos)::acc)
   in loop offset []
 
 (* update the symbol name using the symbol table data offset into the binary *)
 let amend_symbol_table binary offset size symbol_table =
-  Array.iter (fun sym ->
+  List.iter (fun sym ->
 	      sym.name <- Binary.istring binary (offset + sym.st_name);
 	     ) symbol_table;
   symbol_table
 	  
 let print_symbol_table entries =
-  Printf.printf "Symbol Table (%d):\n" @@ Array.length entries;
-  Array.iteri (fun i elem -> Printf.printf "%s\n" @@ symbol_to_string elem) entries
+  Printf.printf "Symbol Table (%d):\n" @@ List.length entries;
+  List.iteri (fun i elem -> Printf.printf "%s\n" @@ symbol_to_string elem) entries
 
 let get_symbol_table binary section_headers =
   match find_sections_by_type SectionHeader.kSHT_SYMTAB section_headers with
-  | [] -> [||]
+  | [] -> []
   | sh::shs ->
      let offset = sh.sh_offset in
      let size = sh.sh_size in
@@ -229,4 +227,8 @@ let symbol_entry_to_goblin_symbol soname entry =
 			    "%s %s" bind stype) in
   [name; lib; offset; size; kind; data]
 
-let symbols_to_goblin soname arr = Array.map (symbol_entry_to_goblin_symbol soname) arr
+let map_symbols_to_goblin map soname collection = map (symbol_entry_to_goblin_symbol soname) collection
+
+let symbols_to_goblin soname list = map_symbols_to_goblin List.map soname list
+
+							   

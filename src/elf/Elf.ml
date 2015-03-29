@@ -25,13 +25,26 @@ let analyze ?nlist:(nlist=false) ~verbose ~filename binary =
   SectionHeader.print_section_headers section_headers;
   let goblin_symbols =
     SymbolTable.symbols_to_goblin soname dynamic_symbols
+    |> GoblinSymbol.sort_symbols_with List.sort
   in
-  GoblinSymbol.sort_symbols_with Array.sort goblin_symbols;
-  (* SymbolTable.print_symbol_table symbol_table; *)
+  let goblin_imports = List.filter
+			 (fun symbol ->
+			  GoblinSymbol.find_symbol_kind symbol
+			  |> function
+			    | GoblinSymbol.Import -> true
+			    | _ -> false) goblin_symbols
+  in
+  let goblin_exports = List.filter
+			 (fun symbol ->
+			  GoblinSymbol.find_symbol_kind symbol
+			  |> function
+			    | GoblinSymbol.Export -> true
+			    | _ -> false) goblin_symbols
+  in
   if (verbose) then
     begin
       Dynamic.print_DYNAMIC _DYNAMIC;
-      if (nlist) then Array.iter (GoblinSymbol.print_symbol_data ~like_nlist:true) goblin_symbols
+      if (nlist) then List.iter (GoblinSymbol.print_symbol_data ~like_nlist:true) goblin_symbols
     end;
    (* TODO: use the strippable symbol table data when available; for example, putwchar doesn't return, but calls _Unwind_Resume, a local symbol, at it's terminus instruction, byte 343 + 4 for instruction size = 347 (it's reported size - 1); *)
    
@@ -41,23 +54,13 @@ let analyze ?nlist:(nlist=false) ~verbose ~filename binary =
   let soname = soname in
   let libs = [||] in
   let nlibs = 0 in
-  let nexports = Array.length goblin_symbols in
-  let exports =  
-    Array.init nexports (fun i ->
-		let export = goblin_symbols.(i) in
-		GoblinSymbol.to_goblin_export export
-	       )
+  let nexports = List.length goblin_exports in
+  let exports = Array.of_list @@ List.map (GoblinSymbol.to_goblin_export) goblin_exports
   in
+  let nimports = List.length goblin_imports in  
   let imports =
-    (* 
-    Array.fold_left (fun acc import -> 
-        let import' = {Goblin.Import.name = import.bi.symbol_name; lib = import.dylib; is_lazy = import.is_lazy; idx = 0x0; offset = 0x0; size = 0x0 } in
-        Goblin.add import.bi.symbol_name import' acc
-      ) Goblin.empty elf.imports
-     *)
-    Goblin.empty
+    Array.of_list @@ List.map (GoblinSymbol.to_goblin_import) goblin_imports
   in
-  let nimports = 0 in
   let islib = ElfHeader.is_lib header in
   let code = Bytes.empty in
   {Goblin.name; soname; islib; libs; nlibs; exports; nexports; imports; nimports; code}
