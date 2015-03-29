@@ -1,8 +1,7 @@
 open Binary
     
-let analyze ~verbose ~filename binary =
+let analyze ?nlist:(nlist=false) ~verbose ~filename binary =
   let header = ElfHeader.get_elf_header64 binary in
-  let is_lib = ElfHeader.is_lib header in
   let program_headers = ProgramHeader.get_program_headers binary header.ElfHeader.e_phoff header.ElfHeader.e_phentsize header.ElfHeader.e_phnum in
   let vaddr_masks = ProgramHeader.get_vaddr_masks program_headers in
   (*   List.iter (fun x -> Printf.printf "0x%x\n" x) vaddr_masks; *)
@@ -27,14 +26,12 @@ let analyze ~verbose ~filename binary =
   let goblin_symbols =
     SymbolTable.symbols_to_goblin soname dynamic_symbols
   in
-  (* *)
-   GoblinSymbol.sort_symbols_with Array.sort goblin_symbols;
+  GoblinSymbol.sort_symbols_with Array.sort goblin_symbols;
   (* SymbolTable.print_symbol_table symbol_table; *)
   if (verbose) then
     begin
       Dynamic.print_DYNAMIC _DYNAMIC;
-      (* SymbolTable.print_symbol_table dynamic_symbols; *)
-      Array.iter (GoblinSymbol.print_symbol_data ~like_export:true) goblin_symbols
+      if (nlist) then Array.iter (GoblinSymbol.print_symbol_data ~like_nlist:true) goblin_symbols
     end;
    (* TODO: use the strippable symbol table data when available; for example, putwchar doesn't return, but calls _Unwind_Resume, a local symbol, at it's terminus instruction, byte 343 + 4 for instruction size = 347 (it's reported size - 1); *)
    
@@ -51,15 +48,17 @@ let analyze ~verbose ~filename binary =
 		GoblinSymbol.to_goblin_export export
 	       )
   in
-  let imports = 		(* 
+  let imports =
+    (* 
     Array.fold_left (fun acc import -> 
         let import' = {Goblin.Import.name = import.bi.symbol_name; lib = import.dylib; is_lazy = import.is_lazy; idx = 0x0; offset = 0x0; size = 0x0 } in
         Goblin.add import.bi.symbol_name import' acc
-      ) Goblin.empty elf.imports *)
+      ) Goblin.empty elf.imports
+     *)
     Goblin.empty
   in
   let nimports = 0 in
-  let islib = is_lib in
+  let islib = ElfHeader.is_lib header in
   let code = Bytes.empty in
   {Goblin.name; soname; islib; libs; nlibs; exports; nexports; imports; nimports; code}
      
