@@ -1,5 +1,8 @@
+(* TODO:
+(1) Memory adjust function TOTALLY BROKEN; see this culprit for reason: /usr/lib/libqgsttools_p.so.1.0.0 *)
+
 open Printf
-       open Binary
+open Binary
 
 (*
             typedef struct {
@@ -48,7 +51,7 @@ let kPT_LOPROC	= 0x70000000	(* Start of processor-specific *)
 let kPT_HIPROC	= 0x7fffffff	(* End of processor-specific *)
 
 let sizeof_program_header = 56 	(* bytes *)
-		    
+			      
 let get_program_header binary offset =
   let p_type = Binary.i32 binary offset in (* &i *)
   let p_flags = Binary.i32 binary (offset + 4) in
@@ -114,11 +117,11 @@ let program_header_to_string ph =
 		 ph.p_filesz
 		 ph.p_memsz
 		 ph.p_align
-    
+		 
 let print_program_headers phs =
   Printf.printf "Program Headers (%d):\n" @@ List.length phs;
   List.iter (fun ph -> Printf.printf "%s\n" @@ program_header_to_string ph) phs
-    
+	    
 let get_program_headers binary phoff phentsize phnum =
   let rec loop count offset acc =
     if (count >= phnum) then
@@ -129,7 +132,7 @@ let get_program_headers binary phoff phentsize phnum =
   in loop 0 phoff []
 
 exception Elf_invalid_binary of string
-	  
+				  
 let get_main_program_header phs =
   match 
     List.fold_left (fun acc elem ->
@@ -159,20 +162,31 @@ let get_vaddr_masks phs =
   List.fold_left (fun acc ph ->
 		  if (ph.p_type = kPT_LOAD) then
 		    let adjusted:int = ph.p_vaddr - ph.p_offset in
-		    IntSet.add adjusted acc
+		    if (adjusted <> 0) then
+		      IntSet.add adjusted acc
+		    else
+		      acc
 		  else
 		    acc
 		 ) IntSet.empty phs |> IntSet.elements
 
 (* returns the adjusted offset with the vm addr mask list*)
+(* TODO: TOTALLY BROKEN *)
+(* This also assumed the leading digit was always the vm addr offset; but /usr/lib/libqgsttools_p.so.1.0.0 has demonstrated otherwise:
+binary offset: 30000 vm: 31000
+will have to approach this in sections; if the offset in question is contained in a vm "covered" area, then subtract the difference, otherwise don't... 
+ *)
 let adjust masks offset =
   List.fold_left (fun acc mask ->
-		  if ((mask land offset) = mask) then
-		    offset - mask
-		  else
+		  let test = mask lxor offset in
+		  (* if (offset > mask) then acc *)
+		  (* if ((mask land offset) = mask) then *)
+		    if ((offset - test) = mask) then
+		      offset - mask
+		    else
 		    acc) offset masks
 
-(*		    
+		 (*		    
 let get_p_type p_type =
   match p_type with
   | 0 -> PT_NULL		
@@ -195,4 +209,4 @@ let get_p_type p_type =
   | 0x6fffffff -> PT_HIOS
   | 0x70000000 -> PT_LOPROC
   | 0x7fffffff -> PT_HIPROC
- *)
+		  *)

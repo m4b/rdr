@@ -47,6 +47,65 @@ let set_base_symbol_map_directories dir_string =
 let set_anon_argument string =
   anonarg := string
 
+let build_system_map () =
+  begin
+    let os = get_os () in
+    let symbol = !anonarg in
+    let searching = (symbol <> "") in
+    let graph = not searching && !graph in
+    if (searching) then 
+      (* cuz on slow systems i want to see this message first *)
+      begin
+        let recursive_message = if (!recursive) then 
+				  " (recursively)" 
+				else ""
+        in
+        Printf.printf "searching %s%s for %s:\n"
+		      (Generics.list_to_string 
+			 ~omit_singleton_braces:true 
+			 !base_symbol_map_directories)
+		      recursive_message
+		      symbol; flush stdout
+      end;
+    let map = SymbolMap.build_polymorphic_map 
+		~recursive:!recursive 
+		~graph:graph 
+		~verbose:!verbose 
+		!base_symbol_map_directories
+    in
+    if (searching) then
+      (* rdr -b <symbol_name> *)
+      begin
+        try 
+          SymbolMap.find_symbol symbol map 
+          |> List.iter 
+	       (fun data ->
+		if (os = Darwin) then
+                  MachExports.print_mach_export_data data
+		else
+		  GoblinSymbol.print_symbol_data ~like_export:true data
+	       );
+        with Not_found -> ()
+      end
+    else
+      begin
+        (* rdr -b -g *)
+        let export_list = SymbolMap.flatten_polymorphic_map_to_list map
+                          |> GoblinSymbol.sort_symbols 
+        in
+        let export_list_string = SymbolMap.polymorphic_list_to_string export_list in
+        if (!write_symbols) then
+          begin
+            let f = get_symbol_filename () in
+            let oc = open_out f in
+            Printf.fprintf oc "%s" export_list_string;
+            close_out oc;
+          end
+        else
+          Printf.printf "%s\n" export_list_string;
+      end
+  end
+	       
 let main =
   let speclist = 
     [("-b", Arg.Set build, "Builds a system symbol map");
@@ -74,58 +133,7 @@ let main =
     end;
   if (!build) then
     (* -b *)
-    begin
-      let symbol = !anonarg in
-      let searching = (symbol <> "") in
-      let graph = not searching && !graph in
-      if (searching) then 
-        (* cuz on slow systems i want to see this message first *)
-        begin
-          let recursive_message = if (!recursive) then 
-              " (recursively)" 
-            else ""
-          in
-          Printf.printf "searching %s%s for %s:\n"
-            (Generics.list_to_string 
-               ~omit_singleton_braces:true 
-               !base_symbol_map_directories)
-            recursive_message
-            symbol; flush stdout
-        end;
-      let map = SymbolMap.build_polymorphic_map 
-          ~recursive:!recursive 
-          ~graph:graph 
-          ~verbose:!verbose 
-          !base_symbol_map_directories
-      in
-      if (searching) then
-        (* rdr -b <symbol_name> *)
-        begin
-          try 
-            SymbolMap.find_symbol symbol map 
-            |> List.iter 
-              (fun data -> 
-                 MachExports.print_mach_export_data data);
-          with Not_found -> ()
-        end
-      else
-        begin
-          (* rdr -b -g *)
-          let export_list = SymbolMap.flatten_polymorphic_map_to_list map
-                            |> GoblinSymbol.sort_symbols 
-          in
-          let export_list_string = SymbolMap.polymorphic_list_to_string export_list in
-          if (!write_symbols) then
-            begin
-              let f = get_symbol_filename () in
-              let oc = open_out f in
-              Printf.fprintf oc "%s" export_list_string;
-              close_out oc;
-            end
-          else
-            Printf.printf "%s\n" export_list_string;
-        end
-    end
+    build_system_map ()
   else
     (* rdr <binary> *)
     let filename = !anonarg in
@@ -165,7 +173,10 @@ let main =
     (* ELF *)
     (* ===================== *)
     | Object.Elf binary ->
-       let binary = Elf.analyze ~nlist:!print_nlist ~verbose:!verbose ~filename:filename binary in
-       if (!graph) then Graph.graph_goblin binary @@ Filename.basename filename;
+       if (!build) then
+	 build_system_map ()
+       else
+	 let binary = Elf.analyze ~nlist:!print_nlist ~verbose:!verbose ~filename:filename binary in
+	 if (!graph) then Graph.graph_goblin binary @@ Filename.basename filename;
     | Object.Unknown ->
       raise @@ Unimplemented_binary_type "Unknown binary"
