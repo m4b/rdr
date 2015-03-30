@@ -62,13 +62,13 @@ let analyze ?nlist:(nlist=false) ~verbose ~filename binary =
   let soname = soname in
   let libs = Array.of_list (soname::libraries) in (* to be consistent... for graphing, etc. *)
   let nlibs = Array.length libs in
-  let nexports = List.length goblin_exports in
   let exports = Array.of_list @@ List.map (GoblinSymbol.to_goblin_export) goblin_exports
   in
-  let nimports = List.length goblin_imports in  
+  let nexports = Array.length exports in
   let imports =
     Array.of_list @@ List.map (GoblinSymbol.to_goblin_import) goblin_imports
   in
+  let nimports = Array.length imports in    
   let islib = ElfHeader.is_lib header in
   let code = Bytes.empty in
   {Goblin.name; soname; islib; libs; nlibs; exports; nexports; imports; nimports; code}
