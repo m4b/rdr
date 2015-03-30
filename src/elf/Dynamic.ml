@@ -313,6 +313,13 @@ let get_dynamic_symtab dynamic =
 		      Some elem
 		    else
 		      acc) None dynamic
+
+let get_libraries dynamic strtab =
+  List.fold_left (fun acc elem ->
+		  if (elem.d_tag = NEEDED) then
+		    (Binary.istring strtab elem.d_un)::acc
+		  else
+		    acc) [] dynamic		     
 	    
 (* build the symbol table from the vm_adjusted and the references to strtab and symtab, NOTE: vm_adjusted will be equal to 0 if it's a dylib like libc because offset = vaddr in phdr *)
 (* TODO: also probably change this to array? *)
