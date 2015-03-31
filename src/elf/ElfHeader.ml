@@ -67,6 +67,7 @@ let print_elf_header64 header =
 		(ElfConstants.etype_to_string header.e_type)
 
 let is_lib header = header.e_type = 3
+let is_supported header = header.e_type = 2 || header.e_type = 3				      
 	 
 let get_e_ident bytes =
   let one = Char.code @@ Bytes.get bytes 0 in

@@ -155,37 +155,47 @@ let get_dynamic_program_header phs =
 		  else
 		    acc) None phs
 
-module IntSet = Set.Make(struct type t = int let compare = Pervasives.compare end)
+type slide_sector = {start_sector: int; end_sector: int; slide: int;}
+(* module IntSet = Set.Make(struct type t = int let compare = Pervasives.compare end) *)
+
+let is_in_sector offset sector =
+  (* should this be offset <= sector.end_sector ? *)
+  offset >= sector.start_sector && offset < sector.end_sector
+
+let print_slide_sector sector =
+  Printf.printf "0x%x: 0x%x - 0x%x\n" sector.slide sector.start_sector sector.end_sector
+		    
+(* checks to see if the slides are equal; will this hold uniformly? *)
+module SlideSet = Set.Make(struct type t = slide_sector let compare = (fun a b -> Pervasives.compare a.slide b.slide) end)
 
 (* finds the vaddr masks *)
-let get_vaddr_masks phs =
+let get_slide_sectors phs =
   List.fold_left (fun acc ph ->
 		  if (ph.p_type = kPT_LOAD) then
-		    let adjusted:int = ph.p_vaddr - ph.p_offset in
-		    if (adjusted <> 0) then
-		      IntSet.add adjusted acc
+		    let slide = ph.p_vaddr - ph.p_offset in
+		    if (slide <> 0) then
+		      let start_sector = ph.p_vaddr in
+		      let end_sector = start_sector + ph.p_filesz in
+		      SlideSet.add {start_sector; end_sector; slide} acc
 		    else
 		      acc
 		  else
 		    acc
-		 ) IntSet.empty phs |> IntSet.elements
+		 ) SlideSet.empty phs |> SlideSet.elements
 
-(* returns the adjusted offset with the vm addr mask list*)
-(* TODO: TOTALLY BROKEN *)
-(* This also assumed the leading digit was always the vm addr offset; but /usr/lib/libqgsttools_p.so.1.0.0 has demonstrated otherwise:
+(* This also assumed the leading digit was always the vm addr offset; 
+but /usr/lib/libqgsttools_p.so.1.0.0 has demonstrated otherwise:
 binary offset: 30000 vm: 31000
 will have to approach this in sections; if the offset in question is contained in a vm "covered" area, then subtract the difference, otherwise don't... 
  *)
-let adjust masks offset =
-  List.fold_left (fun acc mask ->
-		  let test = mask lxor offset in
-		  (* if (offset > mask) then acc *)
-		  (* if ((mask land offset) = mask) then *)
-		    if ((offset - test) = mask) then
-		      offset - mask
-		    else
-		    acc) offset masks
 
+let adjust sectors offset =
+  List.fold_left (fun acc sector ->
+		  if (is_in_sector offset sector) then
+		    offset - sector.slide
+		  else
+		    acc) offset sectors
+					  
 		 (*		    
 let get_p_type p_type =
   match p_type with

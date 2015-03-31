@@ -1,10 +1,27 @@
 open Binary
-       
+
+let debug = false
+
+let create_goblin_binary filename soname libraries islib goblin_exports goblin_imports =
+  let name = filename in
+  let soname = soname in
+  let libs = Array.of_list (soname::libraries) in (* to be consistent... for graphing, etc. *)
+  let nlibs = Array.length libs in
+  let exports = Array.of_list @@ List.map (GoblinSymbol.to_goblin_export) goblin_exports
+  in
+  let nexports = Array.length exports in
+  let imports =
+    Array.of_list @@ List.map (GoblinSymbol.to_goblin_import) goblin_imports
+  in
+  let nimports = Array.length imports in
+  (* empty code *)
+  let code = Bytes.empty in
+  {Goblin.name; soname; islib; libs; nlibs; exports; nexports; imports; nimports; code}
+	      
 let analyze ?nlist:(nlist=false) ?silent:(silent=false) ~verbose ~filename binary =
   let header = ElfHeader.get_elf_header64 binary in
   let program_headers = ProgramHeader.get_program_headers binary header.ElfHeader.e_phoff header.ElfHeader.e_phentsize header.ElfHeader.e_phnum in
-  let vaddr_masks = ProgramHeader.get_vaddr_masks program_headers in
-  (*   List.iter (fun x -> Printf.printf "0x%x\n" x) vaddr_masks; *)
+  let slide_sectors = ProgramHeader.get_slide_sectors program_headers in
   let section_headers = SectionHeader.get_section_headers binary header.ElfHeader.e_shoff header.ElfHeader.e_shentsize header.ElfHeader.e_shnum in
   if (not silent) then
     begin
@@ -12,6 +29,10 @@ let analyze ?nlist:(nlist=false) ?silent:(silent=false) ~verbose ~filename binar
       ProgramHeader.print_program_headers program_headers;
       SectionHeader.print_section_headers section_headers
     end;
+  if (not (ElfHeader.is_supported header)) then
+    (* for relocs, esp /usr/lib/crti.o *)
+    create_goblin_binary filename filename [] false [] []
+  else
   (*
   let symbol_table = SymbolTable.get_symbol_table binary section_headers in
   ignore symbol_table;
@@ -21,17 +42,17 @@ let analyze ?nlist:(nlist=false) ?silent:(silent=false) ~verbose ~filename binar
   Dynamic.print_DYNAMIC _DYNAMIC;
  *)
   let symtab_offset, strtab_offset, strtab_size = Dynamic.get_dynamic_symbol_offset_data _DYNAMIC in
-  Printf.printf "0x%x 0x%x 0x%x\n" symtab_offset strtab_offset strtab_size;
-  List.iter (Printf.printf "0x%x\n") vaddr_masks;
-  let symtab_offset = ProgramHeader.adjust vaddr_masks symtab_offset in
-  Printf.printf "symtab_offset 0x%x\n" symtab_offset;
-  let strtab_offset = ProgramHeader.adjust vaddr_masks strtab_offset in
-  Printf.printf "strtab_offset 0x%x\n" strtab_offset;
+  if (debug) then Printf.printf "0x%x 0x%x 0x%x\n" symtab_offset strtab_offset strtab_size;
+  if (debug) then List.iter (ProgramHeader.print_slide_sector) slide_sectors;
+  let symtab_offset = ProgramHeader.adjust slide_sectors symtab_offset in
+  if (debug) then Printf.printf "adjusted symtab_offset 0x%x\n" symtab_offset;
+  let strtab_offset = ProgramHeader.adjust slide_sectors strtab_offset in
+  if (debug) then Printf.printf "adjusted strtab_offset 0x%x\n" strtab_offset;
   let dynamic_strtab = Dynamic.get_dynamic_strtab binary strtab_offset strtab_size in
   (*   Printf.printf "dynamic_strtab %d\n" @@ Bytes.length dynamic_strtab; *)
   let libraries = Dynamic.get_libraries _DYNAMIC dynamic_strtab in
   (*   Printf.printf "libraries: %d\n" @@ List.length libraries; flush stdout; *)
-  let dynamic_symbols = Dynamic.get_dynamic_symbols binary vaddr_masks symtab_offset strtab_offset strtab_size in
+  let dynamic_symbols = Dynamic.get_dynamic_symbols binary slide_sectors symtab_offset strtab_offset strtab_size in
   let soname =
     try 
       let offset = Dynamic.get_soname_offset _DYNAMIC in
@@ -71,18 +92,4 @@ let analyze ?nlist:(nlist=false) ?silent:(silent=false) ~verbose ~filename binar
   
   (* ============== *)
   (* create goblin binary *)
-  let name = filename in
-  let soname = soname in
-  let libs = Array.of_list (soname::libraries) in (* to be consistent... for graphing, etc. *)
-  let nlibs = Array.length libs in
-  let exports = Array.of_list @@ List.map (GoblinSymbol.to_goblin_export) goblin_exports
-  in
-  let nexports = Array.length exports in
-  let imports =
-    Array.of_list @@ List.map (GoblinSymbol.to_goblin_import) goblin_imports
-  in
-  let nimports = Array.length imports in    
-  let islib = ElfHeader.is_lib header in
-  let code = Bytes.empty in
-  {Goblin.name; soname; islib; libs; nlibs; exports; nexports; imports; nimports; code}
-    
+  create_goblin_binary filename soname libraries (ElfHeader.is_lib header) goblin_exports goblin_imports    
