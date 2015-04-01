@@ -15,12 +15,12 @@ let get_os () =
   else if (uname = "Linux") then Linux
   else Other
 
-let get_symbol_filename () =
+let get_symbol_filename name =
   try 
-    (Sys.getenv "HOME") ^ Filename.dir_sep ^ ".symbols"
+    (Sys.getenv "HOME") ^ Filename.dir_sep ^ "." ^ name
   with
   | Not_found ->
-    Sys.getcwd() ^ Filename.dir_sep ^ "symbols.symbols"
+    Sys.getcwd() ^ Filename.dir_sep ^ name ^ "." ^ name
 
 (* TODO: consider moving these refs to a globals module which is get and set from there *)
 let build = ref false
@@ -29,6 +29,7 @@ let verbose = ref false
 let use_goblin = ref false
 let recursive = ref false
 let write_symbols = ref false
+let marshal_symbols = ref false
 let build_darwin = ref false
 let print_nlist = ref false
 let symbol = ref ""
@@ -66,14 +67,11 @@ let build_system_map () =
 		      recursive_message
 		      symbol; flush stdout
       end;
-    let map = SymbolMap.build_polymorphic_map 
-		~recursive:!recursive 
-		~graph:graph 
-		~verbose:!verbose 
-		!base_symbol_map_directories
-    in
     if (searching) then
       (* rdr -b <symbol_name> *)
+      let f = get_symbol_filename "tol" in
+      let ic = open_in_bin f in
+      let map = Marshal.from_channel ic in
       begin
         try
           SymbolMap.find_symbol symbol map
@@ -87,6 +85,12 @@ let build_system_map () =
       end
     else
       begin
+	let map = SymbolMap.build_polymorphic_map 
+		    ~recursive:!recursive 
+		    ~graph:graph 
+		    ~verbose:!verbose 
+		    !base_symbol_map_directories
+	in
         (* rdr -b -g *)
         let export_list = SymbolMap.flatten_polymorphic_map_to_list map
                           |> GoblinSymbol.sort_symbols 
@@ -94,9 +98,16 @@ let build_system_map () =
         let export_list_string = SymbolMap.polymorphic_list_to_string export_list in
         if (!write_symbols) then
           begin
-            let f = get_symbol_filename () in
+            let f = get_symbol_filename "symbols" in
             let oc = open_out f in
             Printf.fprintf oc "%s" export_list_string;
+            close_out oc;
+          end
+	else if (!marshal_symbols) then
+          begin
+            let f = get_symbol_filename "tol" in
+            let oc = open_out_bin f in
+	    Marshal.to_channel oc map [];
             close_out oc;
           end
         else
@@ -113,7 +124,8 @@ let main =
      ("-v", Arg.Set verbose, "Be verbose");
      ("-s", Arg.Set print_nlist, "Print the symbol table, if present");
      ("-f", Arg.Set_string symbol, "Find symbol in binary");
-     ("-w", Arg.Set write_symbols, "Write out the generated system map .symbols file to your home directory");
+     ("-m", Arg.Set marshal_symbols, "Marshal the generated system map to your home directory");
+     ("-w", Arg.Set write_symbols, "Write out the flattened system map .symbols file to your home directory");
      ("--sys", Arg.Set build_darwin, "Build a darwin specific symbol map");
      ("-G", Arg.Set use_goblin, "Use the goblin binary format");
      ("--goblin", Arg.Set use_goblin, "Use the goblin binary format");
