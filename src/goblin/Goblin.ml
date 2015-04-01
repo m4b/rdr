@@ -97,6 +97,12 @@ let exports_to_string exports =
       Buffer.add_string b @@ Printf.sprintf "%s (%d) -> 0x%x\n" export.Export.name export.Export.size export.Export.offset) exports;
   Buffer.contents b
 
+let print_export ?like_goblin:(like_goblin=true) export =
+  if (like_goblin) then
+    Printf.printf "0x%-16x %s (%d)\n" export.Export.offset export.Export.name export.Export.size
+  else
+    Printf.printf "%s (%d) -> 0x%x\n" export.Export.name export.Export.size export.Export.offset
+
 let to_string goblin = Printf.sprintf "%s (%s):\nLibs (%d):\n%s\nExports (%d):\n%s\nImports (%d):\n%s"
     goblin.name goblin.soname
     goblin.nlibs

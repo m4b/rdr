@@ -93,3 +93,5 @@ let analyze ?nlist:(nlist=false) ?silent:(silent=false) ~verbose ~filename binar
   (* ============== *)
   (* create goblin binary *)
   create_goblin_binary filename soname libraries (ElfHeader.is_lib header) goblin_exports goblin_imports    
+
+let find_export_symbol symbol binary = Goblin.get_export symbol binary.Goblin.exports

@@ -49,7 +49,6 @@ let set_anon_argument string =
 
 let build_system_map () =
   begin
-    let os = get_os () in
     let symbol = !anonarg in
     let searching = (symbol <> "") in
     let graph = not searching && !graph in
@@ -76,16 +75,15 @@ let build_system_map () =
     if (searching) then
       (* rdr -b <symbol_name> *)
       begin
-        try 
-          SymbolMap.find_symbol symbol map 
+        try
+          SymbolMap.find_symbol symbol map
           |> List.iter 
 	       (fun data ->
-		if (os = Darwin) then
-                  MachExports.print_mach_export_data data
-		else
-		  GoblinSymbol.print_symbol_data ~like_export:true data
+		  (* MachExports.print_mach_export_data data *)
+		  GoblinSymbol.print_symbol_data ~with_lib:true ~like_export:true data
 	       );
-        with Not_found -> ()
+        with Not_found ->
+	  Printf.printf "not found\n"; ()
       end
     else
       begin
@@ -176,7 +174,15 @@ let main =
        if (!build) then
 	 build_system_map ()
        else
-	 let binary = Elf.analyze ~nlist:!print_nlist ~verbose:!verbose ~filename:filename binary in
+	 (* analyze the binary and print program headers, etc. *)
+	 let silent = not analyze && not !verbose in (* so we respect verbosity if searching... cl boolean configuration sucks *)
+	 let binary = Elf.analyze ~silent:silent ~nlist:!print_nlist ~verbose:!verbose ~filename:filename binary in
+	 if (not analyze) then
+           try
+             Elf.find_export_symbol !symbol binary |> Goblin.print_export
+           with Not_found ->
+             Printf.printf "";
+	 else
 	 if (!graph) then Graph.graph_goblin binary @@ Filename.basename filename;
     | Object.Unknown ->
       raise @@ Unimplemented_binary_type "Unknown binary"

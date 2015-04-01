@@ -132,15 +132,19 @@ let symbol_data_to_string ?basic_export:(basic_export=false) data =
 	      ) data;
     Buffer.contents b
 
-let print_symbol_data ?like_export:(like_export=false) ?like_nlist:(like_nlist=false) data =
+let print_symbol_data ?with_lib:(with_lib=false) ?like_export:(like_export=false) ?like_nlist:(like_nlist=false) data =
   let offset = try Printf.sprintf "%16x" @@ find_symbol_offset data with Not_found -> Printf.sprintf "                " in
   let size = try Printf.sprintf " (%d)" @@ find_symbol_size data with Not_found -> "" in
-  let kind = find_symbol_kind data |> symbol_kind_to_string in
+  let kind = try find_symbol_kind data |> symbol_kind_to_string with Not_found -> "" in
   let name = find_symbol_name data in
+  let lib = if (with_lib) then
+	      try Printf.sprintf " -> %s" @@ find_symbol_lib data with Not_found -> ""
+	    else ""
+  in
   if (like_nlist) then
     Printf.printf "%s %s %s\n" offset kind name
   else if (like_export) then
-    Printf.printf "%s %s%s\n" offset name size 
+    Printf.printf "%s %s%s%s\n" offset name size lib
   else
     Printf.printf "%s%s @ %s %s\n" name size offset kind
 
@@ -210,7 +214,8 @@ let from_goblin_export symbol lib =
   let offset = `Offset symbol.Goblin.Export.offset in
   let size = `Size symbol.Goblin.Export.size in
   let lib = `Lib lib in
-  [name; offset; size; lib]
+  let kind = `Kind Export in
+  [name; offset; size; lib; kind]
     
 (* TODO: holy shit this is half-implemented *)
 let to_goblin_import symbol =

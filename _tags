@@ -7,4 +7,5 @@
 <graph> : -traverse
 <doc> : -traverse
 <darwin> : -traverse
+<linux> : -traverse
 true : bin_annot

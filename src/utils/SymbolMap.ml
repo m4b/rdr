@@ -210,3 +210,8 @@ let map_to_string map =
  *)
 
 let find_symbol key (map) = SystemSymbolMap.find key map
+
+let print_map map = SystemSymbolMap.iter (
+			fun key values ->
+			Printf.printf "%s -> %s\n" key @@ (Generics.list_with_stringer
+							    (fun export -> GoblinSymbol.find_symbol_lib export) values)) map
