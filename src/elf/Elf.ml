@@ -56,7 +56,7 @@ let analyze ?nlist:(nlist=false) ?silent:(silent=false) ~verbose ~filename binar
   let soname =
     try 
       let offset = Dynamic.get_soname_offset _DYNAMIC in
-      Binary.istring binary offset 
+      Binary.string binary offset 
     with Not_found -> filename
   in
   let goblin_symbols =

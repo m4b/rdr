@@ -482,8 +482,8 @@ let print_load_commands lcs =
   print_string "\n"
 
 let get_load_command_header binary offset = 
-  let cmd = lookup_lc @@ Binary.i32 binary offset in
-  let cmdsize = Binary.i32 binary (offset + 4) in
+  let cmd = lookup_lc @@ Binary.u32 binary offset in
+  let cmdsize = Binary.u32 binary (offset + 4) in
   cmd,cmdsize
 
 let get_data binary offset size = 
@@ -491,36 +491,36 @@ let get_data binary offset size =
 
 (* specific load command constructors *)
 let get_symtable binary = 
-  let symoff = Binary.i32 binary 0 in
-  let nsyms = Binary.i32 binary 4 in
-  let stroff =  Binary.i32 binary 8 in
-  let strsize =  Binary.i32 binary 12 in
+  let symoff = Binary.u32 binary 0 in
+  let nsyms = Binary.u32 binary 4 in
+  let stroff =  Binary.u32 binary 8 in
+  let strsize =  Binary.u32 binary 12 in
   {symoff; nsyms; stroff; strsize;}
 
 let get_dysymtable binary = 
-  let ilocalsym = Binary.i32 binary 0 in
-  let nlocalsym = Binary.i32 binary 4 in
+  let ilocalsym = Binary.u32 binary 0 in
+  let nlocalsym = Binary.u32 binary 4 in
 
-  let iextdefsym =  Binary.i32 binary 8 in
-  let nextdefsym =  Binary.i32 binary 12 in
+  let iextdefsym =  Binary.u32 binary 8 in
+  let nextdefsym =  Binary.u32 binary 12 in
 
-  let iundefsym = Binary.i32 binary 16 in
-  let nundefsym = Binary.i32 binary 20 in
+  let iundefsym = Binary.u32 binary 16 in
+  let nundefsym = Binary.u32 binary 20 in
 
-  let tocoff =  Binary.i32 binary 24 in
-  let ntoc =  Binary.i32 binary 28 in
-  let modtaboff = Binary.i32 binary 32 in
-  let nmodtab = Binary.i32 binary 36 in
+  let tocoff =  Binary.u32 binary 24 in
+  let ntoc =  Binary.u32 binary 28 in
+  let modtaboff = Binary.u32 binary 32 in
+  let nmodtab = Binary.u32 binary 36 in
 
-  let extrefsymoff =  Binary.i32 binary 40 in
-  let nextrefsyms =  Binary.i32 binary 44 in
+  let extrefsymoff =  Binary.u32 binary 40 in
+  let nextrefsyms =  Binary.u32 binary 44 in
 
-  let indirectsymoff =  Binary.i32 binary 48 in
-  let nindirectsyms =  Binary.i32 binary 52 in
-  let extreloff =  Binary.i32 binary 56 in
-  let nextrel =  Binary.i32 binary 60 in
-  let locreloff =  Binary.i32 binary 64 in
-  let nlocrel =  Binary.i32 binary 68 in
+  let indirectsymoff =  Binary.u32 binary 48 in
+  let nindirectsyms =  Binary.u32 binary 52 in
+  let extreloff =  Binary.u32 binary 56 in
+  let nextrel =  Binary.u32 binary 60 in
+  let locreloff =  Binary.u32 binary 64 in
+  let nlocrel =  Binary.u32 binary 68 in
 
   {
     ilocalsym; nlocalsym; iextdefsym; nextdefsym;
@@ -530,36 +530,36 @@ let get_dysymtable binary =
   }
 
 let get_dyld_info binary = 
-  let rebase_off = Binary.i32 binary 0 in
-  let rebase_size = Binary.i32 binary 4 in
-  let bind_off =  Binary.i32 binary 8 in
-  let bind_size =  Binary.i32 binary 12 in
-  let weak_bind_off =  Binary.i32 binary 16 in
-  let weak_bind_size =  Binary.i32 binary 20 in
-  let lazy_bind_off =  Binary.i32 binary 24 in
-  let lazy_bind_size =  Binary.i32 binary 28 in
-  let export_off =  Binary.i32 binary 32 in
-  let export_size =  Binary.i32 binary 36 in
+  let rebase_off = Binary.u32 binary 0 in
+  let rebase_size = Binary.u32 binary 4 in
+  let bind_off =  Binary.u32 binary 8 in
+  let bind_size =  Binary.u32 binary 12 in
+  let weak_bind_off =  Binary.u32 binary 16 in
+  let weak_bind_size =  Binary.u32 binary 20 in
+  let lazy_bind_off =  Binary.u32 binary 24 in
+  let lazy_bind_size =  Binary.u32 binary 28 in
+  let export_off =  Binary.u32 binary 32 in
+  let export_size =  Binary.u32 binary 36 in
   {rebase_off; rebase_size; bind_off; bind_size; weak_bind_off; weak_bind_size; lazy_bind_off; lazy_bind_size; export_off; export_size;}
 
 (* consider glomming all libs into single binary with 0...N load commands and library indexed at 1... *)
 let get_dylib binary = 
-  let lc_str_offset = Binary.i32 binary 0 in
-  let timestamp = Binary.i32 binary 4 in
-  let current_version =  Binary.i32 binary 8 in
-  let compatibility_version =  Binary.i32 binary 12 in
-  let lc_str = Binary.istring binary (lc_str_offset - sizeof_load_command) in (* technically should use the lc_str_offset but need (lc_str_offset - sizeof_load_command) because offset from start of the load_command and we chopped off the first 8 bytes of the lc*)
+  let lc_str_offset = Binary.u32 binary 0 in
+  let timestamp = Binary.u32 binary 4 in
+  let current_version =  Binary.u32 binary 8 in
+  let compatibility_version =  Binary.u32 binary 12 in
+  let lc_str = Binary.string binary (lc_str_offset - sizeof_load_command) in (* technically should use the lc_str_offset but need (lc_str_offset - sizeof_load_command) because offset from start of the load_command and we chopped off the first 8 bytes of the lc*)
   {lc_str; timestamp; current_version; compatibility_version;}
 
 (* version for osx and ios *)
 let get_version binary = 
-  let version = Binary.i32 binary 0 in
-  let sdk = Binary.i32 binary 4 in
+  let version = Binary.u32 binary 0 in
+  let sdk = Binary.u32 binary 4 in
   {version; sdk;}
 
 let get_main binary = 
-  let entryoff = Binary.i64 binary 0 in
-  let stacksize = Binary.i64 binary 8 in
+  let entryoff = Binary.u64 binary 0 in
+  let stacksize = Binary.u64 binary 8 in
   {entryoff; stacksize;}
 
 let rec get_load_commands_it binary offset ncmds acc = 

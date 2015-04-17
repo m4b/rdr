@@ -126,12 +126,12 @@ let symbol_to_string symbol =
 
 let get_symbol_entry bytes offset =
     let name = "" in
-    let st_name = Binary.i32 bytes offset in
-    let st_info = Binary.i8 bytes (offset + 4) in 
-    let st_other = Binary.i8 bytes (offset + 5) in
-    let st_shndx = Binary.i16 bytes (offset + 6) in
-    let st_value = Binary.i64 bytes (offset + 8) in
-    let st_size = Binary.i64 bytes (offset + 16) in
+    let st_name = Binary.u32 bytes offset in
+    let st_info = Binary.u8 bytes (offset + 4) in 
+    let st_other = Binary.u8 bytes (offset + 5) in
+    let st_shndx = Binary.u16 bytes (offset + 6) in
+    let st_value = Binary.u64 bytes (offset + 8) in
+    let st_size = Binary.u64 bytes (offset + 16) in
     {
       name;
       st_name;
@@ -144,12 +144,12 @@ let get_symbol_entry bytes offset =
 
 let get_symbol_entry_adjusted bytes masks offset =
     let name = "" in
-    let st_name = Binary.i32 bytes offset in
-    let st_info = Binary.i8 bytes (offset + 4) in 
-    let st_other = Binary.i8 bytes (offset + 5) in
-    let st_shndx = Binary.i16 bytes (offset + 6) in
-    let st_value = Binary.i64 bytes (offset + 8) |> ProgramHeader.adjust masks in
-    let st_size = Binary.i64 bytes (offset + 16) in
+    let st_name = Binary.u32 bytes offset in
+    let st_info = Binary.u8 bytes (offset + 4) in 
+    let st_other = Binary.u8 bytes (offset + 5) in
+    let st_shndx = Binary.u16 bytes (offset + 6) in
+    let st_value = Binary.u64 bytes (offset + 8) |> ProgramHeader.adjust masks in
+    let st_size = Binary.u64 bytes (offset + 16) in
     {
       name;
       st_name;
@@ -182,7 +182,7 @@ let get_symtab_adjusted bytes masks offset size =
 (* update the symbol name using the symbol table data offset into the binary *)
 let amend_symbol_table binary offset size symbol_table =
   List.iter (fun sym ->
-	      sym.name <- Binary.istring binary (offset + sym.st_name);
+	      sym.name <- Binary.string binary (offset + sym.st_name);
 	     ) symbol_table;
   symbol_table
 	  

@@ -61,11 +61,11 @@ let rec get_nlist_it binary offset nsyms acc =
   if (nsyms <= 0) then
     List.rev acc
   else
-    let strx = i32 binary offset in
-    let n_type = i8 binary (offset + 4) in
-    let n_sect = i8 binary (offset + 5) in
-    let n_desc = i16 binary (offset + 6) in
-    let n_value = i64 binary (offset + 8) in
+    let strx = u32 binary offset in
+    let n_type = u8 binary (offset + 4) in
+    let n_sect = u8 binary (offset + 5) in
+    let n_desc = u16 binary (offset + 6) in
+    let n_value = u64 binary (offset + 8) in
     let nlist = {strx; n_type; n_sect; n_desc; n_value;} in
     get_nlist_it binary (offset + sizeof_nlist) (nsyms - 1) (nlist::acc)
 

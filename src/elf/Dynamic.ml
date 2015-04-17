@@ -243,8 +243,8 @@ let is_null dyn64 =
 let dyn64_to_string dyn64 = Printf.sprintf "%s 0x%x" (tag_to_string dyn64.d_tag) dyn64.d_un
 
 let get_dynamic_entry bytes offset =
-  let d_tag = Binary.i64 bytes offset |> get_tag in
-  let d_un = Binary.i64 bytes (offset + 8) in
+  let d_tag = Binary.u64 bytes offset |> get_tag in
+  let d_un = Binary.u64 bytes (offset + 8) in
   {d_tag; d_un}
 
 let get_dynamic bytes offset size =
@@ -317,7 +317,7 @@ let get_dynamic_symtab dynamic =
 let get_libraries dynamic strtab =
   List.fold_left (fun acc elem ->
 		  if (elem.d_tag = NEEDED) then
-		    (Binary.istring strtab elem.d_un)::acc
+		    (Binary.string strtab elem.d_un)::acc
 		  else
 		    acc) [] dynamic		     
 	    

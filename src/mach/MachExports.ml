@@ -279,7 +279,7 @@ let get_symbol_type bytes libs flags offset =
   | REGULAR -> 
     if (flags land kEXPORT_SYMBOL_FLAGS_REEXPORT <> 0) then (* 0x8 *)
       let lib_ordinal, offset = Leb128.get_uleb128 bytes offset in
-      let lib_symbol_name' = Binary.istring bytes offset in
+      let lib_symbol_name' = Binary.string bytes offset in
       let lib = libs.(lib_ordinal) in
       let lib_symbol_name = if lib_symbol_name' = "" then None else Some lib_symbol_name' in
       Reexport {lib; lib_symbol_name; flags}
@@ -295,7 +295,7 @@ let get_symbol_type bytes libs flags offset =
     if (flags land kEXPORT_SYMBOL_FLAGS_REEXPORT <> 0) then (* 0x8 *)
       let lib_ordinal, offset = Leb128.get_uleb128 bytes offset in
       let lib = libs.(lib_ordinal) in
-      let lib_symbol_name' = Binary.istring bytes offset in
+      let lib_symbol_name' = Binary.string bytes offset in
       let lib_symbol_name = if lib_symbol_name' = "" then None else Some lib_symbol_name' in
       Reexport {lib; lib_symbol_name; flags}
     else

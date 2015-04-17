@@ -141,16 +141,16 @@ let print_section_headers shs =
   Array.iter (fun sh -> Printf.printf "%s\n" @@ to_string sh) shs
 
 let get_section_header binary offset =
-  let sh_name = Binary.i32 binary offset in
-  let sh_type = Binary.i32 binary (offset + 4) in
-  let sh_flags = Binary.i64 binary (offset + 8) in
-  let sh_addr = Binary.i64 binary (offset + 16) in
-  let sh_offset = Binary.i64 binary (offset + 24) in
-  let sh_size = Binary.i64 binary (offset + 32) in
-  let sh_link = Binary.i32 binary (offset + 40) in
-  let sh_info = Binary.i32 binary (offset + 44) in
-  let sh_addralign = Binary.i64 binary (offset + 48) in
-  let sh_entsize = Binary.i64 binary (offset + 56) in
+  let sh_name = Binary.u32 binary offset in
+  let sh_type = Binary.u32 binary (offset + 4) in
+  let sh_flags = Binary.u64 binary (offset + 8) in
+  let sh_addr = Binary.u64 binary (offset + 16) in
+  let sh_offset = Binary.u64 binary (offset + 24) in
+  let sh_size = Binary.u64 binary (offset + 32) in
+  let sh_link = Binary.u32 binary (offset + 40) in
+  let sh_info = Binary.u32 binary (offset + 44) in
+  let sh_addralign = Binary.u64 binary (offset + 48) in
+  let sh_entsize = Binary.u64 binary (offset + 56) in
   let name = "" in
   {
     name;
@@ -199,7 +199,7 @@ let update_section_headers_with_names binary shs =
      let base_offset = sh.sh_offset in
      List.iter (fun sh ->
 		(* must be very careful, the strtab _relies_ on null termination of strings, and performs optimizations, like jumping into the middle of a string, e.g., rela.plt and just .plt to perform a kind of trie-esque string saving format... *)
-		sh.name <- Binary.istring binary (base_offset + sh.sh_name);
+		sh.name <- Binary.string binary (base_offset + sh.sh_name);
 	       ) shs;
      shs
   | None ->

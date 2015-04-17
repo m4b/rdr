@@ -1,26 +1,26 @@
-let i64 binary offset = 
+let u64 binary offset = 
   let res = ref (Char.code @@ Bytes.get binary offset) in
   for i = 1 to 7 do
         res := !res lor (Char.code (Bytes.get binary (i + offset)) lsl (i * 8)); (* ugh-life *)
   done;
   !res
 
-let i32 binary offset = 
+let u32 binary offset = 
   let res = ref (Char.code @@ Bytes.get binary offset) in
   for i = 1 to 3 do
         res := !res lor (Char.code (Bytes.get binary (i + offset)) lsl (i * 8)); (* ugh-life *)
   done;
   !res
 
-let i16 binary offset = 
+let u16 binary offset = 
   let one = Char.code @@ Bytes.get binary offset in
   one lor (Char.code (Bytes.get binary (1 + offset)) lsl 8)
 
-let i8 binary offset = 
+let u8 binary offset = 
   Char.code @@ Bytes.get binary offset
 
 (* TODO: don't rely on zero terminate if possible, use length as optional argument? *)
-let istring binary offset =
+let string binary offset =
   let null_index = Bytes.index_from binary offset '\000' in
   if (null_index = offset) then ""
   else Bytes.sub_string binary offset (null_index - offset)
@@ -31,7 +31,7 @@ let stringo binary offset =
   else
     (Bytes.sub_string binary offset (null_index - offset)), (null_index + 1)
 
-let i64be binary offset = 
+let u64be binary offset = 
   let res = ref ((Char.code @@ Bytes.get binary offset) lsl 56) in
   let counter = ref 6 in (* derp whatever *)
   for i = 1 to 7 do
@@ -40,7 +40,7 @@ let i64be binary offset =
   done;
   !res
 
-let i32be binary offset = 
+let u32be binary offset = 
   let res = ref ((Char.code @@ Bytes.get binary offset) lsl 24) in
   let counter = ref 2 in (* derp whatever *)
   for i = 1 to 3 do
@@ -49,7 +49,7 @@ let i32be binary offset =
   done;
   !res
 
-let i16be binary offset = 
+let u16be binary offset = 
   let one = Char.code @@ Bytes.get binary offset in
   (one lsl 8) lor (Char.code (Bytes.get binary (1 + offset)))
 
@@ -58,7 +58,7 @@ let print_bytes binary =
   Printf.printf "\n"
 
 (* read the byte as a signed integer into our internal representation *)
-let si8 binary offset =
+let i8 binary offset =
   let res = Bytes.get binary offset |> Char.code in
   if (res land 0x80 = 0x80) then res - 256 else res
 

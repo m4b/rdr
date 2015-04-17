@@ -86,19 +86,19 @@ let get_e_ident bytes =
 let get_elf_header64 binary =
   let e_ident = get_e_ident binary in
   let i = sizeof_e_ident in
-  let e_type = i16 binary i in
-  let e_machine = i16 binary (i + 2) in
-  let e_version = i32 binary (i + 4) in
-  let e_entry = i64 binary (i + 8) in
-  let e_phoff = i64 binary (i + 16) in
-  let e_shoff = i64 binary (i + 24) in
-  let e_flags = i32 binary (i + 32) in
-  let e_ehsize = i16 binary (i + 36) in
-  let e_phentsize = i16 binary (i + 38) in
-  let e_phnum = i16 binary (i +  40) in
-  let e_shentsize = i16 binary (i + 42) in
-  let e_shnum = i16 binary (i + 44) in
-  let e_shstrndx = i16 binary (i + 46) in
+  let e_type = u16 binary i in
+  let e_machine = u16 binary (i + 2) in
+  let e_version = u32 binary (i + 4) in
+  let e_entry = u64 binary (i + 8) in
+  let e_phoff = u64 binary (i + 16) in
+  let e_shoff = u64 binary (i + 24) in
+  let e_flags = u32 binary (i + 32) in
+  let e_ehsize = u16 binary (i + 36) in
+  let e_phentsize = u16 binary (i + 38) in
+  let e_phnum = u16 binary (i +  40) in
+  let e_shentsize = u16 binary (i + 42) in
+  let e_shnum = u16 binary (i + 44) in
+  let e_shstrndx = u16 binary (i + 46) in
   {
     e_ident; e_type; e_machine; e_version; e_entry; e_phoff;
     e_shoff; e_flags; e_ehsize; e_phentsize; e_phnum;

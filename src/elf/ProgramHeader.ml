@@ -53,14 +53,14 @@ let kPT_HIPROC	= 0x7fffffff	(* End of processor-specific *)
 let sizeof_program_header = 56 	(* bytes *)
 			      
 let get_program_header binary offset =
-  let p_type = Binary.i32 binary offset in (* &i *)
-  let p_flags = Binary.i32 binary (offset + 4) in
-  let p_offset = Binary.i64 binary (offset + 8) in
-  let p_vaddr = Binary.i64 binary (offset + 16) in
-  let p_paddr = Binary.i64 binary (offset + 24) in
-  let p_filesz = Binary.i64 binary (offset + 32) in
-  let p_memsz = Binary.i64 binary (offset + 40) in
-  let p_align = Binary.i64 binary (offset + 48) in
+  let p_type = Binary.u32 binary offset in (* &i *)
+  let p_flags = Binary.u32 binary (offset + 4) in
+  let p_offset = Binary.u64 binary (offset + 8) in
+  let p_vaddr = Binary.u64 binary (offset + 16) in
+  let p_paddr = Binary.u64 binary (offset + 24) in
+  let p_filesz = Binary.u64 binary (offset + 32) in
+  let p_memsz = Binary.u64 binary (offset + 40) in
+  let p_align = Binary.u64 binary (offset + 48) in
   {
     p_type;
     p_flags; (* 1=x 2=w 4=r *)

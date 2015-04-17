@@ -39,16 +39,16 @@ let print_arch arch =
   printf "%s" (arch_to_string arch)
 
 let get_fat_header binary = 
-  let magic = i32be binary 0 in
-  let nfat_arch = i32be binary 4 in
+  let magic = u32be binary 0 in
+  let nfat_arch = u32be binary 4 in
   {magic; nfat_arch;}
 
 let get_fat_arch binary pos =
-  let cputype = i32be binary pos in
-  let cpusubtype = i32be binary (pos + 4) in
-  let offset = i32be binary (pos + 8) in
-  let size = i32be binary (pos + 12) in
-  let align = i32be binary (pos + 16) in
+  let cputype = u32be binary pos in
+  let cpusubtype = u32be binary (pos + 4) in
+  let offset = u32be binary (pos + 8) in
+  let size = u32be binary (pos + 12) in
+  let align = u32be binary (pos + 16) in
   {cputype; cpusubtype; offset; size; align}
 
 let is_x86_64 fat_arch = 
@@ -56,6 +56,8 @@ let is_x86_64 fat_arch =
 
 let is_arm64 fat_arch = 
   fat_arch.cputype = kCPU_TYPE_ARM64
+
+let is_64 fat_arch = is_x86_64 fat_arch || is_arm64 fat_arch
 
 let get_fatties binary count pos = 
   let rec loop count pos acc =
@@ -70,6 +72,6 @@ let get_x86_64_binary_offset ?verbose:(verbose=false) binary nfat =
   let fatties = get_fatties binary nfat 0 in
   if (verbose) then List.iteri (fun i elem -> Printf.printf "\t(%d): " i; print_arch elem) fatties;
   try 
-    let fatty = List.find (fun fh -> is_x86_64 fh) fatties in
+    let fatty = List.find (fun fh -> is_64 fh) fatties in
     Some (fatty.offset, fatty.size)
   with Not_found -> None
