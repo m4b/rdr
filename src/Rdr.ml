@@ -39,7 +39,7 @@ let set_base_symbol_map_directories dir_string =
   (* Printf.printf "%s\n" dir_string; *)
   let dirs = Str.split (Str.regexp "[ ]+") dir_string |> List.map String.trim in
   match dirs with
-  | [] -> raise @@ Arg.Bad "Invalid argument: directories must be sepearted by spaces, -d /usr/local/lib, /some/other/path"
+  | [] -> raise @@ Arg.Bad "Invalid argument: directories must be separated by spaces, -d /usr/local/lib, /some/other/path"
   | _ -> 
     (* Printf.printf "setting dirs: %s\n" @@ Generics.list_to_string dirs; *)
     base_symbol_map_directories := dirs
