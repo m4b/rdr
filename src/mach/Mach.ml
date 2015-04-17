@@ -121,11 +121,11 @@ let to_goblin mach =
   let code = Bytes.empty in
   {Goblin.name; soname; islib; libs; nlibs; exports; nexports; imports; nimports; code}
 
-let analyze ?print_nlist:(print_nlist=false) ?lc:(lc=false) ?verbose:(verbose=true) binary filename = 
+let analyze ?silent:(silent=false) ?print_nlist:(print_nlist=false) ?lc:(lc=false) ?verbose:(verbose=true) binary filename = 
   let mach_header = MachHeader.get_mach_header binary in
-  if (verbose || lc) then MachHeader.print_header mach_header;
+  if ((verbose || lc) && not silent) then MachHeader.print_header mach_header;
   let lcs = LoadCommand.get_load_commands binary MachHeader.sizeof_mach_header mach_header.ncmds mach_header.sizeofcmds in
-  if (verbose || lc) then LoadCommand.print_load_commands lcs;
+  if ((verbose || lc) && not silent) then LoadCommand.print_load_commands lcs;
   let soname = 
     match LoadCommand.get_lib_name lcs with
     | Some dylib ->
@@ -135,7 +135,7 @@ let analyze ?print_nlist:(print_nlist=false) ?lc:(lc=false) ?verbose:(verbose=tr
   let name = Filename.basename soname in
   (* lib.(0) = soname *)
   let libraries = LoadCommand.get_libraries lcs soname in 
-  if (verbose) then 
+  if (verbose && not silent) then 
       LoadCommand.print_libraries libraries;
   (* move this inside of dyld, need the nlist info to compute locals... *)
   let islib = mach_header.filetype = kMH_DYLIB in
@@ -153,16 +153,16 @@ let analyze ?print_nlist:(print_nlist=false) ?lc:(lc=false) ?verbose:(verbose=tr
     let locals = Nlist.filter_by_kind GoblinSymbol.Local symbols in
     ignore locals;
     let exports = MachExports.get_exports binary dyld_info libraries in 
-    if (verbose) then MachExports.print_exports exports;
+    if (verbose && not silent) then MachExports.print_exports exports;
     (* TODO: yea, need to fix imports like machExports; send in the libraries, do all that preprocessing there, and not in create binary *)
     let imports = MachImports.get_imports binary dyld_info in 
-    if (verbose) then MachImports.print_imports imports;
-    if (print_nlist) then Nlist.print_symbols symbols;
+    if (verbose && not silent) then MachImports.print_imports imports;
+    if (print_nlist && not silent) then Nlist.print_symbols symbols;
     (* TODO: compute final sizes here, after imports, locals, 
        and exports are glommed into a goblin soup, using all the information available*)
     create_binary (name,soname) imports exports islib libraries
   | None ->
-    if (verbose) then Printf.printf "No dyld_info_only\n";
+    if (verbose && not silent) then Printf.printf "No dyld_info_only\n";
     create_binary (name,soname) MachImports.empty MachExports.empty islib libraries
 
 let find_export_symbol symbol binary =

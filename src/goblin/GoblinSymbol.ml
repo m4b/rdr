@@ -58,8 +58,8 @@ let symbol_datum_to_string ?use_kind:(use_kind=false) ?use_lib:(use_lib=true) ?u
   | `Lib lib -> if (use_lib) then "-> " ^ lib else ""
   | `Size s -> Printf.sprintf "(%d)" s
   | `PrintableData string -> if (use_printable) then string else ""
+  | `Kind kind -> if (use_kind) then Printf.sprintf "%s" @@ symbol_kind_to_string kind else ""
   (* i know not supposed to do this but whatever *)
-  | `Kind kind -> Printf.sprintf "%s" @@ symbol_kind_to_string kind
   | _ -> ""
 
 (* probably should just use an object, 

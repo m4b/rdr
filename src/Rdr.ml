@@ -72,6 +72,7 @@ let build_system_map () =
       let f = get_symbol_filename "tol" in
       let ic = open_in_bin f in
       let map = Marshal.from_channel ic in
+      
       begin
         try
           SymbolMap.find_symbol symbol map
@@ -123,7 +124,7 @@ let main =
      ("-r", Arg.Set recursive, "Recursively search directories for binaries");
      ("-v", Arg.Set verbose, "Be verbose");
      ("-s", Arg.Set print_nlist, "Print the symbol table, if present");
-     ("-f", Arg.Set_string symbol, "Find symbol in binary");
+     ("-f", Arg.Set_string symbol, "Find symbol in binary; forces silence");
      ("-m", Arg.Set marshal_symbols, "Marshal the generated system map to your home directory");
      ("-w", Arg.Set write_symbols, "Write out the flattened system map .symbols file to your home directory");
      ("--sys", Arg.Set build_darwin, "Build a darwin specific symbol map");
@@ -148,12 +149,13 @@ let main =
     (* rdr <binary> *)
     let filename = !anonarg in
     let analyze  = !symbol = "" in
+    let silent = not analyze && not !verbose in (* so we respect verbosity if searching... cl boolean configuration sucks *)
     (* ===================== *)
     (* MACH *)
     (* ===================== *)
     match Object.get_bytes filename with
     | Object.Mach bytes ->
-      let binary = Mach.analyze ~print_nlist:!print_nlist ~lc:analyze ~verbose:!verbose bytes filename in
+      let binary = Mach.analyze ~silent:silent ~print_nlist:!print_nlist ~lc:analyze ~verbose:!verbose bytes filename in
       if (not !verbose && analyze) then
       begin
         Printf.printf "Libraries (%d)\n" @@ (binary.Mach.nlibs - 1); (* because 0th element is binary itself *)
@@ -187,7 +189,6 @@ let main =
 	 build_system_map ()
        else
 	 (* analyze the binary and print program headers, etc. *)
-	 let silent = not analyze && not !verbose in (* so we respect verbosity if searching... cl boolean configuration sucks *)
 	 let binary = Elf.analyze ~silent:silent ~nlist:!print_nlist ~verbose:!verbose ~filename:filename binary in
 	 if (not analyze) then
            try

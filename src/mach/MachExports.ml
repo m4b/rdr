@@ -169,9 +169,9 @@ lel ocam you so cray:
 List.nth poly1 1 |> snd |> function | `Offset i -> i | _ -> raise Not_found;;
  *)
 
-let mach_export_datum_to_string ?use_flags:(use_flags=false) ?use_lib:(use_lib=true) datum =
+let mach_export_datum_to_string ?use_kind:(use_kind=true) ?use_flags:(use_flags=false) ?use_lib:(use_lib=true) datum =
   match datum with
-  | #GoblinSymbol.symbol_datum as datum -> GoblinSymbol.symbol_datum_to_string ~use_lib:use_lib ~use_printable:false datum
+  | #GoblinSymbol.symbol_datum as datum -> GoblinSymbol.symbol_datum_to_string ~use_kind:use_kind ~use_lib:use_lib ~use_printable:false datum
   | `Reexport `As (name,lib) -> Printf.sprintf "REEX as %s from %s" name lib
   | `Reexport `From lib -> Printf.sprintf "REEX from %s" lib
   | `Stub (i1,i2) -> Printf.sprintf "STUB 0x%x 0x%x" i1 i2
@@ -192,11 +192,11 @@ let sort_mach_export_data (data) =
       Pervasives.compare e1 e2
     ) data
 
-let mach_export_data_to_string ?use_flags:(use_flags=false) ?use_lib:(use_lib=true) (data:mach_export_data) =
+let mach_export_data_to_string ?use_kind:(use_kind=true) ?use_flags:(use_flags=false) ?use_lib:(use_lib=true) (data:mach_export_data) =
   let data = sort_mach_export_data data in
   let b = Buffer.create ((List.length data) * 15) in
   List.iter (fun elem ->
-      Buffer.add_string b @@ mach_export_datum_to_string ~use_flags:use_flags ~use_lib:use_lib elem;
+      Buffer.add_string b @@ mach_export_datum_to_string ~use_kind:use_kind ~use_flags:use_flags ~use_lib:use_lib elem;
       Buffer.add_string b " "
     ) data;
   Buffer.contents b
@@ -243,7 +243,7 @@ let mach_export_data_list_to_export_map list =
 let print_exports exports = 
   Printf.printf "Exports (%d):\n" @@ List.length exports;
   List.iter 
-  (fun symbol -> mach_export_data_to_string symbol |> Printf.printf "%s\n" ) exports
+  (fun symbol -> mach_export_data_to_string ~use_kind:false ~use_lib:false symbol |> Printf.printf "%s\n" ) exports
 (*   ExportMap.iter (fun key symbol -> mach_export_data_to_string symbol |> Printf.printf "%s\n" ) map *)
 
 let print_mach_export_data ?simple:(simple=false) ?goblin:(goblin=false) export = 

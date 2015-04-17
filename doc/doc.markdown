@@ -1,4 +1,9 @@
-# Mach-O Binaries
+---
+title: Mach-O Binaries
+author: m4b
+layout: post
+tags: [reverse engineering, hacking, symbols, imports, exports, trie, fsa, blog, tutorial, osx, mac, object, binary, binaries, linux]
+---
 
 > εἰ γὰρ ὤφελον, ὦ Κρίτων, οἷοί τ᾽ εἶναι οἱ πολλοὶ τὰ μέγιστα κακὰ ἐργάζεσθαι, ἵνα οἷοί τ᾽
 > ἦσαν καὶ ἀγαθὰ τὰ μέγιστα, καὶ καλῶς ἂν εἶχεν. νῦν δὲ οὐδέτερα οἷοί τε: οὔτε γὰρ
@@ -460,6 +465,8 @@ If you've still got that hex editor running, jump to 0xf90 in `libtoc.dylib` and
 Lastly, and **very importantly**, the _next_ uleb128 after whatever type the symbol is (so, depending on the type, it could be several bytes or uleb's later, see point 2. in the mach trie summary), is the number of child branches.  In the case of "kTOC_MAGICAL_FUN", the number is 0.  But, it doesn't have to be.  The node with terminal export information can also have children; a good example of this can be found in `/usr/lib/system/libsystem_c.dylib` with `_printf` and `_printf_l`, where the latter will be a child node containing the export information for `_printf`; don't terminate your loop (or recursion if you're awesome) when you encounter a "terminal" node, as strange as that sounds, because it might have children.
 
 ### Imports
+
+![darwin /usr/lib/ imports wordmap](linux_imports.png)
 
 Imports on mach are stored in the same linkedit section as exports are.  As mentioned earlier, they are  "encoded" using a finite state automaton.  The FSA accepts so-called "bind opcodes", which have immediate and uleb128/sleb128 arguments, which alter the current record.  When a "bind" bind opcode is encountered, it pushes the current import symbol information record onto a list or array, however you want to think about it.
 

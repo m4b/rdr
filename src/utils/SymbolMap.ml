@@ -101,7 +101,17 @@ let build_lib_stack recursive verbose dirs =
     stack
   in dir_loop dirs stack
 
+let output_stats tbl =
+  let oc = open_out ".stats" in
+  output_string oc "symbol,count\n";
+  Hashtbl.iter (fun a b ->
+		let string = Printf.sprintf "%s,%d\n" a b in
+		output_string oc string;
+	       ) tbl;
+  close_out oc
+	      
 let build_polymorphic_map ?recursive:(recursive=false) ?graph:(graph=false) ?verbose:(verbose=true) dirs =
+  let tbl = Hashtbl.create ((List.length dirs) * 100) in
   if (verbose) then Printf.printf "Building map...\n";
   let libstack = build_lib_stack recursive verbose dirs in
   if (verbose) then 
@@ -112,6 +122,7 @@ let build_polymorphic_map ?recursive:(recursive=false) ?graph:(graph=false) ?ver
   let rec loop map lib_deps = 
     if (Stack.is_empty libstack) then 
       begin
+	output_stats tbl;
         if (graph) then
           Graph.graph_lib_dependencies lib_deps;
         map
@@ -120,9 +131,18 @@ let build_polymorphic_map ?recursive:(recursive=false) ?graph:(graph=false) ?ver
       let lib = Stack.pop libstack in
       let bytes = Object.get_bytes ~verbose:verbose lib in
       match bytes with
+      (* could do a |> Mach.to_goblin here ? --- better yet, to goblin, then map building code after to avoid DRY violations *)
       | Object.Mach binary ->
-         (* could do a |> Mach.to_goblin here ? *)
          let binary = Mach.analyze ~verbose:false binary lib in
+	 let imports = binary.Mach.imports in
+	 Array.iter (fun import ->
+		     let symbol = import.MachImports.bi.MachImports.symbol_name in
+		     if (Hashtbl.mem tbl symbol) then
+		       let count = Hashtbl.find tbl symbol in
+		       Hashtbl.replace tbl symbol (count + 1)
+		     else
+		       Hashtbl.add tbl symbol 1
+		    ) imports;
          (* let symbols = MachExports.export_map_to_mach_export_data_list binary.Mach.exports in *)
          let symbols = binary.Mach.exports in
          (* now we fold over the export -> polymorphic variant list of [mach_export_data] mappings returned from above *)
@@ -144,6 +164,15 @@ let build_polymorphic_map ?recursive:(recursive=false) ?graph:(graph=false) ?ver
       | Object.Elf binary ->
          (* hurr durr iman elf *)
          let binary = Elf.analyze ~silent:true ~verbose:false ~filename:lib binary in
+	 let imports = binary.Goblin.imports in
+	 	 Array.iter (fun import ->
+		     let symbol = import.Goblin.Import.name in
+		     if (Hashtbl.mem tbl symbol) then
+		       let count = Hashtbl.find tbl symbol in
+		       Hashtbl.replace tbl symbol (count + 1)
+		     else
+		       Hashtbl.add tbl symbol 1
+		    ) imports;
          let symbols = binary.Goblin.exports in
          (* now we fold over the export -> polymorphic variant list of [mach_export_data] mappings returned from above *)
          let map' = Array.fold_left
