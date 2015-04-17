@@ -30,7 +30,6 @@ let use_goblin = ref false
 let recursive = ref false
 let write_symbols = ref false
 let marshal_symbols = ref false
-let build_darwin = ref false
 let print_nlist = ref false
 let symbol = ref ""
 let base_symbol_map_directories = ref ["/usr/lib/"]
@@ -118,16 +117,15 @@ let build_system_map () =
 	       
 let main =
   let speclist = 
-    [("-b", Arg.Set build, "Builds a system symbol map");
+    [("-b", Arg.Set build, "Builds a system symbol map; use this in conjunction with -m or -w to write the results to disk; -f will look for a marshalled file from -m to speed up arbitary symbol lookup times");
      ("-g", Arg.Set graph, "Creates a graphviz file; generates lib dependencies if -b given");
      ("-d", Arg.String (set_base_symbol_map_directories), "String of space separated directories to build symbol map from; default is /usr/lib");
      ("-r", Arg.Set recursive, "Recursively search directories for binaries");
      ("-v", Arg.Set verbose, "Be verbose");
      ("-s", Arg.Set print_nlist, "Print the symbol table, if present");
-     ("-f", Arg.Set_string symbol, "Find symbol in binary; forces silence");
-     ("-m", Arg.Set marshal_symbols, "Marshal the generated system map to your home directory");
+     ("-f", Arg.Set_string symbol, "Find symbol in binary");
+     ("-m", Arg.Set marshal_symbols, "Marshal the generated system map to your home directory (speeds up arbitrary symbol search times substantially)");
      ("-w", Arg.Set write_symbols, "Write out the flattened system map .symbols file to your home directory");
-     ("--sys", Arg.Set build_darwin, "Build a darwin specific symbol map");
      ("-G", Arg.Set use_goblin, "Use the goblin binary format");
      ("--goblin", Arg.Set use_goblin, "Use the goblin binary format");
      (* ("-n", Arg.Int (set_max_files), "Sets maximum number of files to list"); *)
