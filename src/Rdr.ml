@@ -14,14 +14,7 @@ let get_os () =
   if (uname = "Darwin") then Darwin
   else if (uname = "Linux") then Linux
   else Other
-
-let get_symbol_filename name =
-  try 
-    (Sys.getenv "HOME") ^ Filename.dir_sep ^ "." ^ name
-  with
-  | Not_found ->
-    Sys.getcwd() ^ Filename.dir_sep ^ name ^ "." ^ name
-
+	 
 (* TODO: consider moving these refs to a globals module which is get and set from there *)
 let build = ref false
 let graph = ref false
@@ -68,10 +61,10 @@ let build_system_map () =
       end;
     if (searching) then
       (* rdr -b <symbol_name> *)
-      let f = get_symbol_filename "tol" in
+      try
+      let f = Output.with_dot_directory "tol" in
       let ic = open_in_bin f in
       let map = Marshal.from_channel ic in
-      
       begin
         try
           SymbolMap.find_symbol symbol map
@@ -83,6 +76,8 @@ let build_system_map () =
         with Not_found ->
 	  Printf.printf "not found\n"; ()
       end
+      with (Sys_error _) ->
+	Printf.eprintf "Searching without a marshalled system map is very slow (on older systems) and a waste of energy; run `rdr -b -m` first (it will create a marshalled system map, $HOME/.rdr/tol, for fast lookups), then search... Have a nice day!\n"; flush stdout; exit 1
     else
       begin
 	let map = SymbolMap.build_polymorphic_map 
@@ -98,14 +93,14 @@ let build_system_map () =
         let export_list_string = SymbolMap.polymorphic_list_to_string export_list in
         if (!write_symbols) then
           begin
-            let f = get_symbol_filename "symbols" in
+            let f = Output.with_dot_directory "symbols" in (* write to our .rdr *)
             let oc = open_out f in
             Printf.fprintf oc "%s" export_list_string;
             close_out oc;
           end
 	else if (!marshal_symbols) then
           begin
-            let f = get_symbol_filename "tol" in
+            let f = Output.with_dot_directory "tol" in (* ditto *)
             let oc = open_out_bin f in
 	    Marshal.to_channel oc map [];
             close_out oc;
@@ -117,7 +112,7 @@ let build_system_map () =
 	       
 let main =
   let speclist = 
-    [("-b", Arg.Set build, "Builds a system symbol map; use this in conjunction with -m or -w to write the results to disk; -f will look for a marshalled file from -m to speed up arbitary symbol lookup times");
+    [("-b", Arg.Set build, "Builds a system symbol map; use this in conjunction with -m or -w to write the results to disk (at $(HOME)/.rdr/); -f will look for a marshalled file from -m to speed up arbitary symbol lookup times");
      ("-g", Arg.Set graph, "Creates a graphviz file; generates lib dependencies if -b given");
      ("-d", Arg.String (set_base_symbol_map_directories), "String of space separated directories to build symbol map from; default is /usr/lib");
      ("-r", Arg.Set recursive, "Recursively search directories for binaries");
@@ -133,6 +128,7 @@ let main =
     ] in
   let usage_msg = "usage: rdr [-r] [-b] [-d] [-g] [-G --goblin] [-v] [<path_to_binary> | <symbol_name>]\noptions:" in
   Arg.parse speclist set_anon_argument usage_msg;
+  Output.create_dot_directory (); (* make our .rdr/ if we haven't already *)
   (* BEGIN program init *)
   if (!anonarg = "" && not !build) then
     begin
@@ -171,7 +167,7 @@ let main =
         if (!use_goblin) then
           begin
             let goblin = Mach.to_goblin binary in
-            Graph.graph_goblin ~draw_imports:true ~draw_libs:true goblin (Filename.basename filename);
+            Graph.graph_goblin ~draw_imports:true ~draw_libs:true goblin @@ Filename.basename filename;
           end
         else
           Graph.graph_mach_binary 

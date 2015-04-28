@@ -102,7 +102,7 @@ let build_lib_stack recursive verbose dirs =
   in dir_loop dirs stack
 
 let output_stats tbl =
-  let oc = open_out ".stats" in
+  let oc = open_out (Output.with_dot_directory "stats") in
   output_string oc "symbol,count\n";
   Hashtbl.iter (fun a b ->
 		let string = Printf.sprintf "%s,%d\n" a b in
