@@ -111,7 +111,6 @@ let output_stats tbl =
 	       ) tbl;
   close_out oc
 
-(*   ?recursive:(recursive=false) ?graph:(graph=false) ?verbose:(verbose=true) *)
 let build_polymorphic_map config =
   let dirs = config.base_symbol_map_directories in
   let recursive = config.recursive in

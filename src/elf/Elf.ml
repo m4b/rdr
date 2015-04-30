@@ -19,8 +19,6 @@ let create_goblin_binary filename soname libraries islib goblin_exports goblin_i
   let code = Bytes.empty in
   {Goblin.name; soname; islib; libs; nlibs; exports; nexports; imports; nimports; code}
 
-(* ffs use the config file here *)
-(* let analyze ?nlist:(nlist=false) ?silent:(silent=false) ~verbose ~filename config binary = *)
 let analyze config binary =
   let header = ElfHeader.get_elf_header64 binary in
   let program_headers = ProgramHeader.get_program_headers binary header.ElfHeader.e_phoff header.ElfHeader.e_phentsize header.ElfHeader.e_phnum in
