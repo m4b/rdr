@@ -66,7 +66,7 @@ let get_bytes ?verbose:(verbose=false) filename =
 let analyze config binary =
   let filename = config.filename in
   let analyze  = config.search_term = "" in
-  let silent = not analyze && not config.verbose in (* so we respect verbosity if searching... cl boolean configuration sucks *)
+  let silent = not analyze && not config.verbose in (* so we respect verbosity if searching*)
   match binary with
   | Mach bytes ->
      let binary = Mach.analyze ~silent:silent ~print_nlist:config.print_nlist ~lc:analyze ~verbose:config.verbose bytes filename in
@@ -79,7 +79,7 @@ let analyze config binary =
      if (not analyze) then
        try
          Mach.find_export_symbol config.search_term binary |> MachExports.print_mach_export_data ~simple:true
-												 (* TODO: add find import symbol *)
+(* TODO: add find import symbol *)
        with Not_found ->
          Printf.printf "";
      else 

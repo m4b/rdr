@@ -31,6 +31,7 @@ for testing
 #load "Fat.cmo";;
  *)
 open Unix
+open Config
 
 module SystemSymbolMap = Map.Make(String)
 
@@ -109,7 +110,7 @@ let output_stats tbl =
 		output_string oc string;
 	       ) tbl;
   close_out oc
-	      
+	    
 let build_polymorphic_map ?recursive:(recursive=false) ?graph:(graph=false) ?verbose:(verbose=true) dirs =
   let tbl = Hashtbl.create ((List.length dirs) * 100) in
   if (verbose) then Printf.printf "Building map...\n";
@@ -147,8 +148,7 @@ let build_polymorphic_map ?recursive:(recursive=false) ?graph:(graph=false) ?ver
          let symbols = binary.Mach.exports in
          (* now we fold over the export -> polymorphic variant list of [mach_export_data] mappings returned from above *)
          let map' = Array.fold_left (fun acc data -> 
-				     (* this is bad, not checking for weird state of no export symbol name,
-               but since i construct the data it isn't possible... right? *)
+				     (* this is bad, not checking for weird state of no export symbol name, but since i construct the data it isn't possible... right? *)
 				     let symbol = GoblinSymbol.find_symbol_name data in
 				     try 
 				       (* if the symbol has a library-data mapping, then add the new lib-export data object to the export data list *)
@@ -157,7 +157,8 @@ let build_polymorphic_map ?recursive:(recursive=false) ?graph:(graph=false) ?ver
 				     with
 				     | Not_found ->
 					(* we don't have a record of this export symbol mapping; 
-                 create a new singleton list with the data (we already know the `Lib because MachExport's job is to add that) *)
+                                           create a new singleton list with the data
+                                           (we already know the `Lib because MachExport's job is to add that) *)
 					SystemSymbolMap.add symbol [data] acc
 				    ) map symbols in
          loop map' ((binary.Mach.name, binary.Mach.libs)::lib_deps)
@@ -165,7 +166,7 @@ let build_polymorphic_map ?recursive:(recursive=false) ?graph:(graph=false) ?ver
          (* hurr durr iman elf *)
          let binary = Elf.analyze ~silent:true ~verbose:false ~filename:lib binary in
 	 let imports = binary.Goblin.imports in
-	 	 Array.iter (fun import ->
+	 Array.iter (fun import ->
 		     let symbol = import.Goblin.Import.name in
 		     if (Hashtbl.mem tbl symbol) then
 		       let count = Hashtbl.find tbl symbol in
@@ -242,5 +243,88 @@ let find_symbol key (map) = SystemSymbolMap.find key map
 
 let print_map map = SystemSymbolMap.iter (
 			fun key values ->
-			Printf.printf "%s -> %s\n" key @@ (Generics.list_with_stringer
-							    (fun export -> GoblinSymbol.find_symbol_lib export) values)) map
+			Printf.printf "%s -> %s\n" key @@ (Generics.list_with_stringer (fun export -> GoblinSymbol.find_symbol_lib export) values)) map
+
+let build_system_map config =
+  begin
+    let symbol = config.search_term in
+    let searching = (symbol <> "") in
+    let graph = not searching && config.graph in
+    if (searching) then 
+      (* cuz on slow systems i want to see this message first *)
+      begin
+        let recursive_message = if (config.recursive) then 
+				  " (recursively)" 
+				else ""
+        in
+        Printf.printf "searching %s%s for %s:\n"
+		      (Generics.list_to_string 
+			 ~omit_singleton_braces:true 
+			 config.base_symbol_map_directories)
+		      recursive_message
+		      symbol; flush Pervasives.stdout
+      end;
+    (* =================== *)
+    (* SEARCHING *)
+    (* =================== *)
+    if (searching) then
+      (* rdr -b <symbol_name> *)
+      try
+	let f = Output.with_dot_directory "tol" in
+	let ic = open_in_bin f in
+	let map = Marshal.from_channel ic in
+	begin
+          try
+            find_symbol symbol map
+            |> List.iter 
+		 (fun data ->
+		  if (config.disassemble) then
+		    begin
+		      let lib = GoblinSymbol.find_symbol_lib data in
+		      ignore lib;
+		      (* lel so much gc-ing *)
+		      ()
+		    end;
+		  GoblinSymbol.print_symbol_data ~with_lib:true ~like_export:true data
+		 );
+          with Not_found ->
+	    Printf.printf "not found\n"; ()
+	end
+      with (Sys_error _) ->
+	Printf.eprintf "Searching without a marshalled system map is very slow (on older systems) and a waste of energy; run `rdr -b -m` first (it will create a marshalled system map, $HOME/.rdr/tol, for fast lookups), then search... Have a nice day!\n";
+	flush Pervasives.stdout;
+	exit 1																		  (* =================== *)
+(* BUILDING *)
+(* =================== *)
+    else
+      begin
+	let map = build_polymorphic_map 
+		    ~recursive:config.recursive 
+		    ~graph:graph
+		    ~verbose:config.verbose 
+		    config.base_symbol_map_directories
+	in
+        (* rdr -b -g *)
+        let export_list = flatten_polymorphic_map_to_list map
+                          |> GoblinSymbol.sort_symbols 
+        in
+        let export_list_string = polymorphic_list_to_string export_list in
+        if (config.write_symbols) then
+          begin
+            let f = Output.with_dot_directory "symbols" in (* write to our .rdr *)
+            let oc = open_out f in
+            Printf.fprintf oc "%s" export_list_string;
+            close_out oc;
+          end
+	else if (config.marshal_symbols) then
+          begin
+            let f = Output.with_dot_directory "tol" in (* ditto *)
+            let oc = open_out_bin f in
+	    Marshal.to_channel oc map [];
+            close_out oc;
+          end
+        else
+          Printf.printf "%s\n" export_list_string;
+      end
+  end
+    

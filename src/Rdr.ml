@@ -59,87 +59,6 @@ let set_base_symbol_map_directories dir_string =
 
 let set_anon_argument string =
   anonarg := string
-
-let build_system_map config =
-  begin
-    let symbol = !anonarg in
-    let searching = (symbol <> "") in
-    let graph = not searching && !graph in
-    if (searching) then 
-      (* cuz on slow systems i want to see this message first *)
-      begin
-        let recursive_message = if (!recursive) then 
-				  " (recursively)" 
-				else ""
-        in
-        Printf.printf "searching %s%s for %s:\n"
-		      (Generics.list_to_string 
-			 ~omit_singleton_braces:true 
-			 !base_symbol_map_directories)
-		      recursive_message
-		      symbol; flush stdout
-      end;
-    (* =================== *)
-    (* SEARCHING *)
-    (* =================== *)
-    if (searching) then
-      (* rdr -b <symbol_name> *)
-      try
-      let f = Output.with_dot_directory "tol" in
-      let ic = open_in_bin f in
-      let map = Marshal.from_channel ic in
-      begin
-        try
-          SymbolMap.find_symbol symbol map
-          |> List.iter 
-	       (fun data ->
-		if (!disassemble) then
-		  begin
-		    let lib = GoblinSymbol.find_symbol_lib data in
-		    (* lel so much gc-ing *)
-		    ()
-		  end;
-		GoblinSymbol.print_symbol_data ~with_lib:true ~like_export:true data
-	       );
-        with Not_found ->
-	  Printf.printf "not found\n"; ()
-      end
-      with (Sys_error _) ->
-	Printf.eprintf "Searching without a marshalled system map is very slow (on older systems) and a waste of energy; run `rdr -b -m` first (it will create a marshalled system map, $HOME/.rdr/tol, for fast lookups), then search... Have a nice day!\n"; flush stdout; exit 1
-    (* =================== *)
-    (* BUILDING *)
-    (* =================== *)
-    else
-      begin
-	let map = SymbolMap.build_polymorphic_map 
-		    ~recursive:!recursive 
-		    ~graph:graph 
-		    ~verbose:!verbose 
-		    !base_symbol_map_directories
-	in
-        (* rdr -b -g *)
-        let export_list = SymbolMap.flatten_polymorphic_map_to_list map
-                          |> GoblinSymbol.sort_symbols 
-        in
-        let export_list_string = SymbolMap.polymorphic_list_to_string export_list in
-        if (!write_symbols) then
-          begin
-            let f = Output.with_dot_directory "symbols" in (* write to our .rdr *)
-            let oc = open_out f in
-            Printf.fprintf oc "%s" export_list_string;
-            close_out oc;
-          end
-	else if (!marshal_symbols) then
-          begin
-            let f = Output.with_dot_directory "tol" in (* ditto *)
-            let oc = open_out_bin f in
-	    Marshal.to_channel oc map [];
-            close_out oc;
-          end
-        else
-          Printf.printf "%s\n" export_list_string;
-      end
-  end
 	       
 let main =
   let speclist = 
@@ -173,6 +92,6 @@ let main =
     end;
   if (config.build) then
     (* -b *)
-    build_system_map config
+    SymbolMap.build_system_map config
   else
     Object.get_bytes config.filename |> Object.analyze config
