@@ -16,7 +16,7 @@ let get_os () =
   else Other
 	 
 (* TODO: consider moving these refs to a globals module which is get and set from there *)
-let build = ref false
+let use_map = ref false
 let graph = ref false
 let verbose = ref false
 let use_goblin = ref false
@@ -31,13 +31,14 @@ let disassemble = ref false
 let search_term_string = ref ""
 
 let get_config () =
-{
-      Config.analyze = true;
+  let analyze = not (!use_map || !marshal_symbols) in
+  {
+      Config.analyze;
       silent = false;
       print_nlist = !print_nlist;
       verbose = !verbose;
       disassemble = !disassemble;
-      build = !build;
+      use_map = !use_map;
       recursive = !recursive;
       write_symbols = !write_symbols;
       marshal_symbols = !marshal_symbols;
@@ -46,7 +47,7 @@ let get_config () =
       filename = !anonarg;
       search_term = !search_term_string;
       use_goblin = !use_goblin;
-    } 
+  } 
 		      
 let set_base_symbol_map_directories dir_string = 
   (* Printf.printf "%s\n" dir_string; *)
@@ -62,15 +63,15 @@ let set_anon_argument string =
 	       
 let main =
   let speclist = 
-    [("-b", Arg.Set build, "Builds a system symbol map; use this in conjunction with -m or -w to write the results to disk (at $(HOME)/.rdr/); -f will look for a marshalled file from -m to speed up arbitary symbol lookup times");
+    [("-m", Arg.Set use_map, "Use a pre-marshalled system symbol map; use this in conjunction with -f, -g, or -w");
      ("-g", Arg.Set graph, "Creates a graphviz file; generates lib dependencies if -b given");
      ("-d", Arg.String (set_base_symbol_map_directories), "String of space separated directories to build symbol map from; default is /usr/lib");
      ("-r", Arg.Set recursive, "Recursively search directories for binaries");
      ("-v", Arg.Set verbose, "Be verbose");
      ("-s", Arg.Set print_nlist, "Print the symbol table, if present");
      ("-f", Arg.Set_string search_term_string, "Find symbol in binary");
-     ("-m", Arg.Set marshal_symbols, "Marshal the generated system map to your home directory (speeds up arbitrary symbol search times substantially)");
-     ("-w", Arg.Set write_symbols, "Write out the flattened system map .symbols file to your home directory");
+     ("-b", Arg.Set marshal_symbols, "Build a symbol map and write to $(HOME)/.rdr/tol; default is /usr/lib, change with -d");
+     ("-w", Arg.Set write_symbols, "Write out a flattened system map to $(HOME)/.rdr/symbols (good for grepping)");
      ("-G", Arg.Set use_goblin, "Use the goblin binary format");
      ("--goblin", Arg.Set use_goblin, "Use the goblin binary format");
      ("-D", Arg.Set disassemble, "Disassemble all found symbols");
@@ -81,17 +82,21 @@ let main =
     ] in
   let usage_msg = "usage: rdr [-r] [-b] [-d] [-g] [-G --goblin] [-v] [<path_to_binary> | <symbol_name>]\noptions:" in
   Arg.parse speclist set_anon_argument usage_msg;
+  (* BEGIN program init *)  
   Output.create_dot_directory (); (* make our .rdr/ if we haven't already *)
   let config = get_config () in
-  (* BEGIN program init *)
-  if (config.filename = "" && not config.build) then
+  if (config.analyze && config.filename = "") then
     begin
       Printf.eprintf "Error: no path to binary given\n";
       Arg.usage speclist usage_msg;
       exit 1;
     end;
-  if (config.build) then
-    (* -b *)
-    SymbolMap.build_system_map config
+  if (config.use_map) then
+    (* -m *)
+    SymbolMap.use_symbol_map config
+  else if (config.marshal_symbols) then
+    (* -b build a marshalled symbol map*)
+    SymbolMap.build_symbol_map config
   else
+    (* analyzing a binary using anon arg *)
     Object.get_bytes config.filename |> Object.analyze config
