@@ -3,7 +3,7 @@
        which would essentially build a map of the entire system
 *)
 
-exception Unimplemented_binary_type of string
+open Config 			(* because only has a record type *)
 
 type os = Darwin | Linux | Other
 
@@ -24,10 +24,30 @@ let recursive = ref false
 let write_symbols = ref false
 let marshal_symbols = ref false
 let print_nlist = ref false
-let symbol = ref ""
 let base_symbol_map_directories = ref ["/usr/lib/"]
 let anonarg = ref ""
 
+let disassemble = ref false
+let search_term_string = ref ""
+
+let get_config () =
+{
+      Config.analyze = true;
+      silent = false;
+      print_nlist = !print_nlist;
+      verbose = !verbose;
+      disassemble = !disassemble;
+      build = !build;
+      recursive = !recursive;
+      write_symbols = !write_symbols;
+      marshal_symbols = !marshal_symbols;
+      base_symbol_map_directories = !base_symbol_map_directories;
+      graph = !graph;
+      filename = !anonarg;
+      search_term = !search_term_string;
+      use_goblin = !use_goblin;
+    } 
+		      
 let set_base_symbol_map_directories dir_string = 
   (* Printf.printf "%s\n" dir_string; *)
   let dirs = Str.split (Str.regexp "[ ]+") dir_string |> List.map String.trim in
@@ -40,7 +60,7 @@ let set_base_symbol_map_directories dir_string =
 let set_anon_argument string =
   anonarg := string
 
-let build_system_map () =
+let build_system_map config =
   begin
     let symbol = !anonarg in
     let searching = (symbol <> "") in
@@ -59,6 +79,9 @@ let build_system_map () =
 		      recursive_message
 		      symbol; flush stdout
       end;
+    (* =================== *)
+    (* SEARCHING *)
+    (* =================== *)
     if (searching) then
       (* rdr -b <symbol_name> *)
       try
@@ -70,14 +93,22 @@ let build_system_map () =
           SymbolMap.find_symbol symbol map
           |> List.iter 
 	       (fun data ->
-		  (* MachExports.print_mach_export_data data *)
-		  GoblinSymbol.print_symbol_data ~with_lib:true ~like_export:true data
+		if (!disassemble) then
+		  begin
+		    let lib = GoblinSymbol.find_symbol_lib data in
+		    (* lel so much gc-ing *)
+		    ()
+		  end;
+		GoblinSymbol.print_symbol_data ~with_lib:true ~like_export:true data
 	       );
         with Not_found ->
 	  Printf.printf "not found\n"; ()
       end
       with (Sys_error _) ->
 	Printf.eprintf "Searching without a marshalled system map is very slow (on older systems) and a waste of energy; run `rdr -b -m` first (it will create a marshalled system map, $HOME/.rdr/tol, for fast lookups), then search... Have a nice day!\n"; flush stdout; exit 1
+    (* =================== *)
+    (* BUILDING *)
+    (* =================== *)
     else
       begin
 	let map = SymbolMap.build_polymorphic_map 
@@ -118,78 +149,30 @@ let main =
      ("-r", Arg.Set recursive, "Recursively search directories for binaries");
      ("-v", Arg.Set verbose, "Be verbose");
      ("-s", Arg.Set print_nlist, "Print the symbol table, if present");
-     ("-f", Arg.Set_string symbol, "Find symbol in binary");
+     ("-f", Arg.Set_string search_term_string, "Find symbol in binary");
      ("-m", Arg.Set marshal_symbols, "Marshal the generated system map to your home directory (speeds up arbitrary symbol search times substantially)");
      ("-w", Arg.Set write_symbols, "Write out the flattened system map .symbols file to your home directory");
      ("-G", Arg.Set use_goblin, "Use the goblin binary format");
      ("--goblin", Arg.Set use_goblin, "Use the goblin binary format");
+     ("-D", Arg.Set disassemble, "Disassemble all found symbols");
+     ("--dis", Arg.Set disassemble, "Disassemble all found symbols");
+
      (* ("-n", Arg.Int (set_max_files), "Sets maximum number of files to list"); *)
      (* ("-d", Arg.String (set_directory), "Names directory to list files"); *)
     ] in
   let usage_msg = "usage: rdr [-r] [-b] [-d] [-g] [-G --goblin] [-v] [<path_to_binary> | <symbol_name>]\noptions:" in
   Arg.parse speclist set_anon_argument usage_msg;
   Output.create_dot_directory (); (* make our .rdr/ if we haven't already *)
+  let config = get_config () in
   (* BEGIN program init *)
-  if (!anonarg = "" && not !build) then
+  if (config.filename = "" && not config.build) then
     begin
       Printf.eprintf "Error: no path to binary given\n";
       Arg.usage speclist usage_msg;
       exit 1;
     end;
-  if (!build) then
+  if (config.build) then
     (* -b *)
-    build_system_map ()
+    build_system_map config
   else
-    (* rdr <binary> *)
-    let filename = !anonarg in
-    let analyze  = !symbol = "" in
-    let silent = not analyze && not !verbose in (* so we respect verbosity if searching... cl boolean configuration sucks *)
-    (* ===================== *)
-    (* MACH *)
-    (* ===================== *)
-    match Object.get_bytes filename with
-    | Object.Mach bytes ->
-      let binary = Mach.analyze ~silent:silent ~print_nlist:!print_nlist ~lc:analyze ~verbose:!verbose bytes filename in
-      if (not !verbose && analyze) then
-      begin
-        Printf.printf "Libraries (%d)\n" @@ (binary.Mach.nlibs - 1); (* because 0th element is binary itself *)
-        Printf.printf "Exports (%d)\n" @@ binary.Mach.nexports;
-        Printf.printf "Imports (%d)\n" @@ binary.Mach.nimports
-      end;
-      if (not analyze) then
-        try
-          Mach.find_export_symbol !symbol binary |> MachExports.print_mach_export_data ~simple:true
-        (* TODO: add find import symbol *)
-        with Not_found ->
-          Printf.printf "";
-      else 
-      if (!graph) then
-        if (!use_goblin) then
-          begin
-            let goblin = Mach.to_goblin binary in
-            Graph.graph_goblin ~draw_imports:true ~draw_libs:true goblin @@ Filename.basename filename;
-          end
-        else
-          Graph.graph_mach_binary 
-            ~draw_imports:true 
-            ~draw_libs:true 
-            binary 
-            (Filename.basename filename)
-    (* ===================== *)
-    (* ELF *)
-    (* ===================== *)
-    | Object.Elf binary ->
-       if (!build) then
-	 build_system_map ()
-       else
-	 (* analyze the binary and print program headers, etc. *)
-	 let binary = Elf.analyze ~silent:silent ~nlist:!print_nlist ~verbose:!verbose ~filename:filename binary in
-	 if (not analyze) then
-           try
-             Elf.find_export_symbol !symbol binary |> Goblin.print_export
-           with Not_found ->
-             Printf.printf "";
-	 else
-	 if (!graph) then Graph.graph_goblin binary @@ Filename.basename filename;
-    | Object.Unknown ->
-      raise @@ Unimplemented_binary_type "Unknown binary"
+    Object.get_bytes config.filename |> Object.analyze config
