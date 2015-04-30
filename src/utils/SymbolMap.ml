@@ -276,15 +276,24 @@ let use_symbol_map config =
           find_symbol symbol map
           |> List.iter 
 	       (fun data ->
+		GoblinSymbol.print_symbol_data ~with_lib:true ~like_export:true data;
 		if (config.disassemble) then
 		  begin
+		    try
 		    let lib = GoblinSymbol.find_symbol_lib data in
-		    let binary = Object.get_bytes lib |> Object.analyze {config with silent=true; filename=lib; consume_bytes=true} in
+		    let startsym = GoblinSymbol.find_symbol_offset data in
+		    let size = GoblinSymbol.find_symbol_size data in (* yo this is so dangerous cause may not be correct size... but I need to impress david and I definitely won't show him this line of code on Saturday ;) *)
+		    let ic = open_in_bin lib in
+		    seek_in ic startsym;
+		    let code = really_input_string ic size |> Binary.to_hex_string in
+		    close_in ic;
+		    flush Pervasives.stdout;
 		    Printf.printf "\t\n";
-		    ignore binary;
-		    (*     		    Binary.print_code binary.Goblin.code *)
-		  end;
-		GoblinSymbol.print_symbol_data ~with_lib:true ~like_export:true data
+		    (* NOW FOR THE FUCKING HACKS *)
+		    let command = Printf.sprintf "echo \"%s\" | /usr/bin/llvm-mc --disassemble" code in
+		    ignore @@ Sys.command command;
+		    with Not_found -> Printf.eprintf "could not disassemble #thug_life\n";
+		  end
 	       );
         with Not_found ->
 	  Printf.printf "not found\n"; ()
@@ -322,5 +331,3 @@ let build_symbol_map config =
   Marshal.to_channel oc map [];
   close_out oc;
   Printf.printf "Done!\n"
-
-  

@@ -60,6 +60,11 @@ let print_bytes binary =
 let print_code binary = 
   let () = Bytes.iter (fun b -> Printf.printf "0x%x " (Char.code b)) binary in
   Printf.printf "\n"
+
+let to_hex_string code =
+  let buffer = Buffer.create ((String.length code) * 3) in
+  String.iter (fun b -> Printf.sprintf "0x%x " (Char.code b) |> Buffer.add_string buffer) code;
+  Buffer.contents buffer
 		
 (* read the byte as a signed integer into our internal representation *)
 let i8 binary offset =

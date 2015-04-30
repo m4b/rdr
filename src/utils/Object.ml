@@ -103,7 +103,6 @@ let analyze config binary =
   (* ===================== *)
   | Elf binary ->
      (* analyze the binary and print program headers, etc. *)
-     (* ~silent:silent ~nlist:config.print_nlist ~verbose:config.verbose ~filename:filename  *)
      let binary = Elf.analyze config binary in
      if (not analyze) then
        try
