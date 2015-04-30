@@ -63,6 +63,9 @@ let get_bytes ?verbose:(verbose=false) filename =
 	Unknown
       end
 
+(* if I return goblin binaries and destroy all the beautiful structure of each kind of binary, i can have one return type without matches...
+so... I should do it, right?
+ *)
 let analyze config binary =
   let filename = config.filename in
   let analyze  = config.search_term = "" in
@@ -94,7 +97,7 @@ let analyze config binary =
              ~draw_imports:true 
              ~draw_libs:true 
              binary 
-             (Filename.basename filename)
+             (Filename.basename filename);
   (* ===================== *)
   (* ELF *)
   (* ===================== *)
@@ -108,5 +111,6 @@ let analyze config binary =
          Printf.printf "";
      else
        if (config.graph) then Graph.graph_goblin binary @@ Filename.basename filename;
+     
   | Unknown ->
      raise @@ Unimplemented_binary_type "Unknown binary"

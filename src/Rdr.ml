@@ -35,6 +35,7 @@ let get_config () =
   {
       Config.analyze;
       silent = false;
+      consume_bytes = false;
       print_nlist = !print_nlist;
       verbose = !verbose;
       disassemble = !disassemble;
@@ -63,7 +64,7 @@ let set_anon_argument string =
 	       
 let main =
   let speclist = 
-    [("-m", Arg.Set use_map, "Use a pre-marshalled system symbol map; use this in conjunction with -f, -g, or -w");
+    [("-m", Arg.Set use_map, "Use a pre-marshalled system symbol map; use this in conjunction with -f, -D, -g, or -w");
      ("-g", Arg.Set graph, "Creates a graphviz file; generates lib dependencies if -b given");
      ("-d", Arg.String (set_base_symbol_map_directories), "String of space separated directories to build symbol map from; default is /usr/lib");
      ("-r", Arg.Set recursive, "Recursively search directories for binaries");

@@ -2,9 +2,11 @@
 
 type basic_config =
   {
+    (* internal *)
+    analyze: bool;
+    silent: bool;
+    consume_bytes: bool;
     (* analysis *)
-    analyze: bool;			      (* internal *)
-    silent: bool;			      (* internal *)
     print_nlist: bool;			      (* -s *)
     verbose: bool;			      (* -v *)
     disassemble: bool;			      (* -D *)

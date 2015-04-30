@@ -57,6 +57,10 @@ let print_bytes binary =
   let () = Bytes.iter (fun b -> Printf.printf "%x" (Char.code b)) binary in
   Printf.printf "\n"
 
+let print_code binary = 
+  let () = Bytes.iter (fun b -> Printf.printf "0x%x " (Char.code b)) binary in
+  Printf.printf "\n"
+		
 (* read the byte as a signed integer into our internal representation *)
 let i8 binary offset =
   let res = Bytes.get binary offset |> Char.code in

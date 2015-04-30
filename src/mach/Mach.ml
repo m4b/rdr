@@ -118,7 +118,7 @@ let to_goblin mach =
   in
   let nimports = mach.nimports in
   let islib = mach.islib in
-  let code = Bytes.empty in
+  let code = mach.code in
   {Goblin.name; soname; islib; libs; nlibs; exports; nexports; imports; nimports; code}
 
 let analyze ?silent:(silent=false) ?print_nlist:(print_nlist=false) ?lc:(lc=false) ?verbose:(verbose=true) binary filename = 

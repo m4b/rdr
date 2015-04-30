@@ -275,8 +275,9 @@ let use_symbol_map config =
 		if (config.disassemble) then
 		  begin
 		    let lib = GoblinSymbol.find_symbol_lib data in
-		    ignore lib;
-		    ()
+		    let binary = Object.get_bytes lib |> Object.analyze {config with silent=true; filename=lib; consume_bytes=true} in
+		    Printf.printf "\t\n";
+    		    Binary.print_code binary.Goblin.code
 		  end;
 		GoblinSymbol.print_symbol_data ~with_lib:true ~like_export:true data
 	       );
