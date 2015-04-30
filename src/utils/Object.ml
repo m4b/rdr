@@ -103,7 +103,8 @@ let analyze config binary =
   (* ===================== *)
   | Elf binary ->
      (* analyze the binary and print program headers, etc. *)
-     let binary = Elf.analyze ~silent:silent ~nlist:config.print_nlist ~verbose:config.verbose ~filename:filename binary in
+     (* ~silent:silent ~nlist:config.print_nlist ~verbose:config.verbose ~filename:filename  *)
+     let binary = Elf.analyze config binary in
      if (not analyze) then
        try
          Elf.find_export_symbol config.search_term binary |> Goblin.print_export

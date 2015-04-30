@@ -110,8 +110,13 @@ let output_stats tbl =
 		output_string oc string;
 	       ) tbl;
   close_out oc
-	    
-let build_polymorphic_map ?recursive:(recursive=false) ?graph:(graph=false) ?verbose:(verbose=true) dirs =
+
+(*   ?recursive:(recursive=false) ?graph:(graph=false) ?verbose:(verbose=true) *)
+let build_polymorphic_map config =
+  let dirs = config.base_symbol_map_directories in
+  let recursive = config.recursive in
+  let graph = config.graph in
+  let verbose = config.verbose in
   let tbl = Hashtbl.create ((List.length dirs) * 100) in
   if (verbose) then Printf.printf "Building map...\n";
   let libstack = build_lib_stack recursive verbose dirs in
@@ -164,7 +169,7 @@ let build_polymorphic_map ?recursive:(recursive=false) ?graph:(graph=false) ?ver
          loop map' ((binary.Mach.name, binary.Mach.libs)::lib_deps)
       | Object.Elf binary ->
          (* hurr durr iman elf *)
-         let binary = Elf.analyze ~silent:true ~verbose:false ~filename:lib binary in
+         let binary = Elf.analyze {config with silent=true; verbose=false; filename=lib} binary in
 	 let imports = binary.Goblin.imports in
 	 Array.iter (fun import ->
 		     let symbol = import.Goblin.Import.name in
@@ -277,7 +282,8 @@ let use_symbol_map config =
 		    let lib = GoblinSymbol.find_symbol_lib data in
 		    let binary = Object.get_bytes lib |> Object.analyze {config with silent=true; filename=lib; consume_bytes=true} in
 		    Printf.printf "\t\n";
-    		    Binary.print_code binary.Goblin.code
+		    ignore binary;
+		    (*     		    Binary.print_code binary.Goblin.code *)
 		  end;
 		GoblinSymbol.print_symbol_data ~with_lib:true ~like_export:true data
 	       );
@@ -311,12 +317,7 @@ let use_symbol_map config =
 (* rdr -b *)
 let build_symbol_map config =
   Printf.printf "Building system map... This can take a while, please be patient... "; flush Pervasives.stdout;
-  let map = build_polymorphic_map 
-	      ~recursive:config.recursive 
-	      ~graph:config.graph
-	      ~verbose:config.verbose 
-	      config.base_symbol_map_directories
-  in
+  let map = build_polymorphic_map config in
   let f = Output.with_dot_directory "tol" in
   let oc = open_out_bin f in
   Marshal.to_channel oc map [];

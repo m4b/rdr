@@ -1,4 +1,5 @@
 open Binary
+open Config
 
 let debug = false
 
@@ -17,13 +18,15 @@ let create_goblin_binary filename soname libraries islib goblin_exports goblin_i
   (* empty code *)
   let code = Bytes.empty in
   {Goblin.name; soname; islib; libs; nlibs; exports; nexports; imports; nimports; code}
-	      
-let analyze ?nlist:(nlist=false) ?silent:(silent=false) ~verbose ~filename binary =
+
+(* ffs use the config file here *)
+(* let analyze ?nlist:(nlist=false) ?silent:(silent=false) ~verbose ~filename config binary = *)
+let analyze config binary =
   let header = ElfHeader.get_elf_header64 binary in
   let program_headers = ProgramHeader.get_program_headers binary header.ElfHeader.e_phoff header.ElfHeader.e_phentsize header.ElfHeader.e_phnum in
   let slide_sectors = ProgramHeader.get_slide_sectors program_headers in
   let section_headers = SectionHeader.get_section_headers binary header.ElfHeader.e_shoff header.ElfHeader.e_shentsize header.ElfHeader.e_shnum in
-  if (not silent) then
+  if (not config.silent) then
     begin
       ElfHeader.print_elf_header64 header;
       ProgramHeader.print_program_headers program_headers;
@@ -31,7 +34,7 @@ let analyze ?nlist:(nlist=false) ?silent:(silent=false) ~verbose ~filename binar
     end;
   if (not (ElfHeader.is_supported header)) then
     (* for relocs, esp /usr/lib/crti.o *)
-    create_goblin_binary filename filename [] false [] []
+    create_goblin_binary config.filename config.filename [] false [] []
   else
   (*
   let symbol_table = SymbolTable.get_symbol_table binary section_headers in
@@ -57,7 +60,7 @@ let analyze ?nlist:(nlist=false) ?silent:(silent=false) ~verbose ~filename binar
     try 
       let offset = Dynamic.get_soname_offset _DYNAMIC in
       Binary.string binary offset 
-    with Not_found -> filename
+    with Not_found -> config.filename
   in
   let goblin_symbols =
     SymbolTable.symbols_to_goblin soname dynamic_symbols
@@ -77,10 +80,10 @@ let analyze ?nlist:(nlist=false) ?silent:(silent=false) ~verbose ~filename binar
 			    | GoblinSymbol.Export -> true
 			    | _ -> false) goblin_symbols
   in
-  if (verbose && not silent) then
+  if (config.verbose && not config.silent) then
     begin
       Dynamic.print_DYNAMIC _DYNAMIC;
-      if (nlist) then List.iter (GoblinSymbol.print_symbol_data ~like_nlist:true) goblin_symbols;
+      if (config.print_nlist) then List.iter (GoblinSymbol.print_symbol_data ~like_nlist:true) goblin_symbols;
       Printf.printf "Libraries (%d)\n" (List.length libraries);
       List.iter (Printf.printf "\t%s\n") libraries;
       Printf.printf "Exports (%d)\n" (List.length goblin_exports);
@@ -92,6 +95,6 @@ let analyze ?nlist:(nlist=false) ?silent:(silent=false) ~verbose ~filename binar
   
   (* ============== *)
   (* create goblin binary *)
-  create_goblin_binary filename soname libraries (ElfHeader.is_lib header) goblin_exports goblin_imports    
+  create_goblin_binary config.filename soname libraries (ElfHeader.is_lib header) goblin_exports goblin_imports    
 
 let find_export_symbol symbol binary = Goblin.get_export symbol binary.Goblin.exports
