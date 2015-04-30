@@ -70,6 +70,15 @@ exception Unknown_instruction
 let get_opcode bytes offset legacy_prefix mandatory_prefix rex_or_vex =
   let opcode = Binary.u8 bytes offset in
   match opcode with
+  | 0x00 | 0x01
+  | 0x02 | 0x03 ->
+	    (* 	    
+            let opcode = OneByte opcode in
+	    let modRM = None in
+	    *)
+	    raise Unknown_instruction
+  | 0x04 | 0x05 ->
+	    raise Unknown_instruction
   | 0x50 | 0x51
   | 0x52 | 0x53
   | 0x54 | 0x55
@@ -79,7 +88,7 @@ let get_opcode bytes offset legacy_prefix mandatory_prefix rex_or_vex =
 	    let sib = None in
 	    let displacement = None in
 	    let immediate = None in
-      {legacy_prefix; mandatory_prefix; rex_or_vex; opcode; modRM; sib; displacement; immediate}
+	    {legacy_prefix; mandatory_prefix; rex_or_vex; opcode; modRM; sib; displacement; immediate}
   | 0x58 | 0x59
   | 0x5a | 0x5b
   | 0x5c | 0x5d
@@ -90,6 +99,9 @@ let get_opcode bytes offset legacy_prefix mandatory_prefix rex_or_vex =
 	    let displacement = None in
 	    let immediate = None in
 	    {legacy_prefix; mandatory_prefix; rex_or_vex; opcode; modRM; sib; displacement; immediate}
+  | 0x0f ->
+  (* two byte opcode *)
+     raise Unknown_instruction
   | _ -> raise Unknown_instruction
       
 let get_raw_inst bytes = raise Not_found
