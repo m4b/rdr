@@ -292,7 +292,7 @@ let use_symbol_map config =
 		    (* NOW FOR THE FUCKING HACKS *)
 		    let command = Printf.sprintf "echo \"%s\" | /usr/bin/llvm-mc --disassemble" code in
 		    ignore @@ Sys.command command;
-		    with Not_found -> Printf.eprintf "could not disassemble #thug_life\n";
+		    with _ -> Printf.eprintf "could not disassemble #thug_life\n";
 		  end
 	       );
         with Not_found ->
