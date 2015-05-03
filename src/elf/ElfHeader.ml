@@ -62,9 +62,10 @@ let print_verbose_elf_header64 header =
 	 header.e_shstrndx
 
 let print_elf_header64 header =
-  Printf.printf "ELF %s %s\n"
+  Printf.printf "ELF %s %s @ 0x%x\n"
 		(ElfConstants.machine_to_string header.e_machine)
 		(ElfConstants.etype_to_string header.e_type)
+		(header.e_entry)
 
 let is_lib header = header.e_type = 3
 let is_supported header = header.e_type = 2 || header.e_type = 3				      

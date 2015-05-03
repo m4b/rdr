@@ -1,9 +1,9 @@
 (* TODO: 
-   (5) add a symbol like --map to run `rdr -b -L /usr/lib /System /Libraries -r`
-       which would essentially build a map of the entire system
+   (0) add a symbol like --map-all to run `rdr -b -d /usr/lib /System /Libraries -r`
+       which would essentially build a map of the entire system, or something like that
 *)
 
-open Config 			(* because only has a record type *)
+open Config (* because only has a record type *)
 
 type os = Darwin | Linux | Other
 
@@ -15,10 +15,13 @@ let get_os () =
   else if (uname = "Linux") then Linux
   else Other
 	 
-(* TODO: consider moving these refs to a globals module which is get and set from there *)
 let use_map = ref false
 let graph = ref false
 let verbose = ref false
+let print_headers = ref false
+let print_libraries = ref false
+let print_exports = ref false
+let print_imports = ref false
 let use_goblin = ref false
 let recursive = ref false
 let write_symbols = ref false
@@ -32,12 +35,17 @@ let search_term_string = ref ""
 
 let get_config () =
   let analyze = not (!use_map || !marshal_symbols) in
+  let silent = not analyze && not !verbose in (* so we respect verbosity if searching*)  
   {
       Config.analyze;
-      silent = false;
+      silent;
       consume_bytes = false;
       print_nlist = !print_nlist;
       verbose = !verbose;
+      print_headers = !print_headers;      
+      print_libraries = !print_libraries;
+      print_exports = !print_exports;
+      print_imports = !print_imports;      
       disassemble = !disassemble;
       use_map = !use_map;
       recursive = !recursive;
@@ -68,7 +76,11 @@ let main =
      ("-g", Arg.Set graph, "Creates a graphviz file; generates lib dependencies if -b given");
      ("-d", Arg.String (set_base_symbol_map_directories), "String of space separated directories to build symbol map from; default is /usr/lib");
      ("-r", Arg.Set recursive, "Recursively search directories for binaries");
-     ("-v", Arg.Set verbose, "Be verbose");
+     ("-v", Arg.Set verbose, "Print all the things");
+     ("-h", Arg.Set print_headers, "Print the header"); 
+     ("-l", Arg.Set print_libraries, "Print only the dynamic libraries");     
+     ("-e", Arg.Set print_exports, "Print only the exported symbols");
+     ("-i", Arg.Set print_imports, "Print only the imported symbols");
      ("-s", Arg.Set print_nlist, "Print the symbol table, if present");
      ("-f", Arg.Set_string search_term_string, "Find symbol in binary");
      ("-b", Arg.Set marshal_symbols, "Build a symbol map and write to $(HOME)/.rdr/tol; default is /usr/lib, change with -d");
@@ -77,11 +89,8 @@ let main =
      ("--goblin", Arg.Set use_goblin, "Use the goblin binary format");
      ("-D", Arg.Set disassemble, "Disassemble all found symbols");
      ("--dis", Arg.Set disassemble, "Disassemble all found symbols");
-
-     (* ("-n", Arg.Int (set_max_files), "Sets maximum number of files to list"); *)
-     (* ("-d", Arg.String (set_directory), "Names directory to list files"); *)
     ] in
-  let usage_msg = "usage: rdr [-r] [-b] [-d] [-g] [-G --goblin] [-v] [<path_to_binary> | <symbol_name>]\noptions:" in
+  let usage_msg = "usage: rdr [-r] [-b] [-m] [-d] [-g] [-G --goblin] [-v | -l | -e | -i] [<path_to_binary> | <symbol_name>]\noptions:" in
   Arg.parse speclist set_anon_argument usage_msg;
   (* BEGIN program init *)  
   Output.create_dot_directory (); (* make our .rdr/ if we haven't already *)

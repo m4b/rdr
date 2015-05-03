@@ -138,7 +138,7 @@ let build_polymorphic_map config =
       match bytes with
       (* could do a |> Mach.to_goblin here ? --- better yet, to goblin, then map building code after to avoid DRY violations *)
       | Object.Mach binary ->
-         let binary = Mach.analyze ~silent:true binary lib in
+         let binary = Mach.analyze {config with silent=true; filename=lib} binary in
 	 let imports = binary.Mach.imports in
 	 Array.iter (fun import ->
 		     let symbol = import.MachImports.bi.MachImports.symbol_name in

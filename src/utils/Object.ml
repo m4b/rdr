@@ -67,19 +67,17 @@ let get_bytes ?verbose:(verbose=false) filename =
 so... I should do it, right?
  *)
 let analyze config binary =
-  let filename = config.filename in
-  let analyze  = config.search_term = "" in
-  let silent = not analyze && not config.verbose in (* so we respect verbosity if searching*)
   match binary with
   | Mach bytes ->
-     let binary = Mach.analyze ~silent:silent ~print_nlist:config.print_nlist ~lc:analyze ~verbose:config.verbose bytes filename in
-     if (not config.verbose && analyze) then
+     (*      let binary = Mach.analyze ~silent:silent ~print_nlist:config.print_nlist ~lc:analyze ~verbose:config.verbose bytes filename in *)
+     let binary = Mach.analyze config bytes in     
+     if (not config.verbose && config.analyze) then
        begin
          Printf.printf "Libraries (%d)\n" @@ (binary.Mach.nlibs - 1); (* because 0th element is binary itself *)
          Printf.printf "Exports (%d)\n" @@ binary.Mach.nexports;
          Printf.printf "Imports (%d)\n" @@ binary.Mach.nimports
        end;
-     if (not analyze) then
+     if (not config.analyze) then
        try
          Mach.find_export_symbol config.search_term binary |> MachExports.print_mach_export_data ~simple:true
 (* TODO: add find import symbol *)
@@ -90,27 +88,27 @@ let analyze config binary =
          if (config.use_goblin) then
            begin
              let goblin = Mach.to_goblin binary in
-             Graph.graph_goblin ~draw_imports:true ~draw_libs:true goblin @@ Filename.basename filename;
+             Graph.graph_goblin ~draw_imports:true ~draw_libs:true goblin @@ Filename.basename config.filename;
            end
          else
            Graph.graph_mach_binary 
              ~draw_imports:true 
              ~draw_libs:true 
              binary 
-             (Filename.basename filename);
+             (Filename.basename config.filename);
   (* ===================== *)
   (* ELF *)
   (* ===================== *)
   | Elf binary ->
      (* analyze the binary and print program headers, etc. *)
      let binary = Elf.analyze config binary in
-     if (not analyze) then
+     if (not config.analyze) then
        try
          Elf.find_export_symbol config.search_term binary |> Goblin.print_export
        with Not_found ->
          Printf.printf "";
      else
-       if (config.graph) then Graph.graph_goblin binary @@ Filename.basename filename;
+       if (config.graph) then Graph.graph_goblin binary @@ Filename.basename config.filename;
      
   | Unknown ->
      raise @@ Unimplemented_binary_type "Unknown binary"

@@ -7,8 +7,12 @@ type basic_config =
     silent: bool;
     consume_bytes: bool;
     (* analysis *)
-    print_nlist: bool;			      (* -s *)
     verbose: bool;			      (* -v *)
+    print_headers: bool;		      (* -h *)    
+    print_nlist: bool;			      (* -s *)
+    print_libraries: bool;		      (* -l *)            
+    print_exports: bool;		      (* -e *)
+    print_imports: bool;		      (* -i *)        
     disassemble: bool;			      (* -D *)
     (* building *)
     use_map: bool;			      (* -m *)
