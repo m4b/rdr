@@ -71,12 +71,6 @@ let analyze config binary =
   | Mach bytes ->
      (*      let binary = Mach.analyze ~silent:silent ~print_nlist:config.print_nlist ~lc:analyze ~verbose:config.verbose bytes filename in *)
      let binary = Mach.analyze config bytes in     
-     if (not config.verbose && config.analyze) then
-       begin
-         Printf.printf "Libraries (%d)\n" @@ (binary.Mach.nlibs - 1); (* because 0th element is binary itself *)
-         Printf.printf "Exports (%d)\n" @@ binary.Mach.nexports;
-         Printf.printf "Imports (%d)\n" @@ binary.Mach.nimports
-       end;
      if (not config.analyze) then
        try
          Mach.find_export_symbol config.search_term binary |> MachExports.print_mach_export_data ~simple:true

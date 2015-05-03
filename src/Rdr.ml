@@ -75,7 +75,7 @@ let main =
     [("-m", Arg.Set use_map, "Use a pre-marshalled system symbol map; use this in conjunction with -f, -D, -g, or -w");
      ("-g", Arg.Set graph, "Creates a graphviz file; generates lib dependencies if -b given");
      ("-d", Arg.String (set_base_symbol_map_directories), "String of space separated directories to build symbol map from; default is /usr/lib");
-     ("-r", Arg.Set recursive, "Recursively search directories for binaries");
+     ("-r", Arg.Set recursive, "Recursively search directories for binaries; use with -b");
      ("-v", Arg.Set verbose, "Print all the things");
      ("-h", Arg.Set print_headers, "Print the header"); 
      ("-l", Arg.Set print_libraries, "Print the dynamic libraries");     
@@ -83,7 +83,7 @@ let main =
      ("-i", Arg.Set print_imports, "Print the imported symbols");
      ("-s", Arg.Set print_nlist, "Print the symbol table, if present");
      ("-f", Arg.Set_string search_term_string, "Find symbol in binary");
-     ("-b", Arg.Set marshal_symbols, "Build a symbol map and write to $(HOME)/.rdr/tol; default is /usr/lib, change with -d");
+     ("-b", Arg.Set marshal_symbols, "Build a symbol map and write to $(HOME)/.rdr/tol; default directory is /usr/lib, change with -d");
      ("-w", Arg.Set write_symbols, "Write out a flattened system map to $(HOME)/.rdr/symbols (good for grepping)");
      ("-G", Arg.Set use_goblin, "Use the goblin binary format");
      ("--goblin", Arg.Set use_goblin, "Use the goblin binary format");

@@ -122,9 +122,12 @@ let to_goblin mach =
 
 let analyze config binary = 
   let mach_header = MachHeader.get_mach_header binary in
-  if ((config.verbose || config.print_headers) && not config.silent) then MachHeader.print_header mach_header;
   let lcs = LoadCommand.get_load_commands binary MachHeader.sizeof_mach_header mach_header.ncmds mach_header.sizeofcmds in
-  if ((config.verbose || config.print_headers) && not config.silent) then LoadCommand.print_load_commands lcs;
+  if (not config.silent) then
+    begin
+      MachHeader.print_header mach_header;     
+      if (config.verbose || config.print_headers) then LoadCommand.print_load_commands lcs
+    end;
   let soname = 
     match LoadCommand.get_lib_name lcs with
     | Some dylib ->
@@ -134,8 +137,6 @@ let analyze config binary =
   let name = Filename.basename soname in
   (* lib.(0) = soname *)
   let libraries = LoadCommand.get_libraries lcs soname in 
-  if ((config.verbose || config.print_libraries) && not config.silent) then 
-      LoadCommand.print_libraries libraries;
   (* move this inside of dyld, need the nlist info to compute locals... *)
   let islib = mach_header.filetype = kMH_DYLIB in
   let dyld_info = LoadCommand.get_dyld_info lcs in
@@ -152,11 +153,15 @@ let analyze config binary =
     let locals = Nlist.filter_by_kind GoblinSymbol.Local symbols in
     ignore locals;
     let exports = MachExports.get_exports binary dyld_info libraries in 
-    if ((config.verbose || config.print_exports) && not config.silent) then MachExports.print_exports exports;
     (* TODO: yea, need to fix imports like machExports; send in the libraries, do all that preprocessing there, and not in create binary *)
-    let imports = MachImports.get_imports binary dyld_info in 
-    if ((config.verbose || config.print_imports) && not config.silent) then MachImports.print_imports imports;
-    if (config.print_nlist && not config.silent) then Nlist.print_symbols symbols;
+    let imports = MachImports.get_imports binary dyld_info in
+    if (not config.silent) then
+      begin
+	if (config.verbose || config.print_libraries) then LoadCommand.print_libraries libraries;
+	if (config.verbose || config.print_exports) then MachExports.print_exports exports;
+	if (config.verbose || config.print_imports) then MachImports.print_imports imports;
+	if (config.print_nlist) then Nlist.print_symbols symbols;	
+      end;
     (* TODO: compute final sizes here, after imports, locals, 
        and exports are glommed into a goblin soup, using all the information available*)
     create_binary (name,soname) imports exports islib libraries
