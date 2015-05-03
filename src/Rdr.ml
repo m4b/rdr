@@ -78,9 +78,9 @@ let main =
      ("-r", Arg.Set recursive, "Recursively search directories for binaries");
      ("-v", Arg.Set verbose, "Print all the things");
      ("-h", Arg.Set print_headers, "Print the header"); 
-     ("-l", Arg.Set print_libraries, "Print only the dynamic libraries");     
-     ("-e", Arg.Set print_exports, "Print only the exported symbols");
-     ("-i", Arg.Set print_imports, "Print only the imported symbols");
+     ("-l", Arg.Set print_libraries, "Print the dynamic libraries");     
+     ("-e", Arg.Set print_exports, "Print the exported symbols");
+     ("-i", Arg.Set print_imports, "Print the imported symbols");
      ("-s", Arg.Set print_nlist, "Print the symbol table, if present");
      ("-f", Arg.Set_string search_term_string, "Find symbol in binary");
      ("-b", Arg.Set marshal_symbols, "Build a symbol map and write to $(HOME)/.rdr/tol; default is /usr/lib, change with -d");
