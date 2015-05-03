@@ -26,7 +26,7 @@ let analyze config binary =
   let section_headers = SectionHeader.get_section_headers binary header.ElfHeader.e_shoff header.ElfHeader.e_shentsize header.ElfHeader.e_shnum in
   if (not config.silent) then
     begin
-      ElfHeader.print_elf_header64 header;
+      if (not config.search) then ElfHeader.print_elf_header64 header;
       if (config.verbose || config.print_headers) then
 	begin
 	  ProgramHeader.print_program_headers program_headers;

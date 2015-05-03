@@ -251,7 +251,6 @@ let print_map map = SystemSymbolMap.iter (
 					 
 let use_symbol_map config =
   let symbol = config.search_term in
-  let searching = (symbol <> "") in
   try
     let f = Output.with_dot_directory "tol" in
     let ic = open_in_bin f in
@@ -259,7 +258,7 @@ let use_symbol_map config =
     (* =================== *)
     (* SEARCHING *)
     (* =================== *)
-    if (searching) then
+    if (config.search) then
       (* rdr -m -f <symbol_name> *)
       begin
         let recursive_message = if (config.recursive) then 

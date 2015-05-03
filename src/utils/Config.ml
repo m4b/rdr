@@ -4,6 +4,7 @@ type basic_config =
   {
     (* internal *)
     analyze: bool;
+    search: bool;    
     silent: bool;
     consume_bytes: bool;
     (* analysis *)

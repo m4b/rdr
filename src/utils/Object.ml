@@ -69,12 +69,11 @@ so... I should do it, right?
 let analyze config binary =
   match binary with
   | Mach bytes ->
-     (*      let binary = Mach.analyze ~silent:silent ~print_nlist:config.print_nlist ~lc:analyze ~verbose:config.verbose bytes filename in *)
      let binary = Mach.analyze config bytes in     
-     if (not config.analyze) then
+     if (config.search) then
        try
          Mach.find_export_symbol config.search_term binary |> MachExports.print_mach_export_data ~simple:true
-(* TODO: add find import symbol *)
+       (* TODO: add find import symbol *)
        with Not_found ->
          Printf.printf "";
      else 
@@ -96,7 +95,7 @@ let analyze config binary =
   | Elf binary ->
      (* analyze the binary and print program headers, etc. *)
      let binary = Elf.analyze config binary in
-     if (not config.analyze) then
+     if (config.search) then
        try
          Elf.find_export_symbol config.search_term binary |> Goblin.print_export
        with Not_found ->

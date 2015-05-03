@@ -125,7 +125,7 @@ let analyze config binary =
   let lcs = LoadCommand.get_load_commands binary MachHeader.sizeof_mach_header mach_header.ncmds mach_header.sizeofcmds in
   if (not config.silent) then
     begin
-      MachHeader.print_header mach_header;     
+      if (not config.search) then MachHeader.print_header mach_header;     
       if (config.verbose || config.print_headers) then LoadCommand.print_load_commands lcs
     end;
   let soname = 

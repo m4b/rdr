@@ -35,10 +35,12 @@ let search_term_string = ref ""
 
 let get_config () =
   let analyze = not (!use_map || !marshal_symbols) in
+  let search = !search_term_string <> "" in
   let silent = not analyze && not !verbose in (* so we respect verbosity if searching*)  
   {
       Config.analyze;
       silent;
+      search;
       consume_bytes = false;
       print_nlist = !print_nlist;
       verbose = !verbose;
