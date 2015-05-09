@@ -617,6 +617,12 @@ let get_dylinker binary =
   let lc_str_offset = Binary.u32 binary 0 in
   let lc_str = Binary.string binary (lc_str_offset - sizeof_load_command) in 
   {lc_str;}
+
+let get_sections64 binary o =
+  let sectname,o = Binary.stringo binary o ~maxlen:(15+o) in
+  let segname,o = Binary.stringo binary o ~maxlen:(15+o) in
+  [||]
+  
     
 let get_segment64 binary = 
   let segname = Binary.string binary 0 ~maxlen:15 in
@@ -628,7 +634,8 @@ let get_segment64 binary =
   let initprot = Binary.u32 binary 52 in
   let nsects = Binary.u32 binary 56 in
   let flags = Binary.u32 binary 60 in
-  {segname; vmaddr; vmsize; fileoff; filesize; maxprot; initprot; nsects; flags; sections=[||]}
+  let sections = get_sections64 binary 60 in
+  {segname; vmaddr; vmsize; fileoff; filesize; maxprot; initprot; nsects; flags; sections;}
     
 let rec get_load_commands_it binary offset ncmds acc = 
   if (ncmds <= 0) then

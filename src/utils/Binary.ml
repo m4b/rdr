@@ -1,3 +1,4 @@
+(* legacy, non-offset producing versions, eventually swap out when generating binary structs/records *)
 let u64 binary offset = 
   let res = ref (Char.code @@ Bytes.get binary offset) in
   for i = 1 to 7 do
@@ -19,18 +20,59 @@ let u16 binary offset =
 let u8 binary offset = 
   Char.code @@ Bytes.get binary offset
 
+(* TODO: SWAP THIS WITH ABOVE TO BREAK EVERYTHING AND FORCE OFFSET CODE MIGRATION *)
+(* offset producing version *)
+let u64o binary offset = 
+  let res = ref (Char.code @@ Bytes.get binary offset) in
+  for i = 1 to 7 do
+        res := !res lor (Char.code (Bytes.get binary (i + offset)) lsl (i * 8)); (* ugh-life *)
+  done;
+  !res,(8+offset)
+
+let u32o binary offset = 
+  let res = ref (Char.code @@ Bytes.get binary offset) in
+  for i = 1 to 3 do
+        res := !res lor (Char.code (Bytes.get binary (i + offset)) lsl (i * 8)); (* ugh-life *)
+  done;
+  !res,(offset+4)
+
+let u16o binary offset = 
+  let one = Char.code @@ Bytes.get binary offset in
+  (one lor (Char.code (Bytes.get binary (1 + offset)) lsl 8)), (offset+2)
+
+let u8o binary offset = 
+  (Char.code @@ Bytes.get binary offset),(offset+1)
+
+(* strings and printing *)
+
 let string binary ?maxlen:(maxlen=0) offset =
   let null_index = Bytes.index_from binary offset '\000' in
   let len = if (null_index > maxlen && maxlen > 0) then maxlen else null_index in
-  if (null_index = offset) then ""
+  if (len <= offset) then ""
   else Bytes.sub_string binary offset (len - offset)
 
-let stringo binary offset =
+let stringo binary ?maxlen:(maxlen=0) offset =
   let null_index = Bytes.index_from binary offset '\000' in
-  if (null_index = offset) then "",offset+1
+  let len = if (null_index > maxlen && maxlen > 0) then maxlen else null_index in
+  if (len <= offset) then "",offset+1
   else
-    (Bytes.sub_string binary offset (null_index - offset)), (null_index + 1)
+    (Bytes.sub_string binary offset (len - offset)), (len + 1)
 
+let print_bytes binary = 
+  let () = Bytes.iter (fun b -> Printf.printf "%x" (Char.code b)) binary in
+  Printf.printf "\n"
+
+let print_code binary = 
+  let () = Bytes.iter (fun b -> Printf.printf "0x%x " (Char.code b)) binary in
+  Printf.printf "\n"
+
+let to_hex_string code =
+  let buffer = Buffer.create ((String.length code) * 3) in
+  String.iter (fun b -> Printf.sprintf "0x%x " (Char.code b) |> Buffer.add_string buffer) code;
+  Buffer.contents buffer
+						       
+(* big endian *)
+						       
 let u64be binary offset = 
   let res = ref ((Char.code @@ Bytes.get binary offset) lsl 56) in
   let counter = ref 6 in (* derp whatever *)
@@ -53,19 +95,7 @@ let u16be binary offset =
   let one = Char.code @@ Bytes.get binary offset in
   (one lsl 8) lor (Char.code (Bytes.get binary (1 + offset)))
 
-let print_bytes binary = 
-  let () = Bytes.iter (fun b -> Printf.printf "%x" (Char.code b)) binary in
-  Printf.printf "\n"
-
-let print_code binary = 
-  let () = Bytes.iter (fun b -> Printf.printf "0x%x " (Char.code b)) binary in
-  Printf.printf "\n"
-
-let to_hex_string code =
-  let buffer = Buffer.create ((String.length code) * 3) in
-  String.iter (fun b -> Printf.sprintf "0x%x " (Char.code b) |> Buffer.add_string buffer) code;
-  Buffer.contents buffer
-		
+(* signed integers*)
 (* read the byte as a signed integer into our internal representation *)
 let i8 binary offset =
   let res = Bytes.get binary offset |> Char.code in
@@ -107,7 +137,8 @@ let iL binary offset size =
   !res
 
  *)
-   
+
+(* unsigned long longs, exact 64-bit *)
 let uL binary offset size = 
   let res = ref ((Bytes.get binary offset) |> Char.code |> Int64.of_int)  in
   for i = 1 to size do
