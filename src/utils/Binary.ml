@@ -21,7 +21,7 @@ let u8 binary offset =
 
 let string binary ?maxlen:(maxlen=0) offset =
   let null_index = Bytes.index_from binary offset '\000' in
-  let len = if (null_index > maxlen && maxlen <> 0) then maxlen else null_index in
+  let len = if (null_index > maxlen && maxlen > 0) then maxlen else null_index in
   if (null_index = offset) then ""
   else Bytes.sub_string binary offset (len - offset)
 
