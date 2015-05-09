@@ -218,7 +218,8 @@ let mach_export_data_to_string
      @@ mach_export_datum_to_string
 	  ~use_kind:use_kind
 	  ~use_flags:use_flags
-	  ~use_lib:use_lib elem;
+	  ~use_lib:use_lib
+	  elem;
      Buffer.add_string b " "
     ) data;
   Buffer.contents b
