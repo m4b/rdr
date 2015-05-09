@@ -132,6 +132,7 @@ let analyze config binary =
   in
   let name = Filename.basename soname in
   (* lib.(0) = soname *)
+  let segments = LoadCommand.get_segments lcs in
   let libraries = LoadCommand.get_libraries lcs soname in 
   (* move this inside of dyld, need the nlist info to compute locals... *)
   let islib = mach_header.MachHeader.filetype = MachHeader.kMH_DYLIB in

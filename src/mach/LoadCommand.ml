@@ -193,7 +193,7 @@ let lc_to_string =
 type section = {
     sectname: string;		(* 16 bytes *)
     segname: string;		(* 16 bytes *)
-        (* 4 bytes each *)
+    (* 4 bytes each *)
     addr: int;
     size: int;
     offset: int;
@@ -718,6 +718,15 @@ let rec find_load_command lc lcs =
     else
       find_load_command lc lcs
 
+let get_segments lcs =
+  let rec loop lcs acc =
+  match lcs with
+  | [] -> List.rev acc
+  | (cmd, _, (SEGMENT_64 segment))::lcs ->
+     loop lcs (segment::acc)
+  | lc::lcs -> loop lcs acc
+  in loop lcs []
+
 let rec get_dyld_info lcs =
   match lcs with
   | [] -> None
@@ -734,7 +743,7 @@ let rec get_lib_name lcs =
     Some id
   | lc::lcs -> get_lib_name lcs
 
-let find_libraries lcs =
+let get_libraries lcs =
   let rec loop lcs acc =
     match lcs with
     | [] -> 
@@ -745,9 +754,9 @@ let find_libraries lcs =
         loop lcs acc
   in loop lcs []
 
+(* wtf dis do here? *)
 exception Impossible of string
 
-(* TODO: this prints self *)
 let print_libraries libs =
   if ((Array.length libs) <> 0) then
     begin
@@ -757,7 +766,6 @@ let print_libraries libs =
 		    Printf.printf "%s\n" lib) libs
     end
 
-(* seems to be printing duplicates *)
 let get_libraries lcs self = 
   let rec loop lcs acc =
     match lcs with
