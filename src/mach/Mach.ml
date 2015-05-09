@@ -2,13 +2,10 @@
    (0) add load segment boundaries, and nlists locals as a parameters to the compute size
    (1) compute final sizes after imports, locals, 
        and exports are glommed into a goblin symbol soup, using all the information available
-   (2) determine what/how to lookup flat namespaces
-    
  *)
 
 open Printf
 
-open MachHeader
 open LoadCommand
 open Config (* only contains a record *)
 
@@ -50,7 +47,6 @@ let binary_to_string binary =
 
 let debug = false
 
-(* TODO: figure out the flat look up situation *)
 let create_binary (name,soname) (nls,las) exports islib libs =
   (*   
   Array.iter (fun e -> Printf.printf "%s\n" e) libraries;
@@ -122,7 +118,7 @@ let to_goblin mach =
 
 let analyze config binary = 
   let mach_header = MachHeader.get_mach_header binary in
-  let lcs = LoadCommand.get_load_commands binary MachHeader.sizeof_mach_header mach_header.ncmds mach_header.sizeofcmds in
+  let lcs = LoadCommand.get_load_commands binary MachHeader.sizeof_mach_header mach_header.MachHeader.ncmds mach_header.MachHeader.sizeofcmds in
   if (not config.silent) then
     begin
       if (not config.search) then MachHeader.print_header mach_header;     
@@ -138,7 +134,7 @@ let analyze config binary =
   (* lib.(0) = soname *)
   let libraries = LoadCommand.get_libraries lcs soname in 
   (* move this inside of dyld, need the nlist info to compute locals... *)
-  let islib = mach_header.filetype = kMH_DYLIB in
+  let islib = mach_header.MachHeader.filetype = MachHeader.kMH_DYLIB in
   let dyld_info = LoadCommand.get_dyld_info lcs in
   match dyld_info with
   | Some dyld_info ->
@@ -181,10 +177,3 @@ let find_export_symbol symbol binary =
 
 let find_import_symbol symbol binary =
   MachImports.find symbol binary.imports
-
-(* ******************** *)
-(*   
-  MachExports.print_exports exports;
-  MachImports.print_imports imports;
-  print_string @@ binary_to_string mach_binary;
- *)

@@ -1,6 +1,6 @@
 (* TODO:
-   (1) fix all the bindcode operations you're making up dude
-   (2) figure out what the addend field does
+   (0): add a pretty printer with optional lib lookup if tol is generated
+   (1): add section offsets to properly print addresses of imports;
  *)
 
 open Binary
@@ -211,7 +211,8 @@ let get_imports binary dyld_info =
   let lazy_imports = Array.of_list @@ List.rev @@ bind_interpreter lazy_bytes 0 lazy_bind_size true in
   non_lazy_imports,lazy_imports
 
-let print_imports (nlas, las) = 
+(* TODO: need section information to properly print addresses *)
+let print_imports ?raw:(raw=false) (nlas, las) = 
   let n1 = Array.length nlas in
   let n2 = Array.length las in
   Printf.printf "Imports (%d):\n" @@ (n1 + n2);
