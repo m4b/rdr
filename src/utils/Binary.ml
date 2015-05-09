@@ -19,7 +19,6 @@ let u16 binary offset =
 let u8 binary offset = 
   Char.code @@ Bytes.get binary offset
 
-(* TODO: don't rely on zero terminate if possible, use length as optional argument? *)
 let string binary ?maxlen:(maxlen=0) offset =
   let null_index = Bytes.index_from binary offset '\000' in
   let len = if (null_index > maxlen && maxlen <> 0) then maxlen else null_index in
