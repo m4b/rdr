@@ -94,12 +94,12 @@ let analyze config binary =
 	if (config.verbose || config.print_exports) then
 	  begin
 	    Printf.printf "Exports (%d)\n" (List.length goblin_exports);
-	    List.iter (GoblinSymbol.print_symbol_data ~like_export:true) goblin_exports
+	    List.iter (GoblinSymbol.print_symbol_data) goblin_exports
 	  end;
 	if (config.verbose || config.print_imports) then
 	  begin
 	    Printf.printf "Imports (%d)\n" (List.length goblin_imports);
-	    List.iter (GoblinSymbol.print_symbol_data ~like_export:true) goblin_imports
+	    List.iter (GoblinSymbol.print_symbol_data ~with_lib:true) goblin_imports
 	  end
       end;
     (* TODO: use the strippable symbol table data when available; for example, putwchar doesn't return, but calls _Unwind_Resume, a local symbol, at it's terminus instruction, byte 343 + 4 for instruction size = 347 (it's reported size - 1); *)

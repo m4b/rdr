@@ -1,5 +1,11 @@
 *~
 _build
+cee/*
+doc/*
+*.png
+*.gv
+*.sh
+stats/*
 bin/*
 old/*
 graph/*

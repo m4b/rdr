@@ -53,9 +53,12 @@ let create_binary (name,soname) (nls,las) exports islib libs =
   Printf.printf "nls (%d)\n" (Array.length nls);
   Printf.printf "las (%d)\n" (Array.length las);
   *)
-  let len = Array.length nls in
+
+  let imports = [||] in
+  (* TODO: comment this for now, too annoying *)
+  (*   let len = Array.length nls in *)
   (* flatten and condense import info *)
-  let imports = Array.init ((Array.length nls) + (Array.length las))
+  (* let imports = Array.init ((Array.length nls) + (Array.length las))
       (fun index ->
          if (debug) then Printf.printf "index %d\n" index;
          if (debug) then Printf.printf "len %d\n" len;
@@ -85,6 +88,7 @@ let create_binary (name,soname) (nls,las) exports islib libs =
              end
          in
          {MachImports.bi; dylib; is_lazy}) in
+   *)
   let nimports = Array.length imports in
   let exports = Array.of_list exports in
   let nexports = Array.length exports in (* careful here, due to aliasing, if order swapped, in trouble *)
@@ -152,7 +156,7 @@ let analyze config binary =
     let exports = MachExports.get_exports binary dyld_info libraries in 
     (* TODO: yea, need to fix imports like machExports; send in the libraries,
        do all that preprocessing there, and not in create binary *)
-    let imports = MachImports.get_imports binary dyld_info in
+    let imports = MachImports.get_imports binary dyld_info libraries segments in
     if (not config.silent) then
       begin
 	if (config.verbose || config.print_libraries) then LoadCommand.print_libraries libraries;

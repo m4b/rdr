@@ -132,7 +132,11 @@ let symbol_data_to_string ?basic_export:(basic_export=false) data =
 	      ) data;
     Buffer.contents b
 
-let print_symbol_data ?with_lib:(with_lib=false) ?like_export:(like_export=false) ?like_nlist:(like_nlist=false) data =
+(* default is now exportish *)
+let print_symbol_data
+      ?with_lib:(with_lib=false)
+      ?like_goblin:(like_goblin=false)
+      ?like_nlist:(like_nlist=false) data =
   let offset = try Printf.sprintf "%16x" @@ find_symbol_offset data with Not_found -> Printf.sprintf "                " in
   let size = try Printf.sprintf " (%d)" @@ find_symbol_size data with Not_found -> "" in
   let kind = try find_symbol_kind data |> symbol_kind_to_string with Not_found -> "" in
@@ -143,10 +147,10 @@ let print_symbol_data ?with_lib:(with_lib=false) ?like_export:(like_export=false
   in
   if (like_nlist) then
     Printf.printf "%s %s %s\n" offset kind name
-  else if (like_export) then
-    Printf.printf "%s %s%s%s\n" offset name size lib
+  else if (like_goblin) then
+    Printf.printf "%s%s @ %s %s\n" name size offset kind    
   else
-    Printf.printf "%s%s @ %s %s\n" name size offset kind
+    Printf.printf "%s %s%s%s\n" offset name size lib
 
 let sort_symbols_with sortf listorarray =
   (* symbol -> [[datum]] *)

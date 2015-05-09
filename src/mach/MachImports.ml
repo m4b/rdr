@@ -1,6 +1,5 @@
 (* TODO:
-   (0): add a pretty printer with optional lib lookup if tol is generated
-   (1): add section offsets to properly print addresses of imports;
+  (0): sort symbols by address, like exports
  *)
 
 open Binary
@@ -199,27 +198,51 @@ let bind_interpreter bytes pos size is_lazy =
 
 (* non-lazy: extern [const] <var_type> <var_name> or specially requested prebound symbols ? *)
 
-let get_imports binary dyld_info =
+let mach_import_to_goblin libraries segments (import:bind_information) =
+  let offset = (List.nth segments import.seg_index).fileoff + import.seg_offset in
+  [
+    `Name import.symbol_name;
+    `Offset offset;
+    `Kind GoblinSymbol.Import;
+    `Flags import.symbol_flags;
+    `Lib libraries.(import.symbol_library_ordinal);
+  ]
+
+  	  
+let get_imports binary dyld_info libs segments =
   let bind_off = dyld_info.LoadCommand.bind_off in
   let bind_size = dyld_info.LoadCommand.bind_size in
   let lazy_bind_off = dyld_info.LoadCommand.lazy_bind_off in
   let lazy_bind_size = dyld_info.LoadCommand.lazy_bind_size in
   let non_lazy_bytes = Bytes.sub binary bind_off bind_size in
   let lazy_bytes = Bytes.sub binary lazy_bind_off lazy_bind_size in
-  let non_lazy_imports = Array.of_list @@ List.rev @@ bind_interpreter non_lazy_bytes 0 bind_size false in
-  (* lazy: extern <fun_ret_type> <fun_name> *)
-  let lazy_imports = Array.of_list @@ List.rev @@ bind_interpreter lazy_bytes 0 lazy_bind_size true in
-  non_lazy_imports,lazy_imports
+  let non_lazy_imports = bind_interpreter non_lazy_bytes 0 bind_size false in
+  let lazy_imports = bind_interpreter lazy_bytes 0 lazy_bind_size true in
+  let nl = List.map (mach_import_to_goblin libs segments) non_lazy_imports in
+  let la = List.map (mach_import_to_goblin libs segments) lazy_imports in
+  nl,la
 
-(* TODO: need section information to properly print addresses *)
-let print_imports ?raw:(raw=false) (nlas, las) = 
+let print_imports (nlas,las) = 
+  let n1 = List.length nlas in
+  let n2 = List.length las in
+  Printf.printf "Imports (%d):\n" @@ (n1 + n2);
+  Printf.printf "  Non-lazy (%d):\n" n1;
+  List.iter
+    (fun data ->
+     GoblinSymbol.print_symbol_data ~with_lib:true data) nlas;
+  Printf.printf "  Lazy (%d):\n" n2;
+  List.iter
+    (fun data ->
+     GoblinSymbol.print_symbol_data ~with_lib:true data) las
+       
+let print_imports_deprecated (nlas, las) = 
   let n1 = Array.length nlas in
   let n2 = Array.length las in
   Printf.printf "Imports (%d):\n" @@ (n1 + n2);
-  Printf.printf "Non-lazy (%d) symbols:\n" n1;
+  Printf.printf "Non-lazy (%d):\n" n1;
   Array.iteri (fun i bi ->
       Printf.printf "%s\n" @@ bind_information_to_string bi) nlas;
-  Printf.printf "Lazy (%d) symbols:\n" n2;
+  Printf.printf "Lazy (%d):\n" n2;
   Array.iter (fun bi ->
       Printf.printf "%s\n" @@ bind_information_to_string bi) las
 

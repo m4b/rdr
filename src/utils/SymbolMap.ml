@@ -275,7 +275,7 @@ let use_symbol_map config =
           find_symbol symbol map
           |> List.iter 
 	       (fun data ->
-		GoblinSymbol.print_symbol_data ~with_lib:true ~like_export:true data;
+		GoblinSymbol.print_symbol_data ~with_lib:true data;
 		if (config.disassemble) then
 		  begin
 		    try
