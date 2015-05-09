@@ -150,7 +150,8 @@ let analyze config binary =
     let locals = Nlist.filter_by_kind GoblinSymbol.Local symbols in
     ignore locals;
     let exports = MachExports.get_exports binary dyld_info libraries in 
-    (* TODO: yea, need to fix imports like machExports; send in the libraries, do all that preprocessing there, and not in create binary *)
+    (* TODO: yea, need to fix imports like machExports; send in the libraries,
+       do all that preprocessing there, and not in create binary *)
     let imports = MachImports.get_imports binary dyld_info in
     if (not config.silent) then
       begin
