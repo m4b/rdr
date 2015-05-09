@@ -152,7 +152,9 @@ let print_symbol_data
   else
     Printf.printf "%s %s%s%s\n" offset name size lib
 
-let sort_symbols_with sortf listorarray =
+let sort_symbols_with sortf
+		      ?nocompare_libs:(nocompare_libs=true)
+		      listorarray =
   (* symbol -> [[datum]] *)
   sortf (fun a b ->       (* [[datum]] , [[datum]] *)
 	 (* such needs of monads right now *)
@@ -162,7 +164,7 @@ let sort_symbols_with sortf listorarray =
 	 let l2 = find_symbol_lib b in
 	 let n1 = find_symbol_name a in
 	 let n2 = find_symbol_name b in
-	 if (l1 = l2) then
+	 if (l1 = l2 || nocompare_libs) then
            try 
              let o1 = find_symbol_offset a in
              try 
@@ -179,8 +181,8 @@ let sort_symbols_with sortf listorarray =
            Pervasives.compare l1 l2
 	) listorarray
 
-let sort_symbols list =
-  sort_symbols_with List.sort list
+let sort_symbols ?nocompare_libs:(nocompare_libs=false) list =
+  sort_symbols_with List.sort ~nocompare_libs:nocompare_libs list
 
 (* TODO: needs extra data for more accurate calculation *)
 (* @invariant (sorted list) *)

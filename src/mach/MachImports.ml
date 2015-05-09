@@ -57,7 +57,6 @@ let bind_information_to_string bi =
     bi.symbol_flags
     bi.special_dylib
 
-
 let print_bind_information bis =
   List.iteri (fun i bi -> Printf.printf "%s\n" (bind_information_to_string bi)) bis
 
@@ -200,14 +199,15 @@ let bind_interpreter bytes pos size is_lazy =
 
 let mach_import_to_goblin libraries segments (import:bind_information) =
   let offset = (List.nth segments import.seg_index).fileoff + import.seg_offset in
+  let size = if (import.bind_type == BindOpcodes.kBIND_TYPE_POINTER) then 8 else 0 in
   [
     `Name import.symbol_name;
     `Offset offset;
     `Kind GoblinSymbol.Import;
+    `Size size;
     `Flags import.symbol_flags;
     `Lib libraries.(import.symbol_library_ordinal);
   ]
-
   	  
 let get_imports binary dyld_info libs segments =
   let bind_off = dyld_info.LoadCommand.bind_off in
@@ -218,8 +218,12 @@ let get_imports binary dyld_info libs segments =
   let lazy_bytes = Bytes.sub binary lazy_bind_off lazy_bind_size in
   let non_lazy_imports = bind_interpreter non_lazy_bytes 0 bind_size false in
   let lazy_imports = bind_interpreter lazy_bytes 0 lazy_bind_size true in
-  let nl = List.map (mach_import_to_goblin libs segments) non_lazy_imports in
-  let la = List.map (mach_import_to_goblin libs segments) lazy_imports in
+  let nl = List.map
+	     (mach_import_to_goblin libs segments)
+	     non_lazy_imports |> GoblinSymbol.sort_symbols ~nocompare_libs:true in
+  let la = List.map
+	     (mach_import_to_goblin libs segments)
+	     lazy_imports |> GoblinSymbol.sort_symbols ~nocompare_libs:true in
   nl,la
 
 let print_imports (nlas,las) = 
