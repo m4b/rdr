@@ -189,8 +189,43 @@ let lc_to_string =
 (* ========================== *)
 (* Specific Load Command Structures *)
 (* ========================== *)
+
+type section_64 = {
+    sectname: string;		(* 16 bytes *)
+    segname: string;		(* 16 bytes *)
+    addr: int;			(* 8 bytes *)
+    size: int;			(* 8 bytes *)
+    (* 4 bytes each *)
+    offset: int;
+    align: int;
+    reloff: int;
+    nreloc: int;
+    flags: int;
+    reserved1: int;
+    reserved2: int;
+    reserved3: int;
+  }
+
+let sizeof_section_64 = 80	(* bytes *)
+
+type section = {
+    sectname: string;		(* 16 bytes *)
+    segname: string;		(* 16 bytes *)
+        (* 4 bytes each *)
+    addr: int;
+    size: int;
+    offset: int;
+    align: int;
+    reloff: int;
+    nreloc: int;
+    flags: int;
+    reserved1: int;
+    reserved2: int;
+    reserved3: int;
+  }
+
 type segment_command = {
-  segname: bytes;
+  segname: string;
   vmaddr: int;
   vmsize: int;
   fileoff: int;
@@ -199,10 +234,11 @@ type segment_command = {
   initprot: int;
   nsects: int;
   flags: int;
+  sections: section array;
 }
 
 type segment_command_64 = {
-  segname: bytes; (* 16 bytes *)
+  segname: string; (* 16 bytes *)
   vmaddr: int; (* 8 bytes *)
   vmsize: int; (* 8 bytes *)
   fileoff: int; (* 8 bytes *)
@@ -211,6 +247,7 @@ type segment_command_64 = {
   initprot: int; (* 4 int *)
   nsects: int;   (* 4  *)
   flags: int;    (* 4 *)
+  sections: section_64 array; 	(* extra *)
 }
 
 let sizeof_segment_command_64 = 64 (* 72 - 8 *)
@@ -401,8 +438,13 @@ type load_command_header = {
 
 let sizeof_load_command = 8
 
+type dylinker = {
+    lc_str : string (* offset to zero-terminated string *);
+  }
+
 type lc_t = 
   | SEGMENT_64 of segment_command_64
+  | DYLINKER of dylinker		    
   | DYLIB of dylib_command
   | SYMTAB of symtab_command
   | DYLD_INFO of dyld_info_command
@@ -414,6 +456,12 @@ type lc_t =
 (* add printing mechanisms here *)
 let lc_t_to_string = 
   function
+  | SEGMENT_64 segment ->
+    Printf.sprintf "\n\t%s vmaddr: 0x%x vmsize: 0x%x\n\tfileoff: 0x%x filesize: 0x%x\n\tmaxprot: %d initprot: %d nsects: %d flags: 0x%x"
+		   segment.segname segment.vmaddr segment.vmsize
+		   segment.fileoff segment.filesize segment.maxprot
+		   segment.initprot segment.nsects segment.flags
+      
   | SYMTAB symtab -> 
     Printf.sprintf "\n\tsymoff: 0x%x nsyms: %u stroff: 0x%x strsize: %u"
       symtab.symoff 
@@ -454,6 +502,9 @@ let lc_t_to_string =
       dyld_info.lazy_bind_size
       dyld_info.export_off
       dyld_info.export_size
+  | DYLINKER dylinker ->
+    Printf.sprintf "\n\t%s"
+      dylinker.lc_str 
   | DYLIB load_dylib ->
     Printf.sprintf "\n\t%s"
       load_dylib.lc_str 
@@ -562,6 +613,23 @@ let get_main binary =
   let stacksize = Binary.u64 binary 8 in
   {entryoff; stacksize;}
 
+let get_dylinker binary = 
+  let lc_str_offset = Binary.u32 binary 0 in
+  let lc_str = Binary.string binary (lc_str_offset - sizeof_load_command) in 
+  {lc_str;}
+    
+let get_segment64 binary = 
+  let segname = Binary.string binary 0 ~maxlen:15 in
+  let vmaddr = Binary.u64 binary 16 in
+  let vmsize =  Binary.u64 binary 24 in
+  let fileoff = Binary.u64 binary 32 in
+  let filesize =  Binary.u64 binary 40 in
+  let maxprot = Binary.u32 binary 48 in
+  let initprot = Binary.u32 binary 52 in
+  let nsects = Binary.u32 binary 56 in
+  let flags = Binary.u32 binary 60 in
+  {segname; vmaddr; vmsize; fileoff; filesize; maxprot; initprot; nsects; flags; sections=[||]}
+    
 let rec get_load_commands_it binary offset ncmds acc = 
   if (ncmds <= 0) then
     List.rev acc
@@ -570,6 +638,10 @@ let rec get_load_commands_it binary offset ncmds acc =
     let bytes = Bytes.sub binary (offset + sizeof_load_command) (cmdsize - sizeof_load_command) in
     let lc_t = 
       match cmd with
+      | SEGMENT_64 ->
+	 SEGMENT_64 (get_segment64 bytes)
+      | LOAD_DYLINKER ->
+	 DYLINKER (get_dylinker bytes)
       | SYMTAB -> 
         SYMTAB (get_symtable bytes)
       | DYSYMTAB ->
