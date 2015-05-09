@@ -190,6 +190,23 @@ let lc_to_string =
 (* Specific Load Command Structures *)
 (* ========================== *)
 
+type section = {
+    sectname: string;		(* 16 bytes *)
+    segname: string;		(* 16 bytes *)
+        (* 4 bytes each *)
+    addr: int;
+    size: int;
+    offset: int;
+    align: int;
+    reloff: int;
+    nreloc: int;
+    flags: int;
+    reserved1: int;
+    reserved2: int;
+  }
+
+let sizeof_section = 68	(* bytes *)
+
 type section_64 = {
     sectname: string;		(* 16 bytes *)
     segname: string;		(* 16 bytes *)
@@ -208,21 +225,17 @@ type section_64 = {
 
 let sizeof_section_64 = 80	(* bytes *)
 
-type section = {
-    sectname: string;		(* 16 bytes *)
-    segname: string;		(* 16 bytes *)
-        (* 4 bytes each *)
-    addr: int;
-    size: int;
-    offset: int;
-    align: int;
-    reloff: int;
-    nreloc: int;
-    flags: int;
-    reserved1: int;
-    reserved2: int;
-    reserved3: int;
-  }
+let sections64_to_string sections =
+  let b = Buffer.create ((Array.length sections) * 32) in
+  let indent = "\t\t" in
+  Array.iteri (fun i section ->
+	      Printf.sprintf "\n%s(%2d) %s addr: 0x%x size: 0x%x\n%soffset: 0x%x align: %d reloff: 0x%x nreloc: 0x%x\n%sflags: 0x%x r1: 0x%x r2: 0x%x r3: 0x%x\n"
+			     indent i section.sectname section.addr section.size
+			     indent section.offset section.align section.reloff section.nreloc
+			     indent section.flags section.reserved1 section.reserved2 section.reserved3
+	     |> Buffer.add_string b
+	     ) sections;
+  Buffer.contents b
 
 type segment_command = {
   segname: string;
@@ -235,7 +248,9 @@ type segment_command = {
   nsects: int;
   flags: int;
   sections: section array;
-}
+  }
+
+let sizeof_segment_command_64 = 48 (* 56 - 8 *)			 
 
 type segment_command_64 = {
   segname: string; (* 16 bytes *)
@@ -457,10 +472,11 @@ type lc_t =
 let lc_t_to_string = 
   function
   | SEGMENT_64 segment ->
-    Printf.sprintf "\n\t%s vmaddr: 0x%x vmsize: 0x%x\n\tfileoff: 0x%x filesize: 0x%x\n\tmaxprot: %d initprot: %d nsects: %d flags: 0x%x"
+    Printf.sprintf "\n\t%s vmaddr: 0x%x vmsize: 0x%x\n\tfileoff: 0x%x filesize: 0x%x\n\tmaxprot: %d initprot: %d nsects: %d flags: 0x%x\n%s"
 		   segment.segname segment.vmaddr segment.vmsize
 		   segment.fileoff segment.filesize segment.maxprot
 		   segment.initprot segment.nsects segment.flags
+		   (sections64_to_string segment.sections)
       
   | SYMTAB symtab -> 
     Printf.sprintf "\n\tsymoff: 0x%x nsyms: %u stroff: 0x%x strsize: %u"
@@ -618,11 +634,32 @@ let get_dylinker binary =
   let lc_str = Binary.string binary (lc_str_offset - sizeof_load_command) in 
   {lc_str;}
 
-let get_sections64 binary o =
-  let sectname,o = Binary.stringo binary o ~maxlen:(15+o) in
-  let segname,o = Binary.stringo binary o ~maxlen:(15+o) in
-  [||]
-  
+let get_section64 binary offset =
+  (*   Printf.printf "initial o: %d\n" o; *)
+  let sectname = Binary.string binary offset ~maxlen:(15+offset) in
+  (*   Printf.printf "sectname: %s o: %d\n" sectname o; *)
+  let segname = Binary.string binary (16+offset) ~maxlen:(15+16+offset) in
+  (*   Printf.printf "segname: %s o: %d\n" segname o; *)
+  let addr,o = Binary.u64o binary (offset+32) in
+  let size,o = Binary.u64o binary o in
+  let offset,o = Binary.u32o binary o in
+  let align,o = Binary.u32o binary o in
+  let reloff,o = Binary.u32o binary o in
+  let nreloc,o = Binary.u32o binary o in
+  let flags,o = Binary.u32o binary o in
+  let reserved1,o = Binary.u32o binary o in
+  let reserved2,o = Binary.u32o binary o in
+  let reserved3,o = Binary.u32o binary o in
+  {sectname; segname; addr; size; offset; align; reloff; nreloc; flags; reserved1; reserved2; reserved3;}
+
+let get_sections64 binary nsects offset =
+  let rec loop count acc =
+    if (count >= nsects) then
+      List.rev acc |> Array.of_list
+    else
+      let section = get_section64 binary ((sizeof_section_64*count)+offset) in
+      loop (count+1) (section::acc)
+  in loop 0 []
     
 let get_segment64 binary = 
   let segname = Binary.string binary 0 ~maxlen:15 in
@@ -634,7 +671,7 @@ let get_segment64 binary =
   let initprot = Binary.u32 binary 52 in
   let nsects = Binary.u32 binary 56 in
   let flags = Binary.u32 binary 60 in
-  let sections = get_sections64 binary 60 in
+  let sections = get_sections64 binary nsects 64 in
   {segname; vmaddr; vmsize; fileoff; filesize; maxprot; initprot; nsects; flags; sections;}
     
 let rec get_load_commands_it binary offset ncmds acc = 
