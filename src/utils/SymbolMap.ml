@@ -34,8 +34,6 @@ for testing
 open Unix
 open Config
 
-module SystemSymbolMap = Map.Make(String)
-
 (* eventually put .dll in there i guess *)
 (* also implement .a i guess : fucking static libs
    --- ios will have a lot of those, burned into the binary, fun fun *)
@@ -141,72 +139,70 @@ let build_polymorphic_map config =
       | Object.Mach binary ->
          let binary = Mach.analyze {config with silent=true; filename=lib} binary in
 	 let imports = binary.Mach.imports in
-	 Array.iter (fun import ->
-		     let symbol = import.MachImports.bi.MachImports.symbol_name in
-		     if (Hashtbl.mem tbl symbol) then
-		       let count = Hashtbl.find tbl symbol in
-		       Hashtbl.replace tbl symbol (count + 1)
-		     else
-		       Hashtbl.add tbl symbol 1
-		    ) imports;
+	 Array.iter
+	   (fun import ->
+	    let symbol = import.MachImports.bi.MachImports.symbol_name in
+	    if (Hashtbl.mem tbl symbol) then
+	      let count = Hashtbl.find tbl symbol in
+	      Hashtbl.replace tbl symbol (count + 1)
+	    else
+	      Hashtbl.add tbl symbol 1
+	   ) imports;
          (* let symbols = MachExports.export_map_to_mach_export_data_list binary.Mach.exports in *)
          let symbols = binary.Mach.exports in
          (* now we fold over the export -> polymorphic variant list of [mach_export_data] mappings returned from above *)
-         let map' = Array.fold_left (fun acc data -> 
-				     (* this is bad, not checking for weird state of no export symbol name, but since i construct the data it isn't possible... right? *)
-				     let symbol = GoblinSymbol.find_symbol_name data in
-				     try 
-				       (* if the symbol has a library-data mapping, then add the new lib-export data object to the export data list *)
-				       let data' = SystemSymbolMap.find symbol acc in
-				       SystemSymbolMap.add symbol (data::data') acc
-				     with
-				     | Not_found ->
-					(* we don't have a record of this export symbol mapping; 
-                                           create a new singleton list with the data
-                                           (we already know the `Lib because MachExport's job is to add that) *)
-					SystemSymbolMap.add symbol [data] acc
-				    ) map symbols in
+         let map' =
+	   Array.fold_left
+	     (fun acc data -> 
+	      (* this is bad, not checking for weird state of no export symbol name, but since i construct the data it isn't possible... right? *)
+	      let symbol = GoblinSymbol.find_symbol_name data in
+	      try 
+		(* if the symbol has a library-data mapping, then add the new lib-export data object to the export data list *)
+		let data' = ToL.SystemSymbolMap.find symbol acc in
+		ToL.SystemSymbolMap.add symbol (data::data') acc
+	      with
+	      | Not_found ->
+		 (* we don't have a record of this export symbol mapping; create a new singleton list with the data (we already know the `Lib because MachExport's job is to add that) *)
+		 ToL.SystemSymbolMap.add symbol [data] acc
+	     ) map symbols in
          loop map' ((binary.Mach.name, binary.Mach.libs)::lib_deps)
       | Object.Elf binary ->
          (* hurr durr iman elf *)
          let binary = Elf.analyze {config with silent=true; verbose=false; filename=lib} binary in
 	 let imports = binary.Goblin.imports in
-	 Array.iter (fun import ->
-		     let symbol = import.Goblin.Import.name in
-		     if (Hashtbl.mem tbl symbol) then
-		       let count = Hashtbl.find tbl symbol in
-		       Hashtbl.replace tbl symbol (count + 1)
-		     else
-		       Hashtbl.add tbl symbol 1
-		    ) imports;
+	 Array.iter
+	   (fun import ->
+	    let symbol = import.Goblin.Import.name in
+	    if (Hashtbl.mem tbl symbol) then
+	      let count = Hashtbl.find tbl symbol in
+	      Hashtbl.replace tbl symbol (count + 1)
+	    else
+	      Hashtbl.add tbl symbol 1
+	   ) imports;
          let symbols = binary.Goblin.exports in
          (* now we fold over the export -> polymorphic variant list of [mach_export_data] mappings returned from above *)
-         let map' = Array.fold_left
-		      (fun acc data -> 
-		       let symbol = data.Goblin.Export.name in
-		       let data = GoblinSymbol.from_goblin_export data lib in (* yea, i know, whatever; 
-                                                                   it keeps the cross-platform polymorphism, aieght *)
-		       try 
-			 (* if the symbol has a library-data mapping, then add the new lib-export data object to the export data list *)
-			 let data' = SystemSymbolMap.find symbol acc in
-			 SystemSymbolMap.add symbol (data::data') acc
-		       with
-		       | Not_found ->
-			  (* we don't have a record of this export symbol mapping; 
-                 create a new singleton list with the data (we already know the `Lib because MachExport's job is to add that)
-                 except this is elf, so we also have to "promise" we did that there.  
-                 Starting to become untenable and not very maintainable code
-			   *)
-			  SystemSymbolMap.add symbol [data] acc
-		      ) map symbols in
+         let map' =
+	   Array.fold_left
+	     (fun acc data -> 
+	      let symbol = data.Goblin.Export.name in
+	      let data = GoblinSymbol.from_goblin_export data lib in (* yea, i know, whatever; it keeps the cross-platform polymorphism, aieght *)
+	      try 
+		(* if the symbol has a library-data mapping, then add the new lib-export data object to the export data list *)
+		let data' = ToL.SystemSymbolMap.find symbol acc in
+		ToL.SystemSymbolMap.add symbol (data::data') acc
+	      with
+	      | Not_found ->
+		 (* we don't have a record of this export symbol mapping; create a new singleton list with the data (we already know the `Lib because MachExport's job is to add that) except this is elf, so we also have to "promise" we did that there. Starting to become untenable and not very maintainable code *)
+		 ToL.SystemSymbolMap.add symbol [data] acc
+	     ) map symbols in
          loop map' ((binary.Goblin.name, binary.Goblin.libs)::lib_deps)
       | _ ->
          loop map lib_deps
-  in loop SystemSymbolMap.empty []
+  in loop ToL.SystemSymbolMap.empty []
 
 (* flattens symbol -> [libs] map to [mach_export_data] *)
 let flatten_polymorphic_map_to_list map =  
-  SystemSymbolMap.fold
+  ToL.SystemSymbolMap.fold
     (fun key values acc ->
      (* list.fold acc in different arg pos than map.fold arg wtf *)
      List.fold_left
@@ -225,53 +221,10 @@ let polymorphic_list_to_string list =
        loop exports
   in loop list
 
-let num_symbols = SystemSymbolMap.cardinal 
-
-(* these no longer work because of massive api changes, good job matt *)
-(* 
-let print_map map =
-  SystemSymbolMap.iter (fun symbol libs -> Printf.printf "%s -> %s\n" symbol 
-                         @@ Generics.string_tuple_list_to_string libs
-                       ) map
-
-
-
-let map_to_string map =
-  let b = Buffer.create ((num_symbols map) * 15) in
-  SystemSymbolMap.iter (fun symbol libs -> Printf.sprintf "%s -> %s\n" symbol 
-                         @@ Generics.string_tuple_list_to_string libs |> Buffer.add_string b
-                       ) map;
-  Buffer.contents b
- *)
-
-(* Map Wrapper functions *)
-
-let empty = SystemSymbolMap.empty
-
-let is_empty = SystemSymbolMap.is_empty
-
-let find_symbol key (map) = SystemSymbolMap.find key map
-
-let print_map map = SystemSymbolMap.iter (
-			fun key values ->
-			Printf.printf "%s -> %s\n" key @@ (Generics.list_with_stringer (fun export -> GoblinSymbol.find_symbol_lib export) values)) map
-
-exception No_ToL
-
-let get_tol () =
-  let f = Storage.get_path "tol" in
-  if (Sys.file_exists f) then
-    let ic = open_in_bin f in
-    let map = Marshal.from_channel ic in
-    close_in ic;
-    map
-  else
-    raise No_ToL
-
 let use_symbol_map config =
   let symbol = config.search_term in
   try
-    let map = get_tol () in
+    let map = ToL.get () in
     (* =================== *)
     (* SEARCHING *)
     (* =================== *)
@@ -289,7 +242,7 @@ let use_symbol_map config =
 		      recursive_message
 		      symbol; flush Pervasives.stdout;
         try
-          find_symbol symbol map
+          ToL.find_symbol symbol map
           |> List.iter 
 	       (fun data ->
 		GoblinSymbol.print_symbol_data ~with_lib:true data;
@@ -330,7 +283,7 @@ let use_symbol_map config =
       else
 	(* rdr -m*)
         Printf.printf "%s\n" export_list_string
-  with No_ToL ->
+  with ToL.Not_built ->
     Printf.eprintf "Searching without a marshalled system map is very slow (on older systems) and a waste of energy; run `rdr -b` first (it will build a marshalled system map, $HOME/.rdr/tol, for fast lookups), then search... Have a nice day!\n";
     flush Pervasives.stdout;
     exit 1
