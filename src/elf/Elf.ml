@@ -21,9 +21,21 @@ let create_goblin_binary filename soname libraries islib goblin_exports goblin_i
 
 let analyze config binary =
   let header = ElfHeader.get_elf_header64 binary in
-  let program_headers = ProgramHeader.get_program_headers binary header.ElfHeader.e_phoff header.ElfHeader.e_phentsize header.ElfHeader.e_phnum in
+  let program_headers =
+    ProgramHeader.get_program_headers
+      binary
+      header.ElfHeader.e_phoff
+      header.ElfHeader.e_phentsize
+      header.ElfHeader.e_phnum
+  in
   let slide_sectors = ProgramHeader.get_slide_sectors program_headers in
-  let section_headers = SectionHeader.get_section_headers binary header.ElfHeader.e_shoff header.ElfHeader.e_shentsize header.ElfHeader.e_shnum in
+  let section_headers =
+    SectionHeader.get_section_headers
+      binary
+      header.ElfHeader.e_shoff
+      header.ElfHeader.e_shentsize
+      header.ElfHeader.e_shnum
+  in
   if (not config.silent) then
     begin
       if (not config.search) then ElfHeader.print_elf_header64 header;
@@ -56,7 +68,14 @@ let analyze config binary =
     (*   Printf.printf "dynamic_strtab %d\n" @@ Bytes.length dynamic_strtab; *)
     let libraries = Dynamic.get_libraries _DYNAMIC dynamic_strtab in
     (*   Printf.printf "libraries: %d\n" @@ List.length libraries; flush stdout; *)
-    let dynamic_symbols = Dynamic.get_dynamic_symbols binary slide_sectors symtab_offset strtab_offset strtab_size in
+    let dynamic_symbols =
+      Dynamic.get_dynamic_symbols
+	binary
+	slide_sectors
+	symtab_offset
+	strtab_offset
+	strtab_size
+    in
     let soname =
       try 
 	let offset = Dynamic.get_soname_offset _DYNAMIC in
@@ -67,19 +86,21 @@ let analyze config binary =
       SymbolTable.symbols_to_goblin soname dynamic_symbols
       |> GoblinSymbol.sort_symbols_with List.sort |> List.tl (* because the head (the first entry, after sorting) is a null entry *)
     in
-    let goblin_imports = List.filter
-			 (fun symbol ->
-			  GoblinSymbol.find_symbol_kind symbol
-			  |> function
-			    | GoblinSymbol.Import -> true
-			    | _ -> false) goblin_symbols
+    let goblin_imports =
+      List.filter
+	(fun symbol ->
+	 GoblinSymbol.find_symbol_kind symbol
+	 |> function
+	   | GoblinSymbol.Import -> true
+	   | _ -> false) goblin_symbols
     in
-    let goblin_exports = List.filter
-			   (fun symbol ->
-			    GoblinSymbol.find_symbol_kind symbol
-			    |> function
-			      | GoblinSymbol.Export -> true
-			      | _ -> false) goblin_symbols
+    let goblin_exports =
+      List.filter
+	(fun symbol ->
+	 GoblinSymbol.find_symbol_kind symbol
+	 |> function
+	   | GoblinSymbol.Export -> true
+	   | _ -> false) goblin_symbols
     in
     (* print switches *)
     if (not config.silent) then

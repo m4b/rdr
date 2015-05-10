@@ -137,12 +137,20 @@ let print_symbol_data
       ?with_lib:(with_lib=false)
       ?like_goblin:(like_goblin=false)
       ?like_nlist:(like_nlist=false) data =
-  let offset = try Printf.sprintf "%16x" @@ find_symbol_offset data with Not_found -> Printf.sprintf "                " in
-  let size = try Printf.sprintf " (%d)" @@ find_symbol_size data with Not_found -> "" in
-  let kind = try find_symbol_kind data |> symbol_kind_to_string with Not_found -> "" in
+  let offset = try
+      Printf.sprintf "%16x" @@ find_symbol_offset data
+    with Not_found -> Printf.sprintf "                " in
+  let size = try
+      Printf.sprintf " (%d)" @@ find_symbol_size data
+    with Not_found -> "" in
+  let kind = try
+      find_symbol_kind data |> symbol_kind_to_string
+    with Not_found -> "" in
   let name = find_symbol_name data in
   let lib = if (with_lib) then
-	      try Printf.sprintf " -> %s" @@ find_symbol_lib data with Not_found -> ""
+	      try
+		Printf.sprintf " -> %s" @@ find_symbol_lib data
+	      with Not_found -> ""
 	    else ""
   in
   if (like_nlist) then
