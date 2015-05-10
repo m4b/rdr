@@ -103,7 +103,7 @@ let build_lib_stack recursive verbose dirs =
   in dir_loop dirs stack
 
 let output_stats tbl =
-  let oc = open_out (Output.with_dot_directory "stats") in
+  let oc = open_out (Storage.get_path "stats") in
   output_string oc "symbol,count\n";
   Hashtbl.iter (fun a b ->
 		let string = Printf.sprintf "%s,%d\n" a b in
@@ -248,13 +248,18 @@ let find_symbol key (map) = SystemSymbolMap.find key map
 let print_map map = SystemSymbolMap.iter (
 			fun key values ->
 			Printf.printf "%s -> %s\n" key @@ (Generics.list_with_stringer (fun export -> GoblinSymbol.find_symbol_lib export) values)) map
-					 
+
+let get_tol () =
+    let f = Storage.get_path "tol" in
+    let ic = open_in_bin f in
+    let map = Marshal.from_channel ic in
+    close_in ic;
+    map
+
 let use_symbol_map config =
   let symbol = config.search_term in
   try
-    let f = Output.with_dot_directory "tol" in
-    let ic = open_in_bin f in
-    let map = Marshal.from_channel ic in
+    let map = get_tol () in
     (* =================== *)
     (* SEARCHING *)
     (* =================== *)
@@ -305,7 +310,7 @@ let use_symbol_map config =
       let export_list_string = polymorphic_list_to_string export_list in
       if (config.write_symbols) then
         begin
-          let f = Output.with_dot_directory "symbols" in (* write to our .rdr *)
+          let f = Storage.get_path "symbols" in (* write to our .rdr *)
           let oc = open_out f in
           Printf.fprintf oc "%s" export_list_string;
           close_out oc;
@@ -325,7 +330,7 @@ let use_symbol_map config =
 let build_symbol_map config =
   Printf.printf "Building system map... This can take a while, please be patient... "; flush Pervasives.stdout;
   let map = build_polymorphic_map config in
-  let f = Output.with_dot_directory "tol" in
+  let f = Storage.get_path "tol" in
   let oc = open_out_bin f in
   Marshal.to_channel oc map [];
   close_out oc;

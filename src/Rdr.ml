@@ -95,7 +95,7 @@ let main =
   let usage_msg = "usage: rdr [-r] [-b] [-m] [-d] [-g] [-G --goblin] [-v | -l | -e | -i] [<path_to_binary> | <symbol_name>]\noptions:" in
   Arg.parse speclist set_anon_argument usage_msg;
   (* BEGIN program init *)  
-  Output.create_dot_directory (); (* make our .rdr/ if we haven't already *)
+  Storage.create_dot_directory (); (* make our .rdr/ if we haven't already *)
   let config = get_config () in
   if (config.analyze && config.filename = "") then
     begin
