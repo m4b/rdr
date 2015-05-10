@@ -149,7 +149,11 @@ let print_symbol_data
   let name = find_symbol_name data in
   let lib = if (with_lib) then
 	      try
-		Printf.sprintf " -> %s" @@ find_symbol_lib data
+		let lib = find_symbol_lib data in
+		if (lib = "") then
+		  ""
+		else
+		  Printf.sprintf " -> %s" lib
 	      with Not_found -> ""
 	    else ""
   in

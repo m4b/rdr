@@ -84,7 +84,9 @@ let analyze config binary =
     in
     let goblin_symbols =
       SymbolTable.symbols_to_goblin soname dynamic_symbols
-      |> GoblinSymbol.sort_symbols_with List.sort |> List.tl (* because the head (the first entry, after sorting) is a null entry *)
+      |> GoblinSymbol.sort_symbols_with List.sort |> List.tl
+      (* because the head (the first entry, after sorting)
+         is a null entry *)
     in
     let goblin_imports =
       List.filter
@@ -106,7 +108,10 @@ let analyze config binary =
     if (not config.silent) then
       begin
 	if (config.print_headers) then Dynamic.print_DYNAMIC _DYNAMIC;
-	if (config.print_nlist) then List.iter (GoblinSymbol.print_symbol_data ~like_nlist:true) goblin_symbols;
+	if (config.print_nlist) then
+	  List.iter
+	    (GoblinSymbol.print_symbol_data ~like_nlist:true)
+	    goblin_symbols;
 	if (config.verbose || config.print_libraries) then
 	  begin
 	    Printf.printf "Libraries (%d)\n" (List.length libraries);
