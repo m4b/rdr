@@ -53,10 +53,7 @@ let analyze config binary =
     (* for relocs, esp /usr/lib/crt1.o *)
     create_goblin_binary config.filename config.filename [] false [] []
   else
-    (*
     let symbol_table = SymbolTable.get_symbol_table binary section_headers in
-    ignore symbol_table;
-    *)
     let _DYNAMIC = Dynamic.get_DYNAMIC binary program_headers in
     (*   Printf.printf "_DYNAMIC %d\n" @@ List.length _DYNAMIC;
     Dynamic.print_DYNAMIC _DYNAMIC;
@@ -113,9 +110,12 @@ let analyze config binary =
       begin
 	if (config.print_headers) then Dynamic.print_DYNAMIC _DYNAMIC;
 	if (config.print_nlist) then
-	  List.iter
-	    (GoblinSymbol.print_symbol_data ~like_nlist:true)
-	    goblin_symbols;
+	  SymbolTable.symbols_to_goblin soname symbol_table
+	  |> GoblinSymbol.sort_symbols ~nocompare_libs:true
+	  |> List.iter
+	       (GoblinSymbol.print_symbol_data ~like_nlist:true);	  (*
+	  SymbolTable.print_symbol_table symbol_table;
+	   *)
 	if (config.verbose || config.print_libraries) then
 	  begin
 	    Printf.printf "Libraries (%d)\n" (List.length libraries);
