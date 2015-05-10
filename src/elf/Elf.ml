@@ -17,7 +17,9 @@ let create_goblin_binary filename soname libraries islib goblin_exports goblin_i
   let nimports = Array.length imports in
   (* empty code *)
   let code = Bytes.empty in
-  {Goblin.name; soname; islib; libs; nlibs; exports; nexports; imports; nimports; code}
+  {Goblin.name;
+   soname; islib; libs; nlibs; exports; nexports;
+   imports; nimports; code}
 
 let analyze config binary =
   let header = ElfHeader.get_elf_header64 binary in
@@ -28,7 +30,9 @@ let analyze config binary =
       header.ElfHeader.e_phentsize
       header.ElfHeader.e_phnum
   in
-  let slide_sectors = ProgramHeader.get_slide_sectors program_headers in
+  let slide_sectors =
+    ProgramHeader.get_slide_sectors program_headers
+  in
   let section_headers =
     SectionHeader.get_section_headers
       binary

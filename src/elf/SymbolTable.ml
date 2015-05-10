@@ -210,7 +210,7 @@ let get_symbol_table_adjusted binary masks offset size strtab_offset strtab_size
 (* polymorphic variants don't need to be qualified by module
  since they are open and the symbol is unique *)
 (* ?tol:(tol=SymbolMap.empty) *)
-let symbol_entry_to_goblin_symbol ?tol:(tol=ToL.empty)soname entry =
+let symbol_entry_to_goblin_symbol ~tol:tol soname entry =
   let bind = (get_bind entry.st_info |> symbol_bind_to_string) in
   let stype = (get_type entry.st_info |> symbol_type_to_string) in
   let name   = `Name entry.name in
@@ -230,7 +230,7 @@ let symbol_entry_to_goblin_symbol ?tol:(tol=ToL.empty)soname entry =
        if (ToL.is_empty tol) then
 	 `Lib "∅"
        else
-	 `Lib (ToL.find_symbol entry.name tol)
+	 `Lib (ToL.get_libraries entry.name tol)
     | _ ->
        `Lib ""
   in
@@ -239,6 +239,8 @@ let symbol_entry_to_goblin_symbol ?tol:(tol=ToL.empty)soname entry =
 			    "%s %s" bind stype) in
   [name; lib; offset; size; kind; data]
 
-let map_symbols_to_goblin map soname collection = map (symbol_entry_to_goblin_symbol soname) collection
+let map_symbols_to_goblin map soname collection =
+  let tol = try ToL.get () with ToL.Not_built -> Printf.printf "NOT FOUND\n"; ToL.empty in
+  map (symbol_entry_to_goblin_symbol ~tol:tol soname) collection
 
 let symbols_to_goblin soname list = map_symbols_to_goblin List.map soname list

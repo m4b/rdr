@@ -1,4 +1,5 @@
 (* Trie of Life is in goblin because it's cross platform *)
+(* Map from symbolname -> GoblinSymbol *)
 
 module SystemSymbolMap = Map.Make(String)
 
@@ -13,9 +14,24 @@ let is_empty = SystemSymbolMap.is_empty
 
 let find_symbol key (map) = SystemSymbolMap.find key map
 
-let print_map map = SystemSymbolMap.iter (
-			fun key values ->
-			Printf.printf "%s -> %s\n" key @@ (Generics.list_with_stringer (fun export -> GoblinSymbol.find_symbol_lib export) values)) map
+let get_libraries key (map) =
+  try
+    let symbols = SystemSymbolMap.find key map in
+    Generics.list_with_stringer ~omit_singleton_braces:true
+	    (fun symbol ->
+	     GoblinSymbol.find_symbol_lib symbol)
+	    symbols
+  with Not_found ->
+       "Unknown"
+
+let print_map map =
+  SystemSymbolMap.iter (
+      fun key values ->
+      Printf.printf "%s -> %s\n" key
+      @@ (Generics.list_with_stringer
+	    (fun export ->
+	     GoblinSymbol.find_symbol_lib export)
+	    values)) map
 
 exception Not_built
 
