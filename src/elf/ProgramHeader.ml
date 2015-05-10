@@ -2,7 +2,6 @@
 (1) Memory adjust function TOTALLY BROKEN; see this culprit for reason: /usr/lib/libqgsttools_p.so.1.0.0 *)
 
 open Printf
-open Binary
 
 (*
             typedef struct {

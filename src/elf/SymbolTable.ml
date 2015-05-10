@@ -209,7 +209,8 @@ let get_symbol_table_adjusted binary masks offset size strtab_offset strtab_size
 
 (* polymorphic variants don't need to be qualified by module
  since they are open and the symbol is unique *)
-let symbol_entry_to_goblin_symbol soname entry =
+(* ?tol:(tol=SymbolMap.empty) *)
+let symbol_entry_to_goblin_symbol ?tol:(tol=SymbolMap.empty)soname entry =
   let bind = (get_bind entry.st_info |> symbol_bind_to_string) in
   let stype = (get_type entry.st_info |> symbol_type_to_string) in
   let name   = `Name entry.name in
@@ -221,8 +222,19 @@ let symbol_entry_to_goblin_symbol soname entry =
 		 else if (bind = "LOCAL") then (* this is a little dubious, could be local section, etc. *)
 		   GoblinSymbol.Local
 		 else GoblinSymbol.Export) in
-  let lib = if (kind = `Kind GoblinSymbol.Export) then `Lib soname else `Lib "" in  
-  let data   = `PrintableData
+  let lib =
+    match kind with
+    | `Kind GoblinSymbol.Export ->
+       `Lib soname
+    | `Kind GoblinSymbol.Import ->
+       if (SymbolMap.is_empty tol) then
+	 `Lib "∅"
+       else
+	 `Lib (SymbolMap.find_symbol entry.name tol)
+    | _ ->
+       `Lib ""
+  in
+  let data = `PrintableData
 			 (Printf.sprintf
 			    "%s %s" bind stype) in
   [name; lib; offset; size; kind; data]
@@ -230,5 +242,3 @@ let symbol_entry_to_goblin_symbol soname entry =
 let map_symbols_to_goblin map soname collection = map (symbol_entry_to_goblin_symbol soname) collection
 
 let symbols_to_goblin soname list = map_symbols_to_goblin List.map soname list
-
-							   

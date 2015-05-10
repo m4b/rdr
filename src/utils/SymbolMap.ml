@@ -1,5 +1,6 @@
 (* 
   TODO: 
+(-2): Add meta data to marshalled symbolmap/tol
 (-1): /usr/lib/libmcheck.a with magic: 0x7f454c46 --- why does the .a file have an elf magic number?
 (0) : Fix the suffix problem; doesn't work very well with linux, and osx frameworks won't get recognized either...
 (1) : add this offset/polymorphic sorting, etc., to macho binary analysis to infer the size of objects per library...!
@@ -243,18 +244,29 @@ let map_to_string map =
   Buffer.contents b
  *)
 
+(* Map Wrapper functions *)
+
+let empty = SystemSymbolMap.empty
+
+let is_empty = SystemSymbolMap.is_empty
+
 let find_symbol key (map) = SystemSymbolMap.find key map
 
 let print_map map = SystemSymbolMap.iter (
 			fun key values ->
 			Printf.printf "%s -> %s\n" key @@ (Generics.list_with_stringer (fun export -> GoblinSymbol.find_symbol_lib export) values)) map
 
+exception No_ToL
+
 let get_tol () =
-    let f = Storage.get_path "tol" in
+  let f = Storage.get_path "tol" in
+  if (Sys.file_exists f) then
     let ic = open_in_bin f in
     let map = Marshal.from_channel ic in
     close_in ic;
     map
+  else
+    raise No_ToL
 
 let use_symbol_map config =
   let symbol = config.search_term in
@@ -318,7 +330,7 @@ let use_symbol_map config =
       else
 	(* rdr -m*)
         Printf.printf "%s\n" export_list_string
-  with (Sys_error _) ->
+  with No_ToL ->
     Printf.eprintf "Searching without a marshalled system map is very slow (on older systems) and a waste of energy; run `rdr -b` first (it will build a marshalled system map, $HOME/.rdr/tol, for fast lookups), then search... Have a nice day!\n";
     flush Pervasives.stdout;
     exit 1
