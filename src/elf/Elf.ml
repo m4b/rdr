@@ -113,9 +113,7 @@ let analyze config binary =
 	  SymbolTable.symbols_to_goblin soname symbol_table
 	  |> GoblinSymbol.sort_symbols ~nocompare_libs:true
 	  |> List.iter
-	       (GoblinSymbol.print_symbol_data ~like_nlist:true);	  (*
-	  SymbolTable.print_symbol_table symbol_table;
-	   *)
+	       (GoblinSymbol.print_symbol_data ~like_nlist:true);
 	if (config.verbose || config.print_libraries) then
 	  begin
 	    Printf.printf "Libraries (%d)\n" (List.length libraries);
@@ -132,8 +130,6 @@ let analyze config binary =
 	    List.iter (GoblinSymbol.print_symbol_data ~with_lib:true) goblin_imports
 	  end
       end;
-    (* TODO: use the strippable symbol table data when available; for example, putwchar doesn't return, but calls _Unwind_Resume, a local symbol, at it's terminus instruction, byte 343 + 4 for instruction size = 347 (it's reported size - 1); *)
-  
     (* ============== *)
     (* create goblin binary *)
     create_goblin_binary config.filename soname libraries (ElfHeader.is_lib header) goblin_exports goblin_imports    

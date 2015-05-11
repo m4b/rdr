@@ -3,14 +3,43 @@
 
 module SystemSymbolMap = Map.Make(String)
 
-type t = SystemSymbolMap
+type t = [ `Kind of GoblinSymbol.symbol_kind
+           | `Lib of string
+           | `Name of string
+           | `Offset of int
+	   | `PrintableData of string
+           | `Size of int
+           | `Reexport of [ `As of string * string | `From of string ]
+           | `Size of int
+           | `Stub of int * int
+	   | `Flags of int
+	 ]
+	   list list SystemSymbolMap.t
 
+(* type 'goblin t =
+  ([> `Kind of GoblinSymbol.symbol_kind
+           | `Lib of string
+           | `Name of string
+           | `Offset of int
+	   (* 	   | `PrintableData of string *)
+           | `Size of int ] as 'goblin)
+	   list list SystemSymbolMap.t
+ *)
 (* Map Wrapper functions *)
-let num_symbols = SystemSymbolMap.cardinal 
+let num_symbols (map) = SystemSymbolMap.cardinal map
 
-let empty = SystemSymbolMap.empty
+let find = SystemSymbolMap.find
+
+(* let add symbol (data:'goblin list list) (map:'goblin t)  = *)
+let add symbol (data) (map:t)  =
+  SystemSymbolMap.add symbol data map
+
+let empty:t = SystemSymbolMap.empty
 
 let is_empty = SystemSymbolMap.is_empty
+
+(* let singleton:'goblin t = ref empty *)
+let singleton: 't SystemSymbolMap.t ref = ref empty
 
 let find_symbol key (map) = SystemSymbolMap.find key map
 
@@ -38,9 +67,15 @@ exception Not_built
 let get () =
   let f = Storage.get_path "tol" in
   if (Sys.file_exists f) then
-    let ic = open_in_bin f in
-    let map = Marshal.from_channel ic in
-    close_in ic;
-    map
+    if (is_empty !singleton) then
+      begin
+	let ic = open_in_bin f in
+	let map = Marshal.from_channel ic in
+	close_in ic;
+	singleton := map;
+	map
+      end
+    else
+      !singleton
   else
     raise Not_built

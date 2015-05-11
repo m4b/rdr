@@ -158,17 +158,22 @@ let build_polymorphic_map config =
 	      let symbol = GoblinSymbol.find_symbol_name data in
 	      try 
 		(* if the symbol has a library-data mapping, then add the new lib-export data object to the export data list *)
-		let data' = ToL.SystemSymbolMap.find symbol acc in
-		ToL.SystemSymbolMap.add symbol (data::data') acc
+		let data' = ToL.find symbol acc in
+		ToL.add symbol (data::data') acc
 	      with
 	      | Not_found ->
 		 (* we don't have a record of this export symbol mapping; create a new singleton list with the data (we already know the `Lib because MachExport's job is to add that) *)
-		 ToL.SystemSymbolMap.add symbol [data] acc
-	     ) map symbols in
+		 ToL.add symbol [data] acc
+	     ) map symbols
+	 in
          loop map' ((binary.Mach.name, binary.Mach.libs)::lib_deps)
       | Object.Elf binary ->
          (* hurr durr iman elf *)
-         let binary = Elf.analyze {config with silent=true; verbose=false; filename=lib} binary in
+         let binary =
+	   Elf.analyze
+	     {config with silent=true; verbose=false; filename=lib}
+	     binary
+	 in
 	 let imports = binary.Goblin.imports in
 	 Array.iter
 	   (fun import ->
@@ -180,7 +185,6 @@ let build_polymorphic_map config =
 	      Hashtbl.add tbl symbol 1
 	   ) imports;
          let symbols = binary.Goblin.exports in
-         (* now we fold over the export -> polymorphic variant list of [mach_export_data] mappings returned from above *)
          let map' =
 	   Array.fold_left
 	     (fun acc data -> 
@@ -188,17 +192,17 @@ let build_polymorphic_map config =
 	      let data = GoblinSymbol.from_goblin_export data lib in (* yea, i know, whatever; it keeps the cross-platform polymorphism, aieght *)
 	      try 
 		(* if the symbol has a library-data mapping, then add the new lib-export data object to the export data list *)
-		let data' = ToL.SystemSymbolMap.find symbol acc in
-		ToL.SystemSymbolMap.add symbol (data::data') acc
+		let data' = ToL.find symbol acc in
+		ToL.add symbol (data::data') acc
 	      with
 	      | Not_found ->
 		 (* we don't have a record of this export symbol mapping; create a new singleton list with the data (we already know the `Lib because MachExport's job is to add that) except this is elf, so we also have to "promise" we did that there. Starting to become untenable and not very maintainable code *)
-		 ToL.SystemSymbolMap.add symbol [data] acc
+		 ToL.add symbol [data] acc
 	     ) map symbols in
          loop map' ((binary.Goblin.name, binary.Goblin.libs)::lib_deps)
       | _ ->
          loop map lib_deps
-  in loop ToL.SystemSymbolMap.empty []
+  in loop ToL.empty []
 
 (* flattens symbol -> [libs] map to [mach_export_data] *)
 let flatten_polymorphic_map_to_list map =  
