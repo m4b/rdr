@@ -189,9 +189,11 @@ let graph_mach_binary ?draw_imports:(draw_imports=true) ?draw_libs:(draw_libs=tr
 (* lib dependency graph *)
 (* [binary, [libs]] *)
 
+(* todo add solid background color here *)
 let lib_header = "digraph lib_deps {
 rankdir=BT;
 overlap=false;
+outputorder=\"edgesfirst\";
 node[shape=\"rect\"];
 "
 

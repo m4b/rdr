@@ -275,7 +275,8 @@ let use_symbol_map config =
       end
     else
       if (config.graph) then
-	graph();
+	graph()
+      else
       (* rdr -m -w *)
       let export_list = flatten_polymorphic_map_to_list map
                         |> GoblinSymbol.sort_symbols 
@@ -291,7 +292,8 @@ let use_symbol_map config =
       else
 	(* TODO: print stats here instead of dumping the whole shitshow, require verbose to do that *)
 	(* rdr -m*)
-        Printf.printf "%s\n" export_list_string
+        if (config.verbose) then
+	  Printf.printf "%s\n" export_list_string
   with ToL.Not_built ->
     Printf.eprintf "Searching without a marshalled system map is very slow (on older systems) and a waste of energy; run `rdr -b` first (it will build a marshalled system map, $HOME/.rdr/tol, for fast lookups), then search... Have a nice day!\n";
     flush Pervasives.stdout;
