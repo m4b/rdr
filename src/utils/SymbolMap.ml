@@ -52,6 +52,8 @@ let has_banned_suffix string =
   List.fold_left (fun acc suffix ->
 		  acc || (Filename.check_suffix string suffix)) false banned_suffixes
 
+let graph () =
+  Sys.command ("dot -O -n -Tpng " ^ (Storage.get_path_graph ())) |> ignore
 		 
 (* rename this to object stack, wtf *)
 let build_lib_stack recursive verbose dirs =
@@ -113,7 +115,6 @@ let output_stats tbl =
 let build_polymorphic_map config =
   let dirs = config.base_symbol_map_directories in
   let recursive = config.recursive in
-  let graph = config.graph in
   let verbose = config.verbose in
   let tbl = Hashtbl.create ((List.length dirs) * 100) in
   if (verbose) then Printf.printf "Building map...\n";
@@ -127,8 +128,9 @@ let build_polymorphic_map config =
     if (Stack.is_empty libstack) then 
       begin
 	output_stats tbl;
-        if (graph) then
-          Graph.graph_lib_dependencies lib_deps;
+        Graph.graph_lib_dependencies ~use_dot_storage:true lib_deps;
+	if (config.graph) then
+	  graph ();
         map
       end
     else
@@ -199,7 +201,7 @@ let build_polymorphic_map config =
 		 (* we don't have a record of this export symbol mapping; create a new singleton list with the data (we already know the `Lib because MachExport's job is to add that) except this is elf, so we also have to "promise" we did that there. Starting to become untenable and not very maintainable code *)
 		 ToL.add symbol [data] acc
 	     ) map symbols in
-         loop map' ((binary.Goblin.name, binary.Goblin.libs)::lib_deps)
+         loop map' ((binary.Goblin.soname, binary.Goblin.libs)::lib_deps)
       | _ ->
          loop map lib_deps
   in loop ToL.empty []
@@ -272,7 +274,9 @@ let use_symbol_map config =
 	  Printf.printf "not found\n"; ()
       end
     else
-      (* rdr -m -g *)
+      if (config.graph) then
+	graph();
+      (* rdr -m -w *)
       let export_list = flatten_polymorphic_map_to_list map
                         |> GoblinSymbol.sort_symbols 
       in
@@ -285,6 +289,7 @@ let use_symbol_map config =
           close_out oc;
         end
       else
+	(* TODO: print stats here instead of dumping the whole shitshow, require verbose to do that *)
 	(* rdr -m*)
         Printf.printf "%s\n" export_list_string
   with ToL.Not_built ->

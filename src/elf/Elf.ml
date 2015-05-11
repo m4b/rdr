@@ -57,6 +57,7 @@ let analyze config binary =
     create_goblin_binary
       config.filename config.filename [] false [] []
   else
+    let is_lib = (ElfHeader.is_lib header) in
     let symbol_table = SymbolTable.get_symbol_table binary section_headers in
     let _DYNAMIC = Dynamic.get_DYNAMIC binary program_headers in
     let symtab_offset, strtab_offset, strtab_size =
@@ -77,7 +78,7 @@ let analyze config binary =
     let soname =
       try 
 	let offset = Dynamic.get_soname_offset _DYNAMIC in
-	Binary.string binary offset 
+	Binary.string binary (strtab_offset + offset)
       with Not_found -> config.filename
     in
     let relocs =
@@ -117,6 +118,7 @@ let analyze config binary =
 	       (GoblinSymbol.print_symbol_data ~like_nlist:true);
 	if (config.verbose || config.print_libraries) then
 	  begin
+	    if (is_lib) then Printf.printf "Soname: %s\n" soname;
 	    Printf.printf "Libraries (%d)\n" (List.length libraries);
 	    List.iter (Printf.printf "\t%s\n") libraries
 	  end;
@@ -137,7 +139,7 @@ let analyze config binary =
       config.filename
       soname
       libraries
-      (ElfHeader.is_lib header)
+      is_lib
       goblin_exports
       goblin_imports    
 

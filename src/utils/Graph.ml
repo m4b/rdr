@@ -199,12 +199,17 @@ let lib_footer = "}\n"
 
 let get_lib_nodes binary_name color libs =
   let b = Buffer.create (Array.length libs * 5) in
-  Array.iteri (fun i lib ->
-	       (* stupid matt putting the binary in the libs... *)
-	       if (i <> 0) then
-		 let node = Printf.sprintf "%s -> %s[color=\"%s\"];\n" (to_dot_name binary_name) (to_dot_name lib |> Filename.basename) color in
-		 Buffer.add_string b node
-	      ) libs;
+  Array.iteri
+    (fun i lib ->
+     (* stupid matt putting the binary in the libs... *)
+     if (i <> 0) then
+       let node =
+	 Printf.sprintf
+	   "%s -> %s[color=\"%s\"];\n"
+	   (to_dot_name binary_name)
+	   (to_dot_name lib |> Filename.basename) color in
+       Buffer.add_string b node
+    ) libs;
   Buffer.contents b
 
 let lib_graph (binary_name, libs) color =
@@ -224,7 +229,7 @@ let get_color color =
 
 (* this should be binary independent *)
 (* input: (binary name, lib dependency array) list *)
-let graph_lib_dependencies lib_deps =
+let graph_lib_dependencies ?use_dot_storage:(use_dot_storage=false) lib_deps =
   let b = Buffer.create 0 in
   Buffer.add_string b lib_header;
   let color_ratio = 1. /. (float_of_int @@ List.length lib_deps) in
@@ -234,7 +239,12 @@ let graph_lib_dependencies lib_deps =
     | [] ->
       Buffer.add_string b lib_footer;
       (* Printf.printf "%s" @@ Buffer.contents b; *)
-      let oc = open_out "lib_dependency_graph.gv" in
+      let path = if (use_dot_storage) then
+	   Storage.get_path_graph ()
+	 else
+	   Storage.graph_name
+      in
+      let oc = open_out path in
       Printf.fprintf oc "%s" @@ Buffer.contents b;
       close_out oc 
     | d::deps ->
@@ -242,16 +252,6 @@ let graph_lib_dependencies lib_deps =
       incr color_counter;
       loop deps
   in loop lib_deps
-
-(* testing
-   let b1 = ("mydylib",   [ "isawesome"; "more"; "other"])
-   let b2 = ("other",     [ "more"; "isawesome"])
-   let b3 = ("more",      [ "isawsome"])
-   let b4 = ("isawesome", [])
-
-   let unit0 = [b1; b2; b3; b4]
-*)
-
 
 (* ================================ *)
 (* abstract binary (goblin) printer *)

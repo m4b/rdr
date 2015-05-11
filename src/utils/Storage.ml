@@ -9,3 +9,11 @@ let create_dot_directory () =
 
 let get_path filename =
   (get_dot_directory ()) ^ filename
+
+let graph_name = "lib_dependency_graph.gv"
+
+let get_path_graph () =
+  get_path graph_name
+
+
+
