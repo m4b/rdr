@@ -262,7 +262,10 @@ let get_DYNAMIC binary program_headers =
   match ProgramHeader.get_dynamic_program_header program_headers with
   | None -> []
   | Some section ->
-     get_dynamic binary section.ProgramHeader.p_offset section.ProgramHeader.p_filesz
+     get_dynamic
+       binary
+       section.ProgramHeader.p_offset
+       section.ProgramHeader.p_filesz
 	  
 let print_dyn64 dyn64 =
      dyn64_to_string dyn64 |> Printf.printf "%s\n"
@@ -271,19 +274,23 @@ let print_DYNAMIC dynamic =
   Printf.printf "Dynamic (%d):\n" @@ List.length dynamic;
   List.iter print_dyn64 dynamic
 
-let get_dynamic_symbol_offset_data dynamic =
+let get_dynamic_symbol_offset_data dynamic slides =
   let rec loop (x,y,z) dynamic =
   match dynamic with
   | [] -> x,y,z
   | elem::dynamic ->
-     if (elem.d_tag = SYMTAB) then
-       loop (elem.d_un, y, z) dynamic
-     else if (elem.d_tag = STRTAB) then
-       loop (x, elem.d_un, z) dynamic
-     else if (elem.d_tag = STRSZ) then
-       loop (x, y, elem.d_un) dynamic
-     else
-       loop (x,y,z) dynamic
+     match elem.d_tag with
+     | SYMTAB ->
+	let x = ProgramHeader.adjust slides elem.d_un in
+	loop (x, y, z) dynamic
+     | STRTAB ->
+	let y = ProgramHeader.adjust slides elem.d_un in
+	loop (x, y, z) dynamic
+     | STRSZ ->
+	let z = elem.d_un in
+	loop (x, y, z) dynamic
+     | _ ->
+	loop (x, y, z) dynamic
   in loop (-1,-1,-1) dynamic
 
 let rec get_soname_offset dynamic =
@@ -298,14 +305,19 @@ let rec get_soname_offset dynamic =
 let get_dynamic_strtab binary offset size =
   Bytes.sub binary offset size
 
-let get_dynamic_strtab_data dynamic =    
-      List.fold_left (fun (x,y) elem ->
-		    if (elem.d_tag = STRTAB) then
-		      elem.d_un,y
-		    else if (elem.d_tag = STRSZ) then
-		      x,elem.d_un
-		    else
-		      x,y) (-1,-1) dynamic
+let get_dynamic_strtab_data dynamic slides =
+  List.fold_left
+    (fun (x,y) elem ->
+     match elem.d_tag with
+     | STRTAB ->
+	let x = ProgramHeader.adjust slides elem.d_un in
+	x,y
+     | STRSZ ->
+	let y = ProgramHeader.adjust slides elem.d_un in
+	x,y
+     | _ ->
+	x,y
+    ) (-1,-1) dynamic
 
 let get_dynamic_symtab dynamic =
       List.fold_left (fun acc elem ->
@@ -320,13 +332,39 @@ let get_libraries dynamic strtab =
 		    (Binary.string strtab elem.d_un)::acc
 		  else
 		    acc) [] dynamic		     
-	    
+
+let get_reloc_data dynamic slides =
+  List.fold_left
+    (fun (x,y,z,w) elem ->
+     match elem.d_tag with
+     | RELASZ ->
+	let x = ProgramHeader.adjust slides elem.d_un in
+	x,y,z,w
+     | RELA ->
+	let y = ProgramHeader.adjust slides elem.d_un in
+	x,y,z,w
+     | PLTRELSZ ->
+	let z = ProgramHeader.adjust slides elem.d_un in
+	x,y,z,w
+     | JMPREL ->
+	let w = ProgramHeader.adjust slides elem.d_un in
+	x,y,z,w
+     | _ -> x,y,z,w)
+    (-1,-1,-1,-1) dynamic
+
 (* build the symbol table from the vm_adjusted and the references to strtab and symtab, NOTE: vm_adjusted will be equal to 0 if it's a dylib like libc because offset = vaddr in phdr *)
 (* TODO: also probably change this to array? *)
-let get_dynamic_symbols binary masks symtab_offset strtab_offset strtab_size =
+let get_dynamic_symbols
+      binary
+      masks
+      symtab_offset
+      strtab_offset
+      strtab_size
+  =
   let symtab_size = strtab_offset - symtab_offset in
   (*   Printf.printf "DEBUG 0x%x 0x%x 0x%x 0x%x\n" symtab_offset strtab_offset symtab_size strtab_size; *)
-  SymbolTable.get_symbol_table_adjusted binary masks symtab_offset symtab_size strtab_offset strtab_size
+  SymbolTable.get_symbol_table_adjusted
+    binary masks symtab_offset symtab_size strtab_offset strtab_size
 					    
 let kDT_NULL =  0  (* Marks end of dynamic section *)
 let kDT_NEEDED = 1  (* Name of needed library *)

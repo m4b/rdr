@@ -3,6 +3,7 @@
 <pwd.{native,byte}>: use_unix, use_str
 <src/{mach,elf,goblin,utils}> : include
 <src/old> : -traverse
+<cee> : -traverse
 <bin> : -traverse
 <graph> : -traverse
 <doc> : -traverse

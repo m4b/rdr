@@ -119,7 +119,7 @@ let program_header_to_string ph =
 		 
 let print_program_headers phs =
   Printf.printf "Program Headers (%d):\n" @@ List.length phs;
-  List.iter (fun ph -> Printf.printf "%s\n" @@ program_header_to_string ph) phs
+  List.iteri (fun i ph -> Printf.printf "%s\n" @@ program_header_to_string ph) phs
 	    
 let get_program_headers binary phoff phentsize phnum =
   let rec loop count offset acc =
@@ -143,7 +143,8 @@ let get_main_program_header phs =
   | Some phdr -> phdr
   | None ->
      begin
-       raise @@ Elf_invalid_binary (Printf.sprintf "Elf binary has no PHDR")
+       raise @@
+	 Elf_invalid_binary (Printf.sprintf "Elf binary has no PHDR")
      end
 
 (* optional return because binary can be statically linked... ewww *)
@@ -162,10 +163,15 @@ let is_in_sector offset sector =
   offset >= sector.start_sector && offset < sector.end_sector
 
 let print_slide_sector sector =
-  Printf.printf "0x%x: 0x%x - 0x%x\n" sector.slide sector.start_sector sector.end_sector
+  Printf.printf "0x%x: 0x%x - 0x%x\n"
+		sector.slide sector.start_sector sector.end_sector
 		    
 (* checks to see if the slides are equal; will this hold uniformly? *)
-module SlideSet = Set.Make(struct type t = slide_sector let compare = (fun a b -> Pervasives.compare a.slide b.slide) end)
+module SlideSet =
+  Set.Make(
+      struct type t = slide_sector
+	     let compare =
+	       (fun a b -> Pervasives.compare a.slide b.slide) end)
 
 (* finds the vaddr masks *)
 let get_slide_sectors phs =

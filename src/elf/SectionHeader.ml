@@ -138,7 +138,7 @@ let to_string sh =
 
 let print_section_headers shs =
   Printf.printf "Section Headers (%d):\n" @@ Array.length shs;
-  Array.iter (fun sh -> Printf.printf "%s\n" @@ to_string sh) shs
+  Array.iteri (fun i sh -> Printf.printf "(%2d) %s\n" i @@ to_string sh) shs
 
 let get_section_header binary offset =
   let sh_name = Binary.u32 binary offset in

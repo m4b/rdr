@@ -8,11 +8,14 @@ let create_goblin_binary filename soname libraries islib goblin_exports goblin_i
   let soname = soname in
   let libs = Array.of_list (soname::libraries) in (* to be consistent... for graphing, etc. *)
   let nlibs = Array.length libs in
-  let exports = Array.of_list @@ List.map (GoblinSymbol.to_goblin_export) goblin_exports
+  let exports =
+    Array.of_list
+    @@ List.map (GoblinSymbol.to_goblin_export) goblin_exports
   in
   let nexports = Array.length exports in
   let imports =
-    Array.of_list @@ List.map (GoblinSymbol.to_goblin_import) goblin_imports
+    Array.of_list
+    @@ List.map (GoblinSymbol.to_goblin_import) goblin_imports
   in
   let nimports = Array.length imports in
   (* empty code *)
@@ -55,20 +58,13 @@ let analyze config binary =
   else
     let symbol_table = SymbolTable.get_symbol_table binary section_headers in
     let _DYNAMIC = Dynamic.get_DYNAMIC binary program_headers in
-    (*   Printf.printf "_DYNAMIC %d\n" @@ List.length _DYNAMIC;
-    Dynamic.print_DYNAMIC _DYNAMIC;
-    *)
-    let symtab_offset, strtab_offset, strtab_size = Dynamic.get_dynamic_symbol_offset_data _DYNAMIC in
-    if (debug) then Printf.printf "0x%x 0x%x 0x%x\n" symtab_offset strtab_offset strtab_size;
-    if (debug) then List.iter (ProgramHeader.print_slide_sector) slide_sectors;
-    let symtab_offset = ProgramHeader.adjust slide_sectors symtab_offset in
-    if (debug) then Printf.printf "adjusted symtab_offset 0x%x\n" symtab_offset;
-    let strtab_offset = ProgramHeader.adjust slide_sectors strtab_offset in
-    if (debug) then Printf.printf "adjusted strtab_offset 0x%x\n" strtab_offset;
-    let dynamic_strtab = Dynamic.get_dynamic_strtab binary strtab_offset strtab_size in
-    (*   Printf.printf "dynamic_strtab %d\n" @@ Bytes.length dynamic_strtab; *)
+    let symtab_offset, strtab_offset, strtab_size =
+      Dynamic.get_dynamic_symbol_offset_data _DYNAMIC slide_sectors
+    in
+    let dynamic_strtab =
+      Dynamic.get_dynamic_strtab binary strtab_offset strtab_size
+    in
     let libraries = Dynamic.get_libraries _DYNAMIC dynamic_strtab in
-    (*   Printf.printf "libraries: %d\n" @@ List.length libraries; flush stdout; *)
     let dynamic_symbols =
       Dynamic.get_dynamic_symbols
 	binary
@@ -82,6 +78,10 @@ let analyze config binary =
 	let offset = Dynamic.get_soname_offset _DYNAMIC in
 	Binary.string binary offset 
       with Not_found -> config.filename
+    in
+    let relocs =
+      Dynamic.get_reloc_data _DYNAMIC slide_sectors
+      |> ElfReloc.get_relocs64 binary |> ElfReloc.print_relocs64 dynamic_symbols 
     in
     let goblin_symbols =
       SymbolTable.symbols_to_goblin soname dynamic_symbols
@@ -132,6 +132,12 @@ let analyze config binary =
       end;
     (* ============== *)
     (* create goblin binary *)
-    create_goblin_binary config.filename soname libraries (ElfHeader.is_lib header) goblin_exports goblin_imports    
+    create_goblin_binary
+      config.filename
+      soname
+      libraries
+      (ElfHeader.is_lib header)
+      goblin_exports
+      goblin_imports    
 
 let find_export_symbol symbol binary = Goblin.get_export symbol binary.Goblin.exports
