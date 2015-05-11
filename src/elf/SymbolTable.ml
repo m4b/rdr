@@ -228,11 +228,19 @@ let get_goblin_kind entry bind stype =
 
 (* polymorphic variants don't need to be qualified by module
  since they are open and the symbol is unique *)
-let symbol_entry_to_goblin_symbol ~tol:tol soname entry =
+let symbol_entry_to_goblin_symbol
+      ~tol:tol ~relocs:relocs soname index entry =
   let bind   = (get_bind entry.st_info |> symbol_bind_to_string) in
   let stype  = (get_type entry.st_info |> symbol_type_to_string) in
   let name   = `Name entry.name in
-  let offset = `Offset entry.st_value in
+  let offset =
+    `Offset (
+       if (entry.st_value = 0) then
+	 (* this _could_ be relatively expensive *)
+	 ElfReloc.get_size index relocs
+       else
+	 entry.st_value)
+  in
   let size   = `Size entry.st_size in
   let kind = `Kind (get_goblin_kind entry bind stype) in
   let lib =
@@ -252,13 +260,13 @@ let symbol_entry_to_goblin_symbol ~tol:tol soname entry =
 		 "%s %s" bind stype) in
   [name; lib; offset; size; kind; data]
 
-let map_symbols_to_goblin map soname collection =
+let symbols_to_goblin soname dynsyms relocs =
   let tol =
     try
       ToL.get ()
     with ToL.Not_built ->
       ToL.empty
   in
-  map (symbol_entry_to_goblin_symbol ~tol:tol soname) collection
-
-let symbols_to_goblin soname list = map_symbols_to_goblin List.map soname list
+  List.mapi
+    (symbol_entry_to_goblin_symbol
+       ~tol:tol ~relocs:relocs soname) dynsyms

@@ -54,7 +54,8 @@ let analyze config binary =
     end;
   if (not (ElfHeader.is_supported header)) then
     (* for relocs, esp /usr/lib/crt1.o *)
-    create_goblin_binary config.filename config.filename [] false [] []
+    create_goblin_binary
+      config.filename config.filename [] false [] []
   else
     let symbol_table = SymbolTable.get_symbol_table binary section_headers in
     let _DYNAMIC = Dynamic.get_DYNAMIC binary program_headers in
@@ -81,10 +82,10 @@ let analyze config binary =
     in
     let relocs =
       Dynamic.get_reloc_data _DYNAMIC slide_sectors
-      |> ElfReloc.get_relocs64 binary |> ElfReloc.print_relocs64 dynamic_symbols 
+      |> ElfReloc.get_relocs64 binary
     in
     let goblin_symbols =
-      SymbolTable.symbols_to_goblin soname dynamic_symbols
+      SymbolTable.symbols_to_goblin soname dynamic_symbols relocs
       |> GoblinSymbol.sort_symbols_with List.sort |> List.tl
       (* because the head (the first entry, after sorting)
          is a null entry *)
@@ -110,7 +111,7 @@ let analyze config binary =
       begin
 	if (config.print_headers) then Dynamic.print_DYNAMIC _DYNAMIC;
 	if (config.print_nlist) then
-	  SymbolTable.symbols_to_goblin soname symbol_table
+	  SymbolTable.symbols_to_goblin soname symbol_table relocs
 	  |> GoblinSymbol.sort_symbols ~nocompare_libs:true
 	  |> List.iter
 	       (GoblinSymbol.print_symbol_data ~like_nlist:true);
