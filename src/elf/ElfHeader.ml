@@ -2,8 +2,8 @@ open Binary
        
 type e_ident =
   {
-    ei_magic: int; (* 7fELF mother fucker *)
-    ei_class: int;
+    ei_magic: int; (* 7fELF *)
+    ei_class: int; (* 1 = 32 bit, 2 = 64 bit *)
     ei_data: int; (* 1 = little endian, 2 = big endian *)
     ei_version: int;
     ei_osabi: int; (* often set to zero for all platforms linux = 3 *)
@@ -67,6 +67,11 @@ let print_elf_header64 header =
 		(ElfConstants.etype_to_string header.e_type)
 		(header.e_entry)
 
+(* hack to check whether 64 bit without consuming stuff *)
+let check_64bit bytes =
+  let klass = Binary.u8 bytes 4 in			    (* 5 bytes in past 7fELF *)
+  klass = 2
+  
 let is_lib header = header.e_type = 3
 let is_supported header = header.e_type = 2 || header.e_type = 3				      
 	 
@@ -83,7 +88,9 @@ let get_e_ident bytes =
   let ei_abiversion = Char.code @@ Bytes.get bytes 8 in
   let ei_pad = 0x0 in
   {ei_magic; ei_class; ei_data; ei_version; ei_osabi; ei_abiversion; ei_pad;}
-    
+
+let is_64bit e_ident = e_ident.ei_class = 2
+		       
 let get_elf_header64 binary =
   let e_ident = get_e_ident binary in
   let i = sizeof_e_ident in

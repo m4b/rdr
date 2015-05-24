@@ -56,7 +56,10 @@ let get_bytes ?verbose:(verbose=false) filename =
 	let binary = Bytes.create (in_channel_length ic) in
 	really_input ic binary 0 (in_channel_length ic);
 	close_in ic;
-	Elf binary
+	if (ElfHeader.check_64bit binary) then
+	  Elf binary
+	else
+	  Unknown
       end
     else
       begin
@@ -116,4 +119,4 @@ let analyze config binary =
 	 @@ Filename.basename config.filename;
      
   | Unknown ->
-     raise @@ Unimplemented_binary_type "Unknown binary"
+     raise @@ Unimplemented_binary_type (Printf.sprintf "Unknown binary %s" config.install_name)
