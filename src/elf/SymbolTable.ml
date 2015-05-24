@@ -212,16 +212,20 @@ let get_symbol_table_adjusted binary masks offset size strtab_offset strtab_size
 (* hacky function to filter imports from exports, etc. *)
 (* todo use proper variants here ffs *)
 let get_goblin_kind entry bind stype =
-  if ((entry.st_value = 0x0
+  if (entry.st_value = 0x0
        && entry.st_shndx = 0
-       && stype = "FUNC")
+       && entry.name <> "")
+  then
+      (*        && stype = "FUNC")
       || (bind = "GLOBAL" && stype = "OBJECT")
-     ) then
+ *)
     GoblinSymbol.Import
   else if (bind = "LOCAL") then
     GoblinSymbol.Local
-  else if (bind = "GLOBAL"
-	   && stype = "FUNC"
+  else if ((bind = "GLOBAL"
+	    || (bind = "WEAK" && (stype = "FUNC"
+				  || stype = "IFUNC"
+				  || stype = "OBJECT")))
 	   && entry.st_value <> 0) then
     GoblinSymbol.Export
   else GoblinSymbol.Other

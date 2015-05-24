@@ -203,7 +203,6 @@ let get_lib_nodes binary_name color libs =
   let b = Buffer.create (Array.length libs * 5) in
   Array.iteri
     (fun i lib ->
-     (* stupid matt putting the binary in the libs... *)
      if (i <> 0) then
        let node =
 	 Printf.sprintf
@@ -229,7 +228,6 @@ let get_color color =
   let b = Printf.sprintf "%x" @@ int_of_float @@ Random.float 1.0 *. 255. in
   "#" ^ r ^ g ^ b
 
-(* this should be binary independent *)
 (* input: (binary name, lib dependency array) list *)
 let graph_lib_dependencies ?use_dot_storage:(use_dot_storage=false) lib_deps =
   let b = Buffer.create 0 in
@@ -240,7 +238,6 @@ let graph_lib_dependencies ?use_dot_storage:(use_dot_storage=false) lib_deps =
     match deps with
     | [] ->
       Buffer.add_string b lib_footer;
-      (* Printf.printf "%s" @@ Buffer.contents b; *)
       let path = if (use_dot_storage) then
 	   Storage.get_path_graph ()
 	 else
@@ -261,8 +258,10 @@ let graph_lib_dependencies ?use_dot_storage:(use_dot_storage=false) lib_deps =
 
 (* hack to print elf multi-libs better *)
 let _newline_re = Str.regexp "\n"
+let _sub = "\n<br></br>"
 let add_brs libstring =
-  Str.global_replace _newline_re "\n<br></br>" libstring
+  (* first replace hack to ignore the first newline; this whole thing is a hack ;) *)
+  Str.replace_first _newline_re "" libstring |> Str.global_replace _newline_re _sub
 
 let get_goblin_html_export_row export =
     Printf.sprintf "   <TR>
