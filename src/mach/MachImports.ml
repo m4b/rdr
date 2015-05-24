@@ -200,13 +200,14 @@ let bind_interpreter bytes pos size is_lazy =
 let mach_import_to_goblin libraries segments (import:bind_information) =
   let offset = (List.nth segments import.seg_index).fileoff + import.seg_offset in
   let size = if (import.bind_type == BindOpcodes.kBIND_TYPE_POINTER) then 8 else 0 in
+  let libname = libraries.(import.symbol_library_ordinal) in
   [
     `Name import.symbol_name;
     `Offset offset;
     `Kind GoblinSymbol.Import;
     `Size size;
     `Flags import.symbol_flags;
-    `Lib libraries.(import.symbol_library_ordinal);
+    `Lib (libname, libname);
   ]
   	  
 let get_imports binary dyld_info libs segments =

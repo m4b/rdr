@@ -196,7 +196,7 @@ let build_polymorphic_map config =
 	     (fun acc data -> 
 	      let symbol = data.Goblin.Export.name in
 	      let data = GoblinSymbol.from_goblin_export
-			   data ~libname:config.name ~libinstall_name:config.install_name
+			   data ~libname:binary.Goblin.name ~libinstall_name:binary.Goblin.install_name
 	      in (* yea, i know, whatever; it keeps the cross-platform polymorphism, aieght *)
 	      try 
 		(* if the symbol has a library-data mapping, then add the new lib-export data object to the export data list *)
@@ -264,7 +264,7 @@ let use_symbol_map config =
 		    let lib = GoblinSymbol.find_symbol_lib data in
 		    let startsym = GoblinSymbol.find_symbol_offset data in
 		    let size = GoblinSymbol.find_symbol_size data in (* yo this is so dangerous cause may not be correct size... but I need to impress david and I definitely won't show him this line of code on Saturday ;) *)
-		    let ic = open_in_bin lib in
+		    let ic = open_in_bin (snd lib) in
 		    seek_in ic startsym;
 		    let code = really_input_string ic size |> Binary.to_hex_string in
 		    close_in ic;

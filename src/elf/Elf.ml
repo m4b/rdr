@@ -86,7 +86,7 @@ let analyze config binary =
       |> ElfReloc.get_relocs64 binary
     in
     let goblin_symbols =
-      SymbolTable.symbols_to_goblin ~use_tol:config.use_tol ~libs:libraries soname dynamic_symbols relocs
+      SymbolTable.symbols_to_goblin ~use_tol:config.use_tol ~libs:libraries (soname,config.install_name) dynamic_symbols relocs
       |> GoblinSymbol.sort_symbols_with List.sort |> List.tl
       (* because the head (the first entry, after sorting)
          is a null entry *)
@@ -112,7 +112,7 @@ let analyze config binary =
       begin
 	if (config.print_headers) then Dynamic.print_DYNAMIC _DYNAMIC;
 	if (config.print_nlist) then
-	  SymbolTable.symbols_to_goblin ~libs:libraries soname symbol_table relocs
+	  SymbolTable.symbols_to_goblin ~libs:libraries (soname,config.install_name) symbol_table relocs
 	  |> GoblinSymbol.sort_symbols ~nocompare_libs:true
 	  |> List.iter
 	       (GoblinSymbol.print_symbol_data ~like_nlist:true);

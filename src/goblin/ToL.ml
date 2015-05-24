@@ -4,7 +4,7 @@
 module SystemSymbolMap = Map.Make(String)
 
 type t = [ `Kind of GoblinSymbol.symbol_kind
-           | `Lib of string
+           | `Lib of string * string
            | `Name of string
            | `Offset of int
 	   | `PrintableData of string
@@ -43,24 +43,15 @@ let singleton: 't SystemSymbolMap.t ref = ref empty
 
 let find_symbol key (map) = SystemSymbolMap.find key map
 
-(* bin libs is for elf, to basically do an intersection to reduce size *)
+(* bin_libs is for elf, to basically do an intersection to reduce size *)
 let get_libraries ?bin_libs:(bin_libs=[]) symbol map =
   try
     let symbols = SystemSymbolMap.find symbol map in
-    (*     let symbols' =
-      if (bin_libs <> []) then
-	let s = Generics.string_set_of_list symbols in
-	let l = Generics.string_set_of_list bin_libs in
-	bin_libs
-    else
-      symbols
-    in
- *)
     Generics.list_with_stringer
       ~newline:true ~omit_singleton_braces:true
       (fun symbol ->
-       let lib = GoblinSymbol.find_symbol_lib symbol in
-       lib
+       let libname,libinstall_name = GoblinSymbol.find_symbol_lib symbol in
+       libname (* TODO: check if correct *)
       )
       symbols
   with Not_found ->
@@ -72,7 +63,8 @@ let print_map map =
       Printf.printf "%s -> %s\n" key
       @@ (Generics.list_with_stringer
 	    (fun export ->
-	     GoblinSymbol.find_symbol_lib export)
+	     GoblinSymbol.find_symbol_lib export |> fst)
+	    (* TODO: check if correct *)
 	    values)) map
 
 exception Not_built

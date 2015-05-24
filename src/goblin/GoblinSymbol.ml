@@ -23,7 +23,7 @@ type symbol_datum =
   | `Name of string
   | `Offset of int 
   | `Size of int
-  | `Lib of string
+  | `Lib of string * string 	(* name, install_name *)
   | `Kind of symbol_kind
   | `PrintableData of string
   ]
@@ -55,7 +55,7 @@ let symbol_datum_to_string ?use_kind:(use_kind=false) ?use_lib:(use_lib=true) ?u
   function
   | `Name string -> string
   | `Offset o -> Printf.sprintf "0x%x" o
-  | `Lib lib -> if (use_lib) then "-> " ^ lib else ""
+  | `Lib (name, install_name) -> if (use_lib) then "-> " ^ install_name else ""
   | `Size s -> Printf.sprintf "(%d)" s
   | `PrintableData string -> if (use_printable) then string else ""
   | `Kind kind -> if (use_kind) then Printf.sprintf "%s" @@ symbol_kind_to_string kind else ""
@@ -84,8 +84,8 @@ let rec find_symbol_name =
 let rec find_symbol_lib = 
   function
   | [] -> raise Not_found
-  | `Lib string :: _ ->
-     string
+  | `Lib (name, install_name) :: _ ->
+     name,install_name
   | _::rest -> find_symbol_lib rest
 
 (* this definitely can be _not_ found, especially with mach *)
@@ -149,11 +149,11 @@ let print_symbol_data
   let name = find_symbol_name data in
   let lib = if (with_lib) then
 	      try
-		let lib = find_symbol_lib data in
-		if (lib = "") then
+		let name,install_name = find_symbol_lib data in
+		if (name = "") then
 		  ""
 		else
-		  Printf.sprintf " -> %s" lib
+		  Printf.sprintf " -> %s" install_name
 	      with Not_found -> ""
 	    else ""
   in
@@ -231,16 +231,16 @@ let from_goblin_export symbol ~libname:libname ~libinstall_name:libinstall_name 
   let name = `Name symbol.Goblin.Export.name in
   let offset = `Offset symbol.Goblin.Export.offset in
   let size = `Size symbol.Goblin.Export.size in
-  let lib = `Lib libname in
+  let lib = `Lib (libname,libinstall_name) in
   let kind = `Kind Export in
   [name; offset; size; lib; kind]
     
 (* TODO: holy shit this is half-implemented *)
 let to_goblin_import symbol =
   let name = find_symbol_name symbol in
-  let lib = try find_symbol_lib symbol with Not_found -> "" in
+  let libname,libinstall_name = try find_symbol_lib symbol with Not_found -> "","" in
   let is_lazy = true in
   let idx = 0x0 in
   let size = find_symbol_size symbol in
   let offset = try find_symbol_offset symbol with Not_found -> 0 in
-  {Goblin.Import.name; lib; is_lazy; idx; offset; size}
+  {Goblin.Import.name; lib=libinstall_name; is_lazy; idx; offset; size}

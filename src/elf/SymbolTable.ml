@@ -229,7 +229,7 @@ let get_goblin_kind entry bind stype =
 (* polymorphic variants don't need to be qualified by module
  since they are open and the symbol is unique *)
 let symbol_entry_to_goblin_symbol
-      ~tol:tol ~libs:libs ~relocs:relocs soname index entry =
+      ~tol:tol ~libs:libs ~relocs:relocs (soname,install_name) index entry =
   let bind   = (get_bind entry.st_info |> symbol_bind_to_string) in
   let stype  = (get_type entry.st_info |> symbol_type_to_string) in
   let name   = `Name entry.name in
@@ -241,19 +241,21 @@ let symbol_entry_to_goblin_symbol
        else
 	 entry.st_value)
   in
-  let size   = `Size entry.st_size in
+  let size = `Size entry.st_size in
   let kind = `Kind (get_goblin_kind entry bind stype) in
   let lib =
+    (* TODO: this is a complete disaster; *)
     match kind with
     | `Kind GoblinSymbol.Export ->
-       `Lib soname
+       `Lib (soname,install_name)
     | `Kind GoblinSymbol.Import ->
        if (ToL.is_empty tol) then
-	 `Lib "∅"
+	 `Lib ("∅","∅")
        else
-	 `Lib (ToL.get_libraries ~bin_libs:libs entry.name tol)
+	 let l = (ToL.get_libraries ~bin_libs:libs entry.name tol) in
+	 `Lib (l,l)
     | _ ->
-       `Lib ""
+       `Lib ("","")
   in
   let data = `PrintableData
 	      (Printf.sprintf

@@ -91,7 +91,7 @@ let export_info_to_mach_export_data name soname =
       `Offset symbol.address;
       `Kind GoblinSymbol.Export;
       `Flags symbol.flags;
-      `Lib soname;
+      `Lib (name, soname);
     ]
   | Reexport symbol -> 
     begin
@@ -103,7 +103,7 @@ let export_info_to_mach_export_data name soname =
           `PrintableData (Printf.sprintf "REEX as %s from %s" name' symbol.lib);
           `Kind GoblinSymbol.Export;
           `Flags symbol.flags;
-          `Lib soname;
+          `Lib (name, soname);
         ]
       | None ->
         [
@@ -112,7 +112,7 @@ let export_info_to_mach_export_data name soname =
           `PrintableData (Printf.sprintf "REEX from %s" symbol.lib);
           `Kind GoblinSymbol.Export;
           `Flags symbol.flags;
-          `Lib soname;
+          `Lib (name, soname);
         ]
     end
   | Stub symbol ->
@@ -122,7 +122,7 @@ let export_info_to_mach_export_data name soname =
       `PrintableData (Printf.sprintf "STUB 0x%x 0x%x" symbol.stub_offset symbol.resolver_offset);
       `Kind GoblinSymbol.Export;
       `Flags symbol.flags;
-      `Lib soname;
+      `Lib (name, soname);
     ]
 
 let rec find_reexport =
