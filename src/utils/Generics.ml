@@ -19,24 +19,25 @@ let list_to_string ?omit_singleton_braces:(osb=false) list =
         loop ss
     in loop list
 
-let list_with_stringer ?omit_singleton_braces:(osb=false) stringer list =
+(* TODO: this name is really not helpful; change *)
+let list_with_stringer ?newline:(newline=false) ?omit_singleton_braces:(osb=false) stringer list =
   let len = List.length list in
   if (len = 0) then "[]"
   else if (len = 1 && osb) then List.hd list |> stringer
   else
     let b = Buffer.create ((List.hd list |> stringer |> String.length) * len) in
-    Buffer.add_string b "[";
+    if (not newline) then Buffer.add_string b "[";
     let rec loop ss = 
       match ss with
       | [] ->
         Buffer.contents b
       | s::[] ->
         Buffer.add_string b (stringer s);
-        Buffer.add_string b "]";
+        if (not newline) then Buffer.add_string b "]";
         Buffer.contents b
       | s::ss ->
         Buffer.add_string b (stringer s);
-        Buffer.add_string b ", ";
+        if (newline) then Buffer.add_string b "\n" else Buffer.add_string b ", ";
         loop ss
     in loop list
 
@@ -80,3 +81,9 @@ let find pred arr =
   in loop 0
       
   
+module StringSet = Set.Make (struct
+                             type t = string
+                             let compare = Pervasives.compare
+                           end);;
+
+let string_set_of_list = List.fold_left (fun acc x -> StringSet.add x acc) StringSet.empty;;

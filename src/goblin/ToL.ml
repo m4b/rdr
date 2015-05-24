@@ -43,13 +43,27 @@ let singleton: 't SystemSymbolMap.t ref = ref empty
 
 let find_symbol key (map) = SystemSymbolMap.find key map
 
-let get_libraries ?bin_libs:(bin_libs=[]) key map =
+(* bin libs is for elf, to basically do an intersection to reduce size *)
+let get_libraries ?bin_libs:(bin_libs=[]) symbol map =
   try
-    let symbols = SystemSymbolMap.find key map in
-    Generics.list_with_stringer ~omit_singleton_braces:true
-	    (fun symbol ->
-	     GoblinSymbol.find_symbol_lib symbol)
-	    symbols
+    let symbols = SystemSymbolMap.find symbol map in
+    (*     let symbols' =
+      if (bin_libs <> []) then
+	let s = Generics.string_set_of_list symbols in
+	let l = Generics.string_set_of_list bin_libs in
+	bin_libs
+    else
+      symbols
+    in
+ *)
+    Generics.list_with_stringer
+      ~newline:true ~omit_singleton_braces:true
+      (fun symbol ->
+       let lib = GoblinSymbol.find_symbol_lib symbol in
+       if (bin_libs <> [] && List.mem lib bin_libs) then lib
+       else ""
+      )
+      symbols
   with Not_found ->
        "Unknown"
 
