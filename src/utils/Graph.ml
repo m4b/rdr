@@ -259,6 +259,11 @@ let graph_lib_dependencies ?use_dot_storage:(use_dot_storage=false) lib_deps =
 (* abstract binary (goblin) printer *)
 (* ================================ *)
 
+(* hack to print elf multi-libs better *)
+let _newline_re = Str.regexp "\n"
+let add_brs libstring =
+  Str.global_replace _newline_re "\n<br></br>" libstring
+
 let get_goblin_html_export_row export =
     Printf.sprintf "   <TR>
     <TD PORT=\"%s\">%s</TD><TD>%d</TD><TD>0x%x</TD>
@@ -270,7 +275,7 @@ let get_goblin_html_import_row import =
   Printf.sprintf "   <TR>
     <TD BGCOLOR=\"%s\" PORT=\"%s\">%s</TD><TD BGCOLOR=\"%s\">%s</TD>
    </TR>
-" color import.Goblin.Import.name import.Goblin.Import.name color import.Goblin.Import.lib
+" color import.Goblin.Import.name import.Goblin.Import.name color (add_brs import.Goblin.Import.lib)
 
 let goblin_to_html_dot (binary:Goblin.t) draw_imports draw_libs = 
   let b = Buffer.create @@ binary.Goblin.nexports * 16 in

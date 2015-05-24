@@ -48,8 +48,8 @@ module StringMap = Map.Make(String)
 
 type t =
     {
-      name: string;                  (* name of this binary *)
-      soname: string;                (* fully qualified pathname ID_DYLIB/SONAME or pwd if an executable *)
+      name: string;                  (* name of this binary used in linking and imports, ID_DYLIB/SONAME, or basename if executable *)
+      install_name: string;          (* fully qualified pathname to the binary/dylib NOTE: OSX ID_DYLIB = PWD of dylib *)
       islib: bool;                   (* are we a library? *)
       libs: string array;            (* lib string array *)
       nlibs: int;                    (* number of libs *)
@@ -104,7 +104,7 @@ let print_export ?like_goblin:(like_goblin=true) export =
     Printf.printf "%s (%d) -> 0x%x\n" export.Export.name export.Export.size export.Export.offset
 
 let to_string goblin = Printf.sprintf "%s (%s):\nLibs (%d):\n%s\nExports (%d):\n%s\nImports (%d):\n%s"
-    goblin.name goblin.soname
+    goblin.name goblin.install_name
     goblin.nlibs
     (libs_to_string goblin.libs)
     goblin.nimports

@@ -206,7 +206,7 @@ let build_polymorphic_map config =
 		 (* we don't have a record of this export symbol mapping; create a new singleton list with the data (we already know the `Lib because MachExport's job is to add that) except this is elf, so we also have to "promise" we did that there. Starting to become untenable and not very maintainable code *)
 		 ToL.add symbol [data] acc
 	     ) map symbols in
-         loop map' ((binary.Goblin.soname, binary.Goblin.libs)::lib_deps)
+         loop map' ((binary.Goblin.name, binary.Goblin.libs)::lib_deps)
       | _ ->
          loop map lib_deps
   in loop ToL.empty []

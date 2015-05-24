@@ -26,19 +26,19 @@ let list_with_stringer ?newline:(newline=false) ?omit_singleton_braces:(osb=fals
   else if (len = 1 && osb) then List.hd list |> stringer
   else
     let b = Buffer.create ((List.hd list |> stringer |> String.length) * len) in
-    if (not newline) then Buffer.add_string b "[";
+    (if (newline) then "\n\t\t" else "[") |> Buffer.add_string b;
     let rec loop ss = 
       match ss with
       | [] ->
-        Buffer.contents b
+         Buffer.contents b
       | s::[] ->
-        Buffer.add_string b (stringer s);
-        if (not newline) then Buffer.add_string b "]";
-        Buffer.contents b
+         Buffer.add_string b (stringer s);
+	 (if (newline) then "" else "]") |> Buffer.add_string b;	 
+         Buffer.contents b
       | s::ss ->
-        Buffer.add_string b (stringer s);
-        if (newline) then Buffer.add_string b "\n" else Buffer.add_string b ", ";
-        loop ss
+         Buffer.add_string b (stringer s);
+         (if (newline) then "\n\t\t" else ", ") |> Buffer.add_string b;
+         loop ss
     in loop list
 
 let string_tuple_list_to_string list =

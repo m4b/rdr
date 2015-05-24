@@ -60,8 +60,7 @@ let get_libraries ?bin_libs:(bin_libs=[]) symbol map =
       ~newline:true ~omit_singleton_braces:true
       (fun symbol ->
        let lib = GoblinSymbol.find_symbol_lib symbol in
-       if (bin_libs <> [] && List.mem lib bin_libs) then lib
-       else ""
+       lib
       )
       symbols
   with Not_found ->

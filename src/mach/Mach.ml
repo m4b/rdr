@@ -11,7 +11,7 @@ open Config (* only contains a record *)
 
 type mach_binary = {
   name: string;
-  soname: string;
+  install_name: string;
   imports: MachImports.import array;
   nimports: int;
   exports: MachExports.mach_export_data array;
@@ -47,7 +47,7 @@ let binary_to_string binary =
 
 let debug = false
 
-let create_binary (name,soname) (nls,las) exports islib libs =
+let create_binary (name,install_name) (nls,las) exports islib libs =
   (*   
   Array.iter (fun e -> Printf.printf "%s\n" e) libraries;
   Printf.printf "nls (%d)\n" (Array.length nls);
@@ -94,11 +94,11 @@ let create_binary (name,soname) (nls,las) exports islib libs =
   let nexports = Array.length exports in (* careful here, due to aliasing, if order swapped, in trouble *)
   let nlibs = Array.length libs in
   let code = Bytes.empty in
-  {name; soname; imports; nimports; exports; nexports; islib; libs; nlibs; code}
+  {name; install_name; imports; nimports; exports; nexports; islib; libs; nlibs; code}
 
 let to_goblin mach =
   let name = mach.name in
-  let soname = mach.soname in
+  let install_name = mach.install_name in
   let libs = mach.libs in
   let nlibs = mach.nlibs in
   let exports =
@@ -118,7 +118,7 @@ let to_goblin mach =
   let nimports = mach.nimports in
   let islib = mach.islib in
   let code = mach.code in
-  {Goblin.name; soname; islib; libs; nlibs; exports; nexports; imports; nimports; code}
+  {Goblin.name; install_name; islib; libs; nlibs; exports; nexports; imports; nimports; code}
 
 let analyze config binary = 
   let mach_header = MachHeader.get_mach_header binary in
@@ -128,16 +128,16 @@ let analyze config binary =
       if (not config.search) then MachHeader.print_header mach_header;     
       if (config.verbose || config.print_headers) then LoadCommand.print_load_commands lcs
     end;
-  let soname = 
+  let name = 
     match LoadCommand.get_lib_name lcs with
     | Some dylib ->
       dylib.lc_str
-    | _ -> Filename.basename config.filename
+    | _ -> config.name (* we're not a dylib *)
   in
-  let name = Filename.basename soname in
-  (* lib.(0) = soname *)
+  let install_name = config.install_name in
+  (* lib.(0) = install_name *)
   let segments = LoadCommand.get_segments lcs in
-  let libraries = LoadCommand.get_libraries lcs soname in 
+  let libraries = LoadCommand.get_libraries lcs install_name in 
   (* move this inside of dyld, need the nlist info to compute locals... *)
   let islib = mach_header.MachHeader.filetype = MachHeader.kMH_DYLIB in
   let dyld_info = LoadCommand.get_dyld_info lcs in
@@ -166,10 +166,10 @@ let analyze config binary =
       end;
     (* TODO: compute final sizes here, after imports, locals, 
        and exports are glommed into a goblin soup, using all the information available*)
-    create_binary (name,soname) imports exports islib libraries
+    create_binary (name,install_name) imports exports islib libraries
   | None ->
     if (config.verbose && not config.silent) then Printf.printf "No dyld_info_only\n";
-    create_binary (name,soname) MachImports.empty MachExports.empty islib libraries
+    create_binary (name,install_name) MachImports.empty MachExports.empty islib libraries
 
 let find_export_symbol symbol binary =
   let len = binary.nexports in

@@ -3,9 +3,9 @@ open Config
 
 let debug = false
 
-let create_goblin_binary filename soname libraries islib goblin_exports goblin_imports =
-  let name = filename in
-  let soname = soname in
+let create_goblin_binary soname install_name libraries islib goblin_exports goblin_imports =
+  let name = soname in
+  let install_name = install_name in
   let libs = Array.of_list (soname::libraries) in (* to be consistent... for graphing, etc. *)
   let nlibs = Array.length libs in
   let exports =
@@ -21,7 +21,7 @@ let create_goblin_binary filename soname libraries islib goblin_exports goblin_i
   (* empty code *)
   let code = Bytes.empty in
   {Goblin.name;
-   soname; islib; libs; nlibs; exports; nexports;
+   install_name; islib; libs; nlibs; exports; nexports;
    imports; nimports; code}
 
 let analyze config binary =
@@ -79,7 +79,7 @@ let analyze config binary =
       try 
 	let offset = Dynamic.get_soname_offset _DYNAMIC in
 	Binary.string binary (strtab_offset + offset)
-      with Not_found -> config.filename
+      with Not_found -> config.name (* we're not a dylib *)
     in
     let relocs =
       Dynamic.get_reloc_data _DYNAMIC slide_sectors
@@ -136,8 +136,8 @@ let analyze config binary =
     (* ============== *)
     (* create goblin binary *)
     create_goblin_binary
-      config.filename
-      soname
+      soname      
+      config.install_name
       libraries
       is_lib
       goblin_exports

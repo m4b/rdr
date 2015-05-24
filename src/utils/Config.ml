@@ -8,6 +8,8 @@ type basic_config =
     silent: bool;
     consume_bytes: bool;
     use_tol: bool;
+    name: string;
+    install_name: string;
     (* analysis *)
     verbose: bool;			      (* -v *)
     print_headers: bool;		      (* -h *)    

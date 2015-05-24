@@ -38,28 +38,37 @@ let get_config () =
   let search = !search_term_string <> "" in
   let silent = not analyze && not !verbose in (* so we respect verbosity if searching*)
   let use_tol = !print_imports || !verbose || (!graph && analyze) in
+  let install_name =
+    if (Filename.is_relative !anonarg) then
+      (Sys.getcwd()) ^ Filename.dir_sep ^ !anonarg
+    else
+      !anonarg
+  in
+  let name = Filename.basename install_name in
   {
-      Config.analyze;
-      silent;
-      search;
-      use_tol;
-      consume_bytes = false;
-      print_nlist = !print_nlist;
-      verbose = !verbose;
-      print_headers = !print_headers;      
-      print_libraries = !print_libraries;
-      print_exports = !print_exports;
-      print_imports = !print_imports;      
-      disassemble = !disassemble;
-      use_map = !use_map;
-      recursive = !recursive;
-      write_symbols = !write_symbols;
-      marshal_symbols = !marshal_symbols;
-      base_symbol_map_directories = !base_symbol_map_directories;
-      graph = !graph;
-      filename = !anonarg;
-      search_term = !search_term_string;
-      use_goblin = !use_goblin;
+    Config.analyze;
+    name;
+    install_name;
+    silent;
+    search;
+    use_tol;
+    consume_bytes = false;
+    print_nlist = !print_nlist;
+    verbose = !verbose;
+    print_headers = !print_headers;      
+    print_libraries = !print_libraries;
+    print_exports = !print_exports;
+    print_imports = !print_imports;      
+    disassemble = !disassemble;
+    use_map = !use_map;
+    recursive = !recursive;
+    write_symbols = !write_symbols;
+    marshal_symbols = !marshal_symbols;
+    base_symbol_map_directories = !base_symbol_map_directories;
+    graph = !graph;
+    filename = !anonarg; 	(* TODO: this should be Filname.basename, but unchanged for now *)
+    search_term = !search_term_string;
+    use_goblin = !use_goblin;
   } 
 		      
 let set_base_symbol_map_directories dir_string = 
