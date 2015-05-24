@@ -63,7 +63,10 @@ let build_lib_stack recursive verbose dirs =
     | [] -> stack
     | dir::dirs ->
        (* add the / if missing, as a convenience to the user *)
-       let dir = if (Filename.check_suffix dir Filename.dir_sep) then dir else dir ^ Filename.dir_sep in
+       let dir = if (Filename.check_suffix dir Filename.dir_sep)
+		 then dir
+		 else dir ^ Filename.dir_sep
+       in
        dir_loop dirs (read_dir dir stack)
   and read_dir dir stack =
     let dir_fd = Unix.opendir dir in
@@ -164,7 +167,9 @@ let build_polymorphic_map config =
 		ToL.add symbol (data::data') acc
 	      with
 	      | Not_found ->
-		 (* we don't have a record of this export symbol mapping; create a new singleton list with the data (we already know the `Lib because MachExport's job is to add that) *)
+		 (* we don't have a record of this export symbol mapping;
+                    create a new singleton list with the data
+                    (we already know the `Lib because MachExport's job is to add that) *)
 		 ToL.add symbol [data] acc
 	     ) map symbols
 	 in
@@ -295,7 +300,7 @@ let use_symbol_map config =
         if (config.verbose) then
 	  Printf.printf "%s\n" export_list_string
   with ToL.Not_built ->
-    Printf.eprintf "Searching without a marshalled system map is very slow (on older systems) and a waste of energy; run `rdr -b` first (it will build a marshalled system map, $HOME/.rdr/tol, for fast lookups), then search... Have a nice day!\n";
+    Printf.eprintf "Searching without a marshalled system map is very slow (on older systems) and a waste of energy; run `rdr -b` first (it will build a marshalled system map, $HOME/.rdr/tol, for fast lookups), then search with `rdr -m -f <symbol_name>`... Have a nice day!\n";
     flush Pervasives.stdout;
     exit 1
 

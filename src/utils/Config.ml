@@ -7,6 +7,7 @@ type basic_config =
     search: bool;    
     silent: bool;
     consume_bytes: bool;
+    use_tol: bool;
     (* analysis *)
     verbose: bool;			      (* -v *)
     print_headers: bool;		      (* -h *)    

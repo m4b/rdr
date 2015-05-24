@@ -229,7 +229,7 @@ let get_goblin_kind entry bind stype =
 (* polymorphic variants don't need to be qualified by module
  since they are open and the symbol is unique *)
 let symbol_entry_to_goblin_symbol
-      ~tol:tol ~relocs:relocs soname index entry =
+      ~tol:tol ~libs:libs ~relocs:relocs soname index entry =
   let bind   = (get_bind entry.st_info |> symbol_bind_to_string) in
   let stype  = (get_type entry.st_info |> symbol_type_to_string) in
   let name   = `Name entry.name in
@@ -251,7 +251,7 @@ let symbol_entry_to_goblin_symbol
        if (ToL.is_empty tol) then
 	 `Lib "∅"
        else
-	 `Lib (ToL.get_libraries entry.name tol)
+	 `Lib (ToL.get_libraries ~bin_libs:libs entry.name tol)
     | _ ->
        `Lib ""
   in
@@ -260,13 +260,13 @@ let symbol_entry_to_goblin_symbol
 		 "%s %s" bind stype) in
   [name; lib; offset; size; kind; data]
 
-let symbols_to_goblin soname dynsyms relocs =
+let symbols_to_goblin ?use_tol:(use_tol=true) ~libs:libs soname dynsyms relocs =
   let tol =
     try
-      ToL.get ()
+      if (use_tol) then ToL.get () else ToL.empty
     with ToL.Not_built ->
       ToL.empty
   in
   List.mapi
     (symbol_entry_to_goblin_symbol
-       ~tol:tol ~relocs:relocs soname) dynsyms
+       ~tol:tol ~libs:libs ~relocs:relocs soname) dynsyms

@@ -320,18 +320,20 @@ let get_dynamic_strtab_data dynamic slides =
     ) (-1,-1) dynamic
 
 let get_dynamic_symtab dynamic =
-      List.fold_left (fun acc elem ->
-		    if (elem.d_tag = SYMTAB) then
-		      Some elem
-		    else
-		      acc) None dynamic
+  List.fold_left
+    (fun acc elem ->
+     if (elem.d_tag = SYMTAB) then
+       Some elem
+     else
+       acc) None dynamic
 
 let get_libraries dynamic strtab =
-  List.fold_left (fun acc elem ->
-		  if (elem.d_tag = NEEDED) then
-		    (Binary.string strtab elem.d_un)::acc
-		  else
-		    acc) [] dynamic		     
+  List.fold_left
+    (fun acc elem ->
+     if (elem.d_tag = NEEDED) then
+       (Binary.string strtab elem.d_un)::acc
+     else
+       acc) [] dynamic		     
 
 let get_reloc_data dynamic slides =
   List.fold_left

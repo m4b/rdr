@@ -43,7 +43,7 @@ let singleton: 't SystemSymbolMap.t ref = ref empty
 
 let find_symbol key (map) = SystemSymbolMap.find key map
 
-let get_libraries key (map) =
+let get_libraries ?bin_libs:(bin_libs=[]) key map =
   try
     let symbols = SystemSymbolMap.find key map in
     Generics.list_with_stringer ~omit_singleton_braces:true
