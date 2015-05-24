@@ -69,8 +69,8 @@ let print_elf_header64 header =
 
 (* hack to check whether 64 bit without consuming stuff *)
 let check_64bit bytes =
-  let klass = Binary.u8 bytes 4 in			    (* 5 bytes in past 7fELF *)
-  klass = 2
+  let ei_class = Binary.u8 bytes 4 in			    (* 4 bytes in past 7fELF *)
+  ei_class = 2
   
 let is_lib header = header.e_type = 3
 let is_supported header = header.e_type = 2 || header.e_type = 3				      
