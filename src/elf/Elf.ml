@@ -55,7 +55,7 @@ let analyze config binary =
   if (not (ElfHeader.is_supported header)) then
     (* for relocs, esp /usr/lib/crt1.o *)
     create_goblin_binary
-      config.filename config.filename [] false [] []
+      config.name config.install_name [] false [] []
   else
     let is_lib = (ElfHeader.is_lib header) in
     let symbol_table = SymbolTable.get_symbol_table binary section_headers in

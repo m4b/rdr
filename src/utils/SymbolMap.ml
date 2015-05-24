@@ -139,10 +139,13 @@ let build_polymorphic_map config =
     else
       let lib = Stack.pop libstack in
       let bytes = Object.get_bytes ~verbose:verbose lib in
+      let name = Filename.basename lib in
+      let install_name = lib in
+      let config = {config with silent=true; verbose=false; name; install_name; filename=lib} in
       match bytes with
       (* could do a |> Mach.to_goblin here ? --- better yet, to goblin, then map building code after to avoid DRY violations *)
       | Object.Mach binary ->
-         let binary = Mach.analyze {config with silent=true; filename=lib} binary in
+         let binary = Mach.analyze config binary in
 	 let imports = binary.Mach.imports in
 	 Array.iter
 	   (fun import ->
@@ -176,11 +179,7 @@ let build_polymorphic_map config =
          loop map' ((binary.Mach.name, binary.Mach.libs)::lib_deps)
       | Object.Elf binary ->
          (* hurr durr iman elf *)
-         let binary =
-	   Elf.analyze
-	     {config with silent=true; verbose=false; filename=lib}
-	     binary
-	 in
+         let binary = Elf.analyze config binary in
 	 let imports = binary.Goblin.imports in
 	 Array.iter
 	   (fun import ->
@@ -196,7 +195,9 @@ let build_polymorphic_map config =
 	   Array.fold_left
 	     (fun acc data -> 
 	      let symbol = data.Goblin.Export.name in
-	      let data = GoblinSymbol.from_goblin_export data lib in (* yea, i know, whatever; it keeps the cross-platform polymorphism, aieght *)
+	      let data = GoblinSymbol.from_goblin_export
+			   data ~libname:config.name ~libinstall_name:config.install_name
+	      in (* yea, i know, whatever; it keeps the cross-platform polymorphism, aieght *)
 	      try 
 		(* if the symbol has a library-data mapping, then add the new lib-export data object to the export data list *)
 		let data' = ToL.find symbol acc in

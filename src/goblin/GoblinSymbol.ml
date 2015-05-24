@@ -227,11 +227,11 @@ let to_goblin_export symbol =
   let size = try find_symbol_size symbol with Not_found -> 0x0 in
   {Goblin.Export.name; offset; size}
 
-let from_goblin_export symbol lib =
+let from_goblin_export symbol ~libname:libname ~libinstall_name:libinstall_name =
   let name = `Name symbol.Goblin.Export.name in
   let offset = `Offset symbol.Goblin.Export.offset in
   let size = `Size symbol.Goblin.Export.size in
-  let lib = `Lib lib in
+  let lib = `Lib libname in
   let kind = `Kind Export in
   [name; offset; size; lib; kind]
     
