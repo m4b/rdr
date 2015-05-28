@@ -51,33 +51,6 @@ let has_libraryish_suffix string =
 let has_banned_suffix string =
   List.fold_left (fun acc suffix ->
 		  acc || (Filename.check_suffix string suffix)) false banned_suffixes
-
-let graph ~use_sfdp:use_sfdp ~use_dot_storage:use_dot_storage =
-  if (Command.program_in_path "dot") then
-    let input =
-      Storage.get_graph_path
-	~graph_name:Storage.graph_name
-	~use_dot_storage:true
-    in
-    let output_tmp =
-	Storage.get_graph_path
-	  ~graph_name:Storage.graph_name
-	  ~use_dot_storage:use_dot_storage
-    in
-    let output =
-      (Filename.chop_suffix output_tmp ".gv") ^ ".png"
-    in
-    let graph_program =
-      Printf.sprintf
-      (if (use_sfdp) then
-	"sfdp -Gsize=50 -Goverlap=prism -o %s -Tpng %s"
-      else
-	"dot -o %s -n -Tpng %s"
-      ) output input
-    in
-    Sys.command graph_program |> ignore
-  else
-    Printf.eprintf "Error: dot is not installed\n"
 		 
 (* rename this to object stack, wtf *)
 let build_lib_stack recursive verbose dirs =
@@ -157,7 +130,7 @@ let build_polymorphic_map config =
 	output_stats tbl;
         Graph.graph_lib_dependencies ~use_dot_storage:true lib_deps;
 	if (config.graph) then
-	  graph ~use_sfdp:(Command.is_linux()) ~use_dot_storage:true;
+	  Graph.graph_library_dependencies ~use_sfdp:(Command.is_linux()) ~use_dot_storage:true;
         map
       end
     else
@@ -309,7 +282,7 @@ let use_symbol_map config =
       end
     else
       if (config.graph) then
-	graph ~use_sfdp:(Command.is_linux()) ~use_dot_storage:false
+	Graph.graph_library_dependencies ~use_sfdp:(Command.is_linux()) ~use_dot_storage:false
       else
       (* rdr -m -w *)
       let export_list = flatten_polymorphic_map_to_list map

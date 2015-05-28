@@ -319,8 +319,43 @@ node [shape=plaintext]\n";
   Buffer.add_string b "}\n";
   Buffer.contents b
 
+let graph_library_dependencies ~use_sfdp:use_sfdp ~use_dot_storage:use_dot_storage =
+  if (Command.program_in_path "dot") then
+    let input =
+      Storage.get_graph_path
+	~graph_name:Storage.graph_name
+	~use_dot_storage:true
+    in
+    let output_tmp =
+	Storage.get_graph_path
+	  ~graph_name:Storage.graph_name
+	  ~use_dot_storage:use_dot_storage
+    in
+    let output =
+      (Filename.chop_suffix output_tmp ".gv") ^ ".png"
+    in
+    let graph_program =
+      Printf.sprintf
+      (if (use_sfdp) then
+	"sfdp -Gsize=50 -Goverlap=prism -o %s -Tpng %s"
+      else
+	"dot -o %s -n -Tpng %s"
+      ) output input
+    in
+    Sys.command graph_program |> ignore
+  else
+    Printf.eprintf "Error: dot is not installed\n"
+		  
 let graph_goblin ?draw_imports:(draw_imports=true) ?draw_libs:(draw_libs=true) binary filename = 
   let graph = goblin_to_html_dot binary draw_imports draw_libs in
-  let oc = open_out @@ filename ^ ".gv" in
+  let file = filename ^ ".gv" in
+  let oc = open_out file in
   Printf.fprintf oc "%s" graph;
-  close_out oc
+  close_out oc;
+  if (Command.program_in_path "dot") then
+    let output = (Filename.chop_suffix file ".gv") ^ ".png" in    
+    Sys.command
+    @@ Printf.sprintf "dot -o %s -n -Tpng %s" output file
+    |> ignore
+			    
+    
