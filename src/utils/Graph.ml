@@ -357,5 +357,7 @@ let graph_goblin ?draw_imports:(draw_imports=true) ?draw_libs:(draw_libs=true) b
     Sys.command
     @@ Printf.sprintf "dot -o %s -n -Tpng %s" output file
     |> ignore
+  else
+    Printf.eprintf "Error: dot not installed; raw graphviz file %s written to disk\n" file
 			    
     
