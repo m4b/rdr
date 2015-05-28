@@ -12,8 +12,10 @@ let get_path filename =
 
 let graph_name = "lib_dependency_graph.gv"
 
-let get_path_graph () =
-  get_path graph_name
-
-
-
+let get_graph_path ?graph_name:(graph_name=graph_name)
+		   ~use_dot_storage:use_dot_storage =
+  if (use_dot_storage) then
+    get_path graph_name
+  else
+    (Unix.getcwd()) ^ Filename.dir_sep ^ graph_name
+       

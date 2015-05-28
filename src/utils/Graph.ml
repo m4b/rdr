@@ -238,10 +238,10 @@ let graph_lib_dependencies ?use_dot_storage:(use_dot_storage=false) lib_deps =
     match deps with
     | [] ->
       Buffer.add_string b lib_footer;
-      let path = if (use_dot_storage) then
-	   Storage.get_path_graph ()
-	 else
-	   Storage.graph_name
+      let path =
+	Storage.get_graph_path
+	  ~graph_name:Storage.graph_name
+	  ~use_dot_storage:use_dot_storage
       in
       let oc = open_out path in
       Printf.fprintf oc "%s" @@ Buffer.contents b;

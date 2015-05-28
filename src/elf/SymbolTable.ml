@@ -205,7 +205,8 @@ let get_symbol_table_with_offsets binary offset size strtab_offset strtab_size =
 let get_symbol_table_adjusted binary masks offset size strtab_offset strtab_size =
   get_symtab_adjusted binary masks offset size
   |> amend_symbol_table binary strtab_offset strtab_size
-  |> List.rev 			(* otherwise relocs backwards *)
+  |> List.rev (* otherwise relocs backwards *)
+
 
 (* goblin *)
 
@@ -214,11 +215,8 @@ let get_symbol_table_adjusted binary masks offset size strtab_offset strtab_size
 let get_goblin_kind entry bind stype =
   if (entry.st_value = 0x0
        && entry.st_shndx = 0
-       && entry.name <> "")
+       && entry.name <> "") (* ignore first \0 entry *)
   then
-      (*        && stype = "FUNC")
-      || (bind = "GLOBAL" && stype = "OBJECT")
- *)
     GoblinSymbol.Import
   else if (bind = "LOCAL") then
     GoblinSymbol.Local

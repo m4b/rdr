@@ -11,10 +11,13 @@ This is a non-exhaustive list of some features that would be nice.
 
 4. x86 interpreter.  Yea, I know it's crazy; but this is the feature I'll be working on.  Maybe it's too much, but I want it, for other reasons...  Even a simple one would be worth the time and wheel reinvention of creating an x86 backend/AST.
 
-5. Of course the interpreter would also need a disassembler; for philosophical reasons I'd prefer the backend disassembler **not** use GNU BFD or llvm; the philosophical reason is essentially outlined in [a blog post](http://www.m4b.io/the-fault-is-not).  The gist is that multiple redundancy is scientific; think of it as triangulation of the semantics of an instruction set.  Of course interim solutions (hacks) are welcome to get functionality off the ground, i.e., the -D flag in `rdr -m -D -f printf`.
+5. Of course the interpreter would also need a disassembler; for philosophical reasons I'd prefer the backend disassembler **not** use GNU BFD or llvm; the philosophical reason is essentially outlined in [a blog post](http://www.m4b.io/2015-05-04-the-fault-is-not-in-our-stars.html).  The gist is that multiple redundancy is scientific; think of it as triangulation of the semantics of an instruction set.  Of course interim solutions (hacks) are welcome to get functionality off the ground, i.e., the -D flag in `rdr -m -D -f printf`.
 
 6. A completely unsafe, hacky compiler for some unspecified binary/assembly-ish language.  Rationale: so I mess around with instructions a lot; assembly doesn't work, because I want to input, for example, `0x66 0xe8 0x44 0xff 0x7f 0xff 0xff`, and see what the _silicon_ says that instruction sequence is.  Right now I load up a precompiled C binary with integer sigils or repeated instruction sequences, and replace them with whatever I want in a hex editor.  It's laborious and not very rewarding.  Prototype cycles are slow.  A more structured approach would be nice.  Most importantly, whatever name this assembly/binary language has _must_ be awesome.
 
+7. Regexp `-f` searching.
+
+8. `c++filt` reverse searching; you give it a `c++filt` string, and it reverses it.  Also, `c++filt` output.  Can be hacky and call `c++filt` for now.
 
 # Bug TODOs
 

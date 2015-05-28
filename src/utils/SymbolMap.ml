@@ -52,8 +52,32 @@ let has_banned_suffix string =
   List.fold_left (fun acc suffix ->
 		  acc || (Filename.check_suffix string suffix)) false banned_suffixes
 
-let graph () =
-  Sys.command ("dot -O -n -Tpng " ^ (Storage.get_path_graph ())) |> ignore
+let graph ~use_sfdp:use_sfdp ~use_dot_storage:use_dot_storage =
+  if (Command.program_in_path "dot") then
+    let input =
+      Storage.get_graph_path
+	~graph_name:Storage.graph_name
+	~use_dot_storage:true
+    in
+    let output_tmp =
+	Storage.get_graph_path
+	  ~graph_name:Storage.graph_name
+	  ~use_dot_storage:use_dot_storage
+    in
+    let output =
+      (Filename.chop_suffix output_tmp ".gv") ^ ".png"
+    in
+    let graph_program =
+      Printf.sprintf
+      (if (use_sfdp) then
+	"sfdp -Gsize=50 -Goverlap=prism -o %s -Tpng %s"
+      else
+	"dot -o %s -n -Tpng %s"
+      ) output input
+    in
+    Sys.command graph_program |> ignore
+  else
+    Printf.eprintf "Error: dot is not installed\n"
 		 
 (* rename this to object stack, wtf *)
 let build_lib_stack recursive verbose dirs =
@@ -133,7 +157,7 @@ let build_polymorphic_map config =
 	output_stats tbl;
         Graph.graph_lib_dependencies ~use_dot_storage:true lib_deps;
 	if (config.graph) then
-	  graph ();
+	  graph ~use_sfdp:(Command.is_linux()) ~use_dot_storage:true;
         map
       end
     else
@@ -260,20 +284,24 @@ let use_symbol_map config =
 		GoblinSymbol.print_symbol_data ~with_lib:true data;
 		if (config.disassemble) then
 		  begin
-		    try
+
 		    let lib = GoblinSymbol.find_symbol_lib data in
 		    let startsym = GoblinSymbol.find_symbol_offset data in
-		    let size = GoblinSymbol.find_symbol_size data in (* yo this is so dangerous cause may not be correct size... but I need to impress david and I definitely won't show him this line of code on Saturday ;) *)
+		    let size = GoblinSymbol.find_symbol_size data in (* this may not be correct size... but i do it for the lulz *)
 		    let ic = open_in_bin (snd lib) in
 		    seek_in ic startsym;
 		    let code = really_input_string ic size |> Binary.to_hex_string in
 		    close_in ic;
 		    flush Pervasives.stdout;
 		    Printf.printf "\t\n";
-		    (* NOW FOR THE FUCKING HACKS *)
-		    let command = Printf.sprintf "echo \"%s\" | /usr/bin/llvm-mc --disassemble" code in
-		    ignore @@ Sys.command command;
-		    with _ -> Printf.eprintf "could not disassemble #thug_life\n";
+		    (* NOW FOR THE HACKS *)
+ 		    if (Command.program_in_path "llvm-mc") then
+		      Sys.command
+		      @@ Printf.sprintf
+			"echo \"%s\" | llvm-mc --disassemble" code
+		      |> ignore
+		    else
+		      Printf.eprintf "Error: llvm-mc not installed or not in ${PATH}\n";
 		  end
 	       );
         with Not_found ->
@@ -281,7 +309,7 @@ let use_symbol_map config =
       end
     else
       if (config.graph) then
-	graph()
+	graph ~use_sfdp:(Command.is_linux()) ~use_dot_storage:false
       else
       (* rdr -m -w *)
       let export_list = flatten_polymorphic_map_to_list map
