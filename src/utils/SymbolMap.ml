@@ -225,7 +225,10 @@ let polymorphic_list_to_string list =
     function
     | [] -> Buffer.contents b
     | export::exports ->
-       Buffer.add_string b @@ MachExports.mach_export_data_to_string ~use_flags:false export;
+       Buffer.add_string b
+       (* need to not use mach export to string? *)
+       @@ MachExports.mach_export_data_to_string
+	    ~use_flags:false export;
        Buffer.add_string b "\n";
        loop exports
   in loop list

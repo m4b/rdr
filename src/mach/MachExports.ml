@@ -205,7 +205,7 @@ let sort_mach_export_data (data) =
     ) data
 
 let mach_export_data_to_string
-      ?use_kind:(use_kind=true)
+      ?use_kind:(use_kind=false)
       ?use_flags:(use_flags=false)
       ?use_lib:(use_lib=true)
       (data:mach_export_data)
