@@ -28,6 +28,7 @@ let write_symbols = ref false
 let marshal_symbols = ref false
 let print_nlist = ref false
 let base_symbol_map_directories = ref ["/usr/lib/"]
+let framework_directories = ref []
 let anonarg = ref ""
 
 let disassemble = ref false
@@ -65,6 +66,7 @@ let get_config () =
     write_symbols = !write_symbols;
     marshal_symbols = !marshal_symbols;
     base_symbol_map_directories = !base_symbol_map_directories;
+    framework_directories = !framework_directories;
     graph = !graph;
     filename = !anonarg; 	(* TODO: this should be Filname.basename, but unchanged for now *)
     search_term = !search_term_string;
@@ -73,12 +75,21 @@ let get_config () =
 		      
 let set_base_symbol_map_directories dir_string = 
   (* Printf.printf "%s\n" dir_string; *)
-  let dirs = Str.split (Str.regexp "[ ]+") dir_string |> List.map String.trim in
+  let dirs = Str.split (Str.regexp "[ :]+") dir_string |> List.map String.trim in
   match dirs with
-  | [] -> raise @@ Arg.Bad "Invalid argument: directories must be separated by spaces, -d /usr/local/lib, /some/other/path"
+  | [] -> raise @@ Arg.Bad "Invalid argument: directories must be separated by spaces or :, -d /usr/local/lib, /some/other/path"
   | _ -> 
     (* Printf.printf "setting dirs: %s\n" @@ Generics.list_to_string dirs; *)
     base_symbol_map_directories := dirs
+
+let set_framework_directories dir_string =
+  (* Printf.printf "Framework directories: %s\n" dir_string; *)
+  let dirs = Str.split (Str.regexp "[ :]+") dir_string |> List.map String.trim in
+  match dirs with
+  | [] -> ()
+  | _ ->
+    (* Printf.printf "setting framework dirs: %s\n" @@ Generics.list_to_string dirs; *)
+    framework_directories := dirs
 
 let set_anon_argument string =
   anonarg := string
@@ -88,6 +99,7 @@ let main =
     [("-m", Arg.Set use_map, "Use a pre-marshalled system symbol map; use this in conjunction with -f, -D, -g, or -w");
      ("-g", Arg.Set graph, "Creates a graphviz file; generates lib dependencies if -b given");
      ("-d", Arg.String (set_base_symbol_map_directories), "String of space separated directories to build symbol map from; default is /usr/lib");
+     ("-F", Arg.String (set_framework_directories), "(OSX Only) String of space or colon separated base framework directories to additionally search when building the symbol map");
      ("-r", Arg.Set recursive, "Recursively search directories for binaries; use with -b");
      ("-v", Arg.Set verbose, "Print all the things");
      ("-h", Arg.Set print_headers, "Print the header"); 

@@ -24,6 +24,7 @@ type basic_config =
     write_symbols: bool;		      (* -w *)
     marshal_symbols: bool;                    (* -b *)
     base_symbol_map_directories: string list; (* -d *)
+    framework_directories: string list; (* -F *)
     (* general *)
     graph: bool;		(* -g *)
     filename: string;		(* anonarg *)

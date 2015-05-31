@@ -51,7 +51,44 @@ let has_libraryish_suffix string =
 let has_banned_suffix string =
   List.fold_left (fun acc suffix ->
 		  acc || (Filename.check_suffix string suffix)) false banned_suffixes
-		 
+
+(* osx specific framework reading; needs some (a lot) of tuning *)
+let read_frameworks ~verbose dir stack =
+  let dir_fd = Unix.opendir dir in
+  let count = ref 0 in
+  try
+    while true do
+      let f = dir ^ (Unix.readdir dir_fd) in
+      let f_stat = Unix.lstat f in (* sees symbolic links *)
+      match f_stat.st_kind with
+      | Unix.S_DIR ->
+	 if (Filename.check_suffix f "framework") then
+	   let framework = Filename.chop_suffix (Filename.basename f) ".framework" in
+	   Stack.push (f ^ Filename.dir_sep ^ framework) stack
+	 else
+	   ();
+      | _ -> ();
+    done
+  with
+  | End_of_file ->
+     Unix.closedir dir_fd;
+     if (verbose) then Printf.printf "Pushed %d libs from %s\n" !count dir
+  | Unix_error (error,s1,s2) ->
+     Unix.closedir dir_fd;
+     if (verbose) then Printf.printf "Error: %s %s %s\n" (error_message error) s1 s2
+
+let rec read_framework_dirs ~verbose:verbose ~frameworks:frameworks stack =
+  match frameworks with
+  | [] -> stack
+  | dir::dirs ->
+     let dir = if (Filename.check_suffix dir Filename.dir_sep) then
+		 dir
+	       else
+		 dir ^ Filename.dir_sep
+     in
+     read_frameworks ~verbose:verbose dir stack;
+     read_framework_dirs ~verbose:verbose ~frameworks:dirs stack
+
 (* rename this to object stack, wtf *)
 let build_lib_stack recursive verbose dirs =
   let stack = Stack.create() in
@@ -60,9 +97,10 @@ let build_lib_stack recursive verbose dirs =
     | [] -> stack
     | dir::dirs ->
        (* add the / if missing, as a convenience to the user *)
-       let dir = if (Filename.check_suffix dir Filename.dir_sep)
-		 then dir
-		 else dir ^ Filename.dir_sep
+       let dir = if (Filename.check_suffix dir Filename.dir_sep) then
+		   dir
+		 else
+		   dir ^ Filename.dir_sep
        in
        dir_loop dirs (read_dir dir stack)
   and read_dir dir stack =
@@ -70,7 +108,7 @@ let build_lib_stack recursive verbose dirs =
     let not_done = ref true in
     let count = ref 0 in
     while (!not_done) do
-      try 
+      try
         let f = dir ^ (Unix.readdir dir_fd) in
         let f_stat = Unix.lstat f in (* lstat can see symbolic links *)
         match f_stat.st_kind with
@@ -114,11 +152,18 @@ let output_stats tbl =
 
 let build_polymorphic_map config =
   let dirs = config.base_symbol_map_directories in
+  let framework_dirs = config.framework_directories in
   let recursive = config.recursive in
   let verbose = config.verbose in
   let tbl = Hashtbl.create ((List.length dirs) * 100) in
   if (verbose) then Printf.printf "Building map...\n";
-  let libstack = build_lib_stack recursive verbose dirs in
+  let libstack =
+      if (Command.is_osx ()) then
+	build_lib_stack recursive verbose dirs
+	|> read_framework_dirs ~verbose:config.verbose ~frameworks:framework_dirs
+      else
+	build_lib_stack recursive verbose dirs
+  in
   if (verbose) then 
     begin
       Printf.printf "Total libs: %d\n" (Stack.length libstack);
