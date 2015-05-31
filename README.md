@@ -46,13 +46,17 @@ Some examples:
 * `rdr -f printf /usr/lib/libc.so.6` - searches the `libc.so.6` binary for an exported symbol named _exactly_ "printf", and if found, prints its binary offset and size (in bytes).  _Watch out for_ `_` prefixed symbols in mach and compiler private symbols in ELF. Definitely watch out for funny (`$`) symbols, like in mach-o Objective C binaries; you'll need to quote the symbol name to escape them, otherwise bash gets mad.  Future: regexp multiple returns, and searching imports as well.
 * `rdr -l /usr/lib/libc.so.6` - lists the dynamic libraries `libc.so.6` _explicitly_ depends on (I'm looking at _you_ `dlsym`).
 * `rdr -i /usr/lib/libc.so.6` - lists the imports the binary depends on.  **NOTE** when run on linux binaries, if a system map has been built, it will use that to lookup where the symbol could have come from for you.  Depending on your machine, can add a slight delay; sorry bout that.  On `mach-o` this isn't necessary, since imports are required to state where they come from, because the format was built by sane people (more or less).
-* `rdr -g /usr/lib/libz.so.1.2.8` - graphs the libraries, imports, and exports of `libz.so.1.2.8`; run `dot -O -n -Tpng libz.so.1.2.8.gv` to make a pretty picture.  Does a simple, hackish check to see if `dot` is installed, and if so, runs the above dot command for you - you should probably just install it before you run this.
+* `rdr -g /usr/lib/libz.so.1.2.8` - graphs the libraries, imports, and exports of `libz.so.1.2.8`; run `dot -O -n -Tpng libz.so.1.2.8.gv` to make a pretty picture.  Does a simple, hackish check to see if `dot` is in your `${PATH}`, and if so, runs the above dot command for you - you should probably just install it before you run this.
 * `rdr -s /usr/lib/libc.so.6` - print the nlist/strippable symbol table, if it exists.  Crappy programs like `nm` _only_ use the strippable symbol table, even for exports and imports.
 * `rdr -v /usr/lib/libc.so.6` - print everything.
 
 ## Symbol Map
 
-`rdr` can create a "symbol map" for you, in `${HOME}/.rdr/`.  What's that you ask?  It's a map from `exported symbol name -> list of symbol info`.
+`rdr` can create a "symbol map" for you, in `${HOME}/.rdr/`.  What's that you ask?  It's a map from `exported symbol name -> list of symbol info`, where symbol information is offset, size, exporting library, etc.
+
+It is a map from keys of symbol names to _lists_ of symbol information, because symbol-to-symbol information is _not a function_.  To put that less technically: for any given symbol name, `malloc` for example, you can have multiple libraries which provide (export) that same exact symbol.  It is a one to many relationship.
+
+Nevertheless, with such a map, we can perform a variety of useful activities, like looking up a symbol's offset in a library, its size, etc.
 
 Why hasn't this existed before?  I don't know.
 
@@ -72,7 +76,7 @@ rdr -b -r -d "/usr/lib /usr/local/lib"
 
 Spaces in the `-d` string separate different directories; with `-r` set, it searches _each_ recursively.
 
-Be careful (patient); on slow machines, this can take some time.  On a MBP, it's so damn fast it can build the map in realtime, and then do a symbol lookup (I don't do that).
+Be careful (patient); on slow machines, this can take some time.  On a recent MBP, it's so damn fast it can build the map in realtime, and then do a symbol lookup (I don't do that).
 
 After you've built the map, you can perform _exact_ symbol lookups, for example:
 
@@ -82,7 +86,7 @@ searching /usr/lib/ for printf:
            4f0a0 printf (161) -> /usr/lib/libc-2.21.so
 ````
 
-This is an experimental feature and subject to change (it'll definitely have to stay in, cause it's awesome), but if you find a symbol you admire, you can disassemble it by adding the `-D` flag using `llvm-mc`.
+If you find a symbol you admire, you can disassemble it by adding the `-D` flag, using `llvm-mc`.  This is an experimental feature and subject to change (it'll definitely have to stay in, cause it's awesome).
 
 Again, I do a simple, hackish check to see if `llvm-mc` is in your `${PATH}`, and if so, the program is run, otherwise an error message is printed.  However, to quote a C idiom: "this behavior is undefined" if `llvm-mc` isn't installed and in your `${PATH}`.
 
@@ -124,11 +128,17 @@ searching /usr/lib/ for printf:
 	retq
 ````
 
+If you don't like AT&T syntax, then you're out of luck for now (and in the meantime you should probably become a real hacker and learn to read and understand both).
+
 You can also graph the library dependencies (the `.gv` file is generated _at build time_) with `rdr -m -g`.  Currently, it creates a `library_dependency.png` file; in the future, this will be named after the map it was generated from, once named maps become a thing.
 
 Finally, and again at build time, a `stats` file is generated from the system map in `${HOME}/.rdr/`; this simply counts the number of times a symbol was _imported_ by every binary analyzed when the system map was built (so with a `-d` directory specified, the default is `/usr/lib/`, and so it counts every time some symbol _x_ was imported in every binary found in `/usr/lib`).  Expect this file to change, or various other statistical files to be created in the `${HOME}/.rdr/` directory.
 
-Once versioned/named maps are implemented, this stats will be per map.
+Once versioned/named maps are implemented, the stats will be per map.
+
+There are also times that you will want to `grep` symbols, maybe because you only know a part of it, or etc.
+
+For now, this facility is enabled by writing a _flattened_ symbol file to disk, using `rdr -m -w`, at `${HOME}/.rdr/`.  This file is named `symbols` and you can `grep` it to your hearts content.
 
 # Project Structure
 
