@@ -46,9 +46,11 @@ Some examples:
 * `rdr -f printf /usr/lib/libc.so.6` - searches the `libc.so.6` binary for an exported symbol named _exactly_ "printf", and if found, prints its binary offset and size (in bytes).  _Watch out for_ `_` prefixed symbols in mach and compiler private symbols in ELF. Definitely watch out for funny (`$`) symbols, like in mach-o Objective C binaries; you'll need to quote the symbol name to escape them, otherwise bash gets mad.  Future: regexp multiple returns, and searching imports as well.
 * `rdr -l /usr/lib/libc.so.6` - lists the dynamic libraries `libc.so.6` _explicitly_ depends on (I'm looking at _you_ `dlsym`).
 * `rdr -i /usr/lib/libc.so.6` - lists the imports the binary depends on.  **NOTE** when run on linux binaries, if a system map has been built, it will use that to lookup where the symbol could have come from for you.  Depending on your machine, can add a slight delay; sorry bout that.  On `mach-o` this isn't necessary, since imports are required to state where they come from, because the format was built by sane people (more or less).
-* `rdr -g /usr/lib/libz.so.1.2.8` - graphs the libraries, imports, and exports of `libz.so.1.2.8`; run `dot -O -n -Tpng libz.so.1.2.8.gv` to make a pretty picture.  Does a simple, hackish check to see if `dot` is in your `${PATH}`, and if so, runs the above dot command for you - you should probably just install it before you run this.
+* `rdr -g /usr/lib/libz.so.1.2.8` - graphs the libraries, imports, and exports of `libz.so.1.2.8`; run `dot -O -n -Tpng libz.so.1.2.8.gv` to make a pretty picture.  Does a simple, hackish check to see if `dot` is in your `${PATH}`, and if so, runs the above dot command for you - you should probably just install it before you run this.  [See the examples](#examples) for `rdr` output. Here is an example of the linux output
 * `rdr -s /usr/lib/libc.so.6` - print the nlist/strippable symbol table, if it exists.  Crappy programs like `nm` _only_ use the strippable symbol table, even for exports and imports.
 * `rdr -v /usr/lib/libc.so.6` - print everything.
+
+
 
 ## Symbol Map
 
@@ -130,7 +132,7 @@ searching /usr/lib/ for printf:
 
 If you don't like AT&T syntax, then you're out of luck for now (and in the meantime you should probably become a real hacker and learn to read and understand both).
 
-You can also graph the library dependencies (the `.gv` file is generated _at build time_) with `rdr -m -g`.  Currently, it creates a `library_dependency.png` file; in the future, this will be named after the map it was generated from, once named maps become a thing.
+You can also graph the library dependencies (the `.gv` file is generated _at build time_) with `rdr -m -g`.  Currently, it creates a `library_dependency.png` file; in the future, this will be named after the map it was generated from, once named maps become a thing.  Also, this `.png` will be enormous.
 
 Finally, and again at build time, a `stats` file is generated from the system map in `${HOME}/.rdr/`; this simply counts the number of times a symbol was _imported_ by every binary analyzed when the system map was built (so with a `-d` directory specified, the default is `/usr/lib/`, and so it counts every time some symbol _x_ was imported in every binary found in `/usr/lib`).  Expect this file to change, or various other statistical files to be created in the `${HOME}/.rdr/` directory.
 
@@ -138,7 +140,25 @@ Once versioned/named maps are implemented, the stats will be per map.
 
 There are also times that you will want to `grep` symbols, maybe because you only know a part of it, or etc.
 
-For now, this facility is enabled by writing a _flattened_ symbol file to disk, using `rdr -m -w`, at `${HOME}/.rdr/`.  This file is named `symbols` and you can `grep` it to your hearts content.
+For now, this facility is enabled by writing a _flattened_ symbol map to disk, using `rdr -m -w`, at `${HOME}/.rdr/`.  This file is named `symbols` and you can `grep` it to your heart's content.  It is flattened because each element in the list of symbol information a symbol maps to is output to disk, e.g., like this:
+
+````
+0x16a50 malloc (13) E -> /usr/lib/ld-2.21.so 
+0x576f0 malloc (303) E -> /usr/lib/libasan.so.1.0.0 
+0x7a7b0 malloc (394) E -> /usr/lib/libc-2.21.so 
+0x346f0 malloc (137) E -> /usr/lib/libgvpr.so.2.0.0 
+0x5f90 malloc (1543) E -> /usr/lib/libjemalloc.so.1 
+0xb290 malloc (267) E -> /usr/lib/liblsan.so.0.0.0 
+0x19c0 malloc (299) E -> /usr/lib/libmemusage.so 
+0x1200 malloc (33) E -> /usr/lib/libtbbmalloc_proxy.so.2 
+0x1210 malloc (33) E -> /usr/lib/libtbbmalloc_proxy_debug.so.2 
+0x367a0 malloc (2395) E -> /usr/lib/libtcmalloc.so.4.2.6 
+0x3a640 malloc (2395) E -> /usr/lib/libtcmalloc_and_profiler.so.4.2.6 
+0x3d740 malloc (718) E -> /usr/lib/libtcmalloc_debug.so.4.2.6 
+0x1d2b0 malloc (2395) E -> /usr/lib/libtcmalloc_minimal.so.4.2.6 
+0x242a0 malloc (702) E -> /usr/lib/libtcmalloc_minimal_debug.so.4.2.6 
+0x4d020 malloc (175) E -> /usr/lib/libtsan.so.0.0.0 
+````
 
 # Project Structure
 
@@ -146,3 +166,6 @@ Because I just knew you were going to ask, I made this _sweet_ graphic, just for
 
 ![project deps](project_deps.gv.png)
 
+# Examples
+
+* `rdr -g /usr/lib/libz.so.1.2.8`: ![libz so hard](http://www.m4b.io/images/libz.so.1.2.8.gv.png)
