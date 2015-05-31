@@ -2,7 +2,9 @@
 
 Welcome to the `rdr` project.
 
-`rdr` is an OCaml tool/library for doing cross-platform analysis of binaries.  I typically use it for looking up symbol names, finding the address offset, and then running `gdb` or `lldb` (you should be using both if you even know what you're doing) to mess around.
+`rdr` is an OCaml tool/library for doing cross-platform analysis of binaries.  I typically use it for looking up symbol names, finding the address offset, and then running `gdb` or `lldb` to mess around (you should be using both if you even know what you're doing).
+
+I also find that it's useful for resolving linking errors if you're trying to build some project, especially some random, misconfigured XCode project, or what have you.
 
 See the [usage section](#usage) for a list of features.
 
@@ -16,12 +18,11 @@ ocamlbuild.native -lib unix -lib str src/Rdr.native && mv Rdr.native rdr
 
 I'll look into getting it on OPAM soon, but it's in a state of _flux_ right now, and is under [active development](TODO.md).  Contributions welcome!
 
-
 # Install
 
 * You must have OCaml installed, version 4.02.1.  You'll need at least 4.01 (I use `|>` and `@@`), but I haven't tested on that.
 * You must run the `build.sh` script, or execute `ocamlbuild.native -lib unix -lib str src/Rdr.native && mv Rdr.native rdr` in the base directory.
-* You may then copy or symlink the resulting `rdr` binary to anywhere that is exported in your `${PATH}`.
+* You may then copy or symlink the resulting `rdr` binary to anywhere that is exported in your `${PATH}` (or not do that, if that's your fancy).
 
 # Usage
 
@@ -37,7 +38,7 @@ rdr /usr/lib/libc.so.6
 
 It should output something like: `ELF X86_64 DYN @ 0x20920`.  Which is boring.
 
-You can pass it various flags, `-e` for printing the exports found in the binary (see this post on [ELF exports](http://www.m4b.io/elf/export/binary/analysis/2015/05/25/what-is-an-elf-export.html#conclusion) for what I'm counting as an "export"), `-i` for imports, etc.
+You can pass it various flags, `-e` for printing the exports found in the binary (see this post on [ELF exports](http://www.m4b.io/elf/export/binary/analysis/2015/05/25/what-is-an-elf-export.html#conclusion) for what I'm counting as an "export"), `-i` for imports, etc.  For mach-o binaries, exporthood and importhood are clearly defined, so blog posts detailing this aren't necessary.
 
 Some examples:
 
@@ -45,7 +46,7 @@ Some examples:
 * `rdr -h /usr/lib/libc.so.6` - prints the program headers, bookkeeping data, and other beaurocratic aspects of binaries, just to confuse you.
 * `rdr -f printf /usr/lib/libc.so.6` - searches the `libc.so.6` binary for an exported symbol named _exactly_ "printf", and if found, prints its binary offset and size (in bytes).  _Watch out for_ `_` prefixed symbols in mach and compiler private symbols in ELF. Definitely watch out for funny (`$`) symbols, like in mach-o Objective C binaries; you'll need to quote the symbol name to escape them, otherwise bash gets mad.  Future: regexp multiple returns, and searching imports as well.
 * `rdr -l /usr/lib/libc.so.6` - lists the dynamic libraries `libc.so.6` _explicitly_ depends on (I'm looking at _you_ `dlsym`).
-* `rdr -i /usr/lib/libc.so.6` - lists the imports the binary depends on.  **NOTE** when run on linux binaries, if a system map has been built, it will use that to lookup where the symbol could have come from for you.  Depending on your machine, can add a slight delay; sorry bout that.  On `mach-o` this isn't necessary, since imports are required to state where they come from, because the format was built by sane people (more or less).
+* `rdr -i /usr/lib/libc.so.6` - lists the imports the binary depends on.  **NOTE** when run on linux binaries, if a system map has been built, it will use that to lookup where the symbol could have come from for you.  Depending on your machine, can add a slight delay; sorry bout that.  On `mach-o` this delay caused by an extra lookup isn't necessary, since imports are required to state where they come from, because the format was built by sane people (more or less).
 * `rdr -g /usr/lib/libz.so.1.2.8` - graphs the libraries, imports, and exports of `libz.so.1.2.8`; run `dot -O -n -Tpng libz.so.1.2.8.gv` to make a pretty picture.  Does a simple, hackish check to see if `dot` is in your `${PATH}`, and if so, runs the above dot command for you - you should probably just install it before you run this.  [See the examples](#examples) for `rdr` output. Here is an example of the linux output
 * `rdr -s /usr/lib/libc.so.6` - print the nlist/strippable symbol table, if it exists.  Crappy programs like `nm` _only_ use the strippable symbol table, even for exports and imports.
 * `rdr -v /usr/lib/libc.so.6` - print everything.
@@ -87,6 +88,8 @@ $ rdr -m -f printf
 searching /usr/lib/ for printf:
            4f0a0 printf (161) -> /usr/lib/libc-2.21.so
 ````
+
+Where the output format for each symbol is `offset symbol_name (size) -> /path/to/exporting/library`.
 
 If you find a symbol you admire, you can disassemble it by adding the `-D` flag, using `llvm-mc`.  This is an experimental feature and subject to change (it'll definitely have to stay in, cause it's awesome).
 
@@ -140,7 +143,9 @@ Once versioned/named maps are implemented, the stats will be per map.
 
 There are also times that you will want to `grep` symbols, maybe because you only know a part of it, or etc.
 
-For now, this facility is enabled by writing a _flattened_ symbol map to disk, using `rdr -m -w`, at `${HOME}/.rdr/`.  This file is named `symbols` and you can `grep` it to your heart's content.  It is flattened because each element in the list of symbol information a symbol maps to is output to disk, e.g., like this:
+For now, this facility is enabled by writing a _flattened_ symbol map to disk, using `rdr -m -w`, at `${HOME}/.rdr/`.  This file is named `symbols` and you can `grep` it to your heart's content.  It is flattened because each element in the list of symbol information a symbol maps to is output to disk.
+
+So, for example, `grep -w "malloc" ~/.rdr/symbols` yields:
 
 ````
 0x16a50 malloc (13) E -> /usr/lib/ld-2.21.so 
