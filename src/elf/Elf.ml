@@ -86,10 +86,16 @@ let analyze config binary =
       |> ElfReloc.get_relocs64 binary
     in
     let goblin_symbols =
-      SymbolTable.symbols_to_goblin ~use_tol:config.use_tol ~libs:libraries (soname,config.install_name) dynamic_symbols relocs
-      |> GoblinSymbol.sort_symbols_with List.sort |> function | [] -> [] | syms -> List.tl syms (* because can be empty *)
+      SymbolTable.symbols_to_goblin
+	~use_tol:config.use_tol
+	~libs:libraries
+	(soname,config.install_name)
+	dynamic_symbols
+	relocs
+      |> GoblinSymbol.sort_symbols_with List.sort
+      |> function | [] -> [] | syms -> List.tl syms
       (* because the head (the first entry, after sorting)
-         is a null entry *)
+         is a null entry, and also _DYNAMIC can be empty *)
     in
     let goblin_imports =
       List.filter
