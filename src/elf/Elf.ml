@@ -87,7 +87,7 @@ let analyze config binary =
     in
     let goblin_symbols =
       SymbolTable.symbols_to_goblin ~use_tol:config.use_tol ~libs:libraries (soname,config.install_name) dynamic_symbols relocs
-      |> GoblinSymbol.sort_symbols_with List.sort |> List.tl
+      |> GoblinSymbol.sort_symbols_with List.sort |> function | [] -> [] | syms -> List.tl syms (* because can be empty *)
       (* because the head (the first entry, after sorting)
          is a null entry *)
     in

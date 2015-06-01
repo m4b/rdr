@@ -71,10 +71,10 @@ let print_elf_header64 header =
 let check_64bit bytes =
   let ei_class = Binary.u8 bytes 4 in			    (* 4 bytes in past 7fELF *)
   ei_class = 2
-  
+
 let is_lib header = header.e_type = 3
-let is_supported header = header.e_type = 2 || header.e_type = 3				      
-	 
+let is_supported header = header.e_type = 2 || header.e_type = 3 (* executable or dy lib *)
+
 let get_e_ident bytes =
   let one = Char.code @@ Bytes.get bytes 0 in
   let two = (Char.code @@ Bytes.get bytes 1) lsl 8 in

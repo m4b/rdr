@@ -303,7 +303,10 @@ let rec get_soname_offset dynamic =
        get_soname_offset dynamic
 	    
 let get_dynamic_strtab binary offset size =
-  Bytes.sub binary offset size
+  if (offset >= 0 && size >= 0) then
+    Bytes.sub binary offset size
+  else
+    Bytes.empty
 
 let get_dynamic_strtab_data dynamic slides =
   List.fold_left
