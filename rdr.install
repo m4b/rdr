@@ -1,1 +1,1 @@
-bin:[ "_build/src/Rdr.native" { "rdr" } ]
+bin:[ "rdr" { "rdr" } ]
