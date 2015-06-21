@@ -10,15 +10,23 @@ See the [usage section](#usage) for a list of features.
 
 Currently, only 64-bit _ELF_ and _mach-o_ binaries are supported.  32-bit binaries aren't cool anymore; stop publishing reverse engineering tutorials on them.
 
-It has no OPAM dependencies (not that I don't love OPAM) and can be built with the provided `build.sh` script, or simply with:
+It has no dependencies (besides the standard libs and `unix` and `str`) and can be built with the provided `build.sh` script, or simply with:
 
 ````bash
 ocamlbuild.native -lib unix -lib str src/Rdr.native && mv Rdr.native rdr
 ````
 
-I'll look into getting it on OPAM soon, but it's in a state of _flux_ right now, and is under [active development](TODO.md).  Contributions welcome!
+It is also available via OPAM: `opam install rdr`.
+
+`rdr` is under [active development](TODO.md) --- contributions welcome!
 
 # Install
+
+#### Easy (OPAM)
+
+Install with OPAM: `opam install rdr`
+
+#### Slightly Less Easy (Manual)
 
 * You must have OCaml installed, version 4.02.1.  You'll need at least 4.01 (I use `|>` and `@@`), but I haven't tested on that.
 * You must run the `build.sh` script, or execute `ocamlbuild.native -lib unix -lib str src/Rdr.native && mv Rdr.native rdr` in the base directory.
