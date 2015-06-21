@@ -38,7 +38,7 @@ rdr /usr/lib/libc.so.6
 
 It should output something like: `ELF X86_64 DYN @ 0x20920`.  Which is boring.
 
-You can pass it various flags, `-e` for printing the exports found in the binary (see this post on [ELF exports](http://www.m4b.io/elf/export/binary/analysis/2015/05/25/what-is-an-elf-export.html#conclusion) for what I'm counting as an "export"), `-i` for imports, etc.  For mach-o binaries, exporthood and importhood are clearly defined, so blog posts detailing this aren't necessary (unless you want a [detailed analysis of the binary format](http://www.m4b.io/reverse/engineering/mach/binaries/2015/03/29/mach-binaries.html).
+You can pass it various flags, `-e` for printing the exports found in the binary (see this post on [ELF exports](http://www.m4b.io/elf/export/binary/analysis/2015/05/25/what-is-an-elf-export.html#conclusion) for what I'm counting as an "export"), `-i` for imports, etc.  For mach-o binaries, exporthood and importhood are clearly defined, so blog posts detailing this aren't necessary (unless you want a [detailed analysis of the binary format](http://www.m4b.io/reverse/engineering/mach/binaries/2015/03/29/mach-binaries.html)).
 
 Some examples:
 
@@ -69,7 +69,7 @@ rdr -b
 
 Which defaults to scanning `/usr/lib/` for things it considers "binaries".  Basically, it works pretty well.
 
-If you want to recursively search, you give it a directory (or supply none at all, and it uses the default, `/usr/lib`), and the `r` flag:
+If you want to recursively search, you give it a directory (or supply none at all, and it uses the default, `/usr/lib`), and the `-r` flag:
 
 ````bash
 rdr -b -r -d "/usr/lib /usr/local/lib"
