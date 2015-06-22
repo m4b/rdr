@@ -28,7 +28,7 @@ Install with OPAM: `opam install rdr`
 
 #### Slightly Less Easy (Manual)
 
-* You must have OCaml installed, version 4.02.1.  You'll need at least 4.01 (I use `|>` and `@@`), but I haven't tested on that.
+* You must have OCaml installed, at least version 4.02 (I use the `Bytes` module).
 * You must run the `build.sh` script, or execute `ocamlbuild.native -lib unix -lib str src/Rdr.native && mv Rdr.native rdr` in the base directory.
 * You may then copy or symlink the resulting `rdr` binary to anywhere that is exported in your `${PATH}` (or not do that, if that's your fancy).
 
