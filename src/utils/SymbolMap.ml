@@ -334,7 +334,7 @@ let use_symbol_map config =
       else
       (* rdr -m -w *)
       let export_list = flatten_polymorphic_map_to_list map
-                        |> GoblinSymbol.sort_symbols 
+                        |> GoblinSymbol.sort_symbols ~compare_libs:true
       in
       let export_list_string = polymorphic_list_to_string export_list in
       if (config.write_symbols) then

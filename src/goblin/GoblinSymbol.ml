@@ -15,6 +15,13 @@ TODO:
    Attempt to generically represent symbol information, primarily for printing and analysis, i.e., computing size, etc.
  *)
 
+(*
+for testing
+
+#directory "/Users/matthewbarney/git/rdr/_build/src/goblin/";;
+#load "Goblin.cmo";;
+  *)
+
 type symbol_kind = 
   | Export | Import | Local | Debug | Other
 
@@ -165,21 +172,20 @@ let print_symbol_data
     Printf.printf "%s %s%s%s\n" offset name size lib
 
 let sort_symbols_with sortf
-		      ?nocompare_libs:(nocompare_libs=true)
+		      ?compare_libs:(compare_libs=false)
 		      listorarray =
   (* symbol -> [[datum]] *)
   sortf (fun a b ->       (* [[datum]] , [[datum]] *)
-	 (* such needs of monads right now *)
 	 (* first compare libs, export must have a lib *)
 	 (* yea... but not just for exports anymore, so either need to return empty lib or check for Not_found... *)
 	 let l1 = find_symbol_lib a in
 	 let l2 = find_symbol_lib b in
 	 let n1 = find_symbol_name a in
 	 let n2 = find_symbol_name b in
-	 if (l1 = l2 || nocompare_libs) then
-           try 
+	 if (not compare_libs || l1 = l2) then
+           try
              let o1 = find_symbol_offset a in
-             try 
+             try
                let o2 = find_symbol_offset b in
 	       if (o1 = o2) then
 		 Pervasives.compare n1 n2
@@ -193,8 +199,9 @@ let sort_symbols_with sortf
            Pervasives.compare l1 l2
 	) listorarray
 
-let sort_symbols ?nocompare_libs:(nocompare_libs=false) list =
-  sort_symbols_with List.sort ~nocompare_libs:nocompare_libs list
+
+let sort_symbols ?compare_libs:(compare_libs=false) list =
+  sort_symbols_with List.sort ~compare_libs:compare_libs list
 
 (* TODO: needs extra data for more accurate calculation *)
 (* @invariant (sorted list) *)
@@ -244,3 +251,24 @@ let to_goblin_import symbol =
   let size = find_symbol_size symbol in
   let offset = try find_symbol_offset symbol with Not_found -> 0 in
   {Goblin.Import.name; lib=libinstall_name; is_lazy; idx; offset; size}
+
+
+let sortunit1 = [
+[`Lib ("/usr/lib/libc.dylib", "/usr/lib/libc.dylib"); `Name "printf"; `Offset 0x500; `Kind Export];
+[`Lib ("/usr/lib/libc.dylib", "/usr/lib/libc.dylib"); `Name "printf2"; `Offset 0x300; `Kind Export];
+[`Lib ("/usr/lib/malloc.dylib", "/usr/lib/malloc.dylib"); `Name "malloc"; `Offset 0x700; `Kind Export];
+[`Lib ("/usr/lib/malloc.dylib", "/usr/lib/malloc.dylib"); `Name "strcmp"; `Offset 0x400; `Kind Export];
+[`Lib ("/usr/lib/libc.dylib", "/usr/lib/libc.dylib"); `Name "dir"; `Offset 0x1000; `Kind Export];]
+
+let expected1 = [[`Lib ("/usr/lib/libc.dylib", "/usr/lib/libc.dylib"); `Name "printf2";
+  `Offset 768; `Kind Export];
+ [`Lib ("/usr/lib/malloc.dylib", "/usr/lib/malloc.dylib"); `Name "strcmp";
+  `Offset 1024; `Kind Export];
+ [`Lib ("/usr/lib/libc.dylib", "/usr/lib/libc.dylib"); `Name "printf";
+  `Offset 1280; `Kind Export];
+ [`Lib ("/usr/lib/malloc.dylib", "/usr/lib/malloc.dylib"); `Name "malloc";
+  `Offset 1792; `Kind Export];
+ [`Lib ("/usr/lib/libc.dylib", "/usr/lib/libc.dylib"); `Name "dir";
+  `Offset 4096; `Kind Export]]
+
+let testunit1 = (sort_symbols sortunit1) = expected1
