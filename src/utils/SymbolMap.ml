@@ -9,28 +9,49 @@
 (*
 for testing
 
-#directory "/Users/matthewbarney/projects/binreader/_build/src/utils/";;
-#directory "/Users/matthewbarney/projects/binreader/_build/src/mach/";;
-#directory "/Users/matthewbarney/projects/binreader/_build/src/goblin/";;
+#directory "../../_build/src/utils/";;
+#directory "../../_build/src/mach/";;
+#directory "../../_build/src/goblin/";;
+#directory "../../_build/src/elf/";;
+
+#load "Str.cma";;
 #load "Unix.cma";;
-#load "Binary.cmo";;
 #load "InputUtils.cmo";;
+#load "Binary.cmo";;
+#load "Leb128.cmo";;
+#load "Generics.cmo";;
+#load "Config.cmo";;
+#load "Command.cmo";;
+#load "Storage.cmo";;
+
+#load "GoblinSymbol.cmo";;
+#load "Goblin.cmo";;
+
+#load "MachExports.cmo";;
+#load "Nlist.cmo";;
+#load "CpuTypes.cmo";;
+#load "BindOpcodes.cmo";;
+#load "MachImports.cmo";;
+#load "MachHeader.cmo";;
 #load "Version.cmo";;
 #load "LoadCommand.cmo";;
-#load "BindOpcodes.cmo";;
-#load "Goblin.cmo";;
-#load "GoblinSymbol.cmo";;
-#load "Leb128.cmo";;
-#load "Imports.cmo";;
-#load "MachExports.cmo";;
-#load "Macho.cmo";;
-#load "MachHeader.cmo";;
-#load "CpuTypes.cmo";;
-#load "Generics.cmo";;
-#load "Graph.cmo";;
-#load "Object.cmo";;
 #load "Fat.cmo";;
- *)
+#load "Mach.cmo";;
+
+#load "ToL.cmo";;
+
+#load "Elf.cmo";;
+#load "ElfReloc.cmo";;
+#load "ElfHeader.cmo";;
+#load "ElfConstants.cmo";;
+#load "SymbolTable.cmo";;
+#load "Dynamic.cmo";;
+#load "SectionHeader.cmo";;
+#load "ProgramHeader.cmo";;
+
+#load "Object.cmo";;
+#load "Graph.cmo";;
+*)
 open Unix
 open Config
 
@@ -254,7 +275,7 @@ let build_polymorphic_map config =
          loop map lib_deps
   in loop ToL.empty []
 
-(* flattens symbol -> [libs] map to [mach_export_data] *)
+(* flattens symbol -> [libs] map to [goblin symbols] *)
 let flatten_polymorphic_map_to_list map =  
   ToL.SystemSymbolMap.fold
     (fun key values acc ->
@@ -366,3 +387,19 @@ let build_symbol_map config =
   Marshal.to_channel oc map [];
   close_out oc;
   Printf.printf "Done!\n"
+
+
+(* unit testing *)
+(*  
+let findf libs elem = 
+  let lib = GoblinSymbol.find_symbol_lib elem |> fst in
+  List.mem lib libs
+
+let sort = GoblinSymbol.sort_symbols
+
+let map = ToL.get ()
+let flat = flatten_polymorphic_map_to_list map
+let sflat = GoblinSymbol.sort_symbols flat
+let small = List.find_all  (findf ["/usr/lib/libz.dylib"; "/usr/lib/libobjc.dylib"]) flat
+*)
+

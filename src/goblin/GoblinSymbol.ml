@@ -252,7 +252,7 @@ let to_goblin_import symbol =
   let offset = try find_symbol_offset symbol with Not_found -> 0 in
   {Goblin.Import.name; lib=libinstall_name; is_lazy; idx; offset; size}
 
-
+(* 
 let sortunit1 = [
 [`Lib ("/usr/lib/libc.dylib", "/usr/lib/libc.dylib"); `Name "printf"; `Offset 0x500; `Kind Export];
 [`Lib ("/usr/lib/libc.dylib", "/usr/lib/libc.dylib"); `Name "printf2"; `Offset 0x300; `Kind Export];
@@ -271,4 +271,42 @@ let expected1 = [[`Lib ("/usr/lib/libc.dylib", "/usr/lib/libc.dylib"); `Name "pr
  [`Lib ("/usr/lib/libc.dylib", "/usr/lib/libc.dylib"); `Name "dir";
   `Offset 4096; `Kind Export]]
 
+let expected2 = 
+  [[`Lib ("/usr/lib/libc.dylib", "/usr/lib/libc.dylib"); `Name "printf2";
+    `Offset 768; `Kind Export];
+   [`Lib ("/usr/lib/libc.dylib", "/usr/lib/libc.dylib"); `Name "printf";
+    `Offset 1280; `Kind Export];
+   [`Lib ("/usr/lib/libc.dylib", "/usr/lib/libc.dylib"); `Name "dir";
+    `Offset 4096; `Kind Export];
+   [`Lib ("/usr/lib/malloc.dylib", "/usr/lib/malloc.dylib"); `Name "strcmp";
+    `Offset 1024; `Kind Export];
+   [`Lib ("/usr/lib/malloc.dylib", "/usr/lib/malloc.dylib"); `Name "malloc";
+    `Offset 1792; `Kind Export]]
+
 let testunit1 = (sort_symbols sortunit1) = expected1
+let testunit2 = (sort_symbols ~compare_libs:true sortunit1) = expected2
+
+
+let t1 = [
+  ("test", 0);
+  ("thug", 1);
+  ("test", 5);
+  ("test", 2);
+  ("thug", 3);
+  ("thug", 0);
+]
+
+let cmp (s,a) (t,b) = 
+  let r = String.compare s t in 
+  if r <> 0 then r 
+  else Pervasives.compare a b
+
+let cmp2 (s1, i1) (s2, i2) = 
+  if (s1 = s2) then
+    Pervasives.compare i1 i2 
+  else
+    Pervasives.compare s1 s2
+
+let sorter = List.sort cmp
+let sorter2 = List.sort cmp2
+*)
