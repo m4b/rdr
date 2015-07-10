@@ -92,7 +92,7 @@ let analyze config binary =
 	(soname,config.install_name)
 	dynamic_symbols
 	relocs
-      |> GoblinSymbol.sort_symbols_with List.sort
+      |> GoblinSymbol.sort_symbols
       |> function | [] -> [] | syms -> List.tl syms
       (* because the head (the first entry, after sorting)
          is a null entry, and also _DYNAMIC can be empty *)
@@ -119,7 +119,7 @@ let analyze config binary =
 	if (config.print_headers) then Dynamic.print_DYNAMIC _DYNAMIC;
 	if (config.print_nlist) then
 	  SymbolTable.symbols_to_goblin ~use_tol:config.use_tol ~libs:libraries (soname,config.install_name) symbol_table relocs
-	  |> GoblinSymbol.sort_symbols ~nocompare_libs:true
+	  |> GoblinSymbol.sort_symbols
 	  |> List.iter
 	       (GoblinSymbol.print_symbol_data ~like_nlist:true);
 	if (config.verbose || config.print_libraries) then

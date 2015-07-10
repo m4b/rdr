@@ -424,17 +424,18 @@ let get_exports binary dyld_info libs  =
   let boundary = (dyld_info.LoadCommand.export_size + dyld_info.LoadCommand.export_off) in
   let base = dyld_info.LoadCommand.export_off in
   if (debug) then Printf.printf "export init: 0x%x 0x%x\n" base boundary;
-  get_exports_it binary base boundary libs "" base [] |>
-  GoblinSymbol.sort_symbols |> GoblinSymbol.compute_size 0x0 (* FIX THIS WITH EXTRA NLIST DATA *) |> List.rev (* for some reason compute size wasn't reversing... ? *)
+  get_exports_it binary base boundary libs "" base []
+  |> GoblinSymbol.sort_symbols
+  |> GoblinSymbol.compute_size 0x0 (* FIX THIS WITH EXTRA NLIST DATA *)
+  |> List.rev (* for some reason compute size wasn't reversing... ? *)
 
 (* ======================== *)
 
 (* test bytes (3 exported symbols) from compiled max *)
-(*  *)
+(*  
 let unit1 = List.map (fun x -> Char.chr x) [0x00; 0x01; 0x5f; 0x00; 0x05; 0x00; 0x02; 0x5f; 0x6d; 0x68; 0x5f; 0x65; 0x78; 0x65; 0x63; 0x75; 0x74; 0x65; 0x5f; 0x68; 0x65; 0x61; 0x64; 0x65; 0x72; 0x00; 0x1f; 0x6d; 0x61; 0x00; 0x23; 0x02; 0x00; 0x00; 0x00; 0x00; 0x02; 0x78; 0x69; 0x6d; 0x75; 0x6d; 0x00; 0x30; 0x69; 0x6e; 0x00; 0x35; 0x03; 0x00; 0xc0; 0x1e; 0x00; 0x03; 0x00; 0xd0; 0x1e; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00;]
 
 let e1  = Bytes.init (List.length unit1) (fun i -> List.nth unit1 i)
 
-(* 
 let test1 = get_exports_it e1 0 64 [|"/usr/lib/libderp.so"; "/usr/lib/libthuglife.so"|] "" 0 []
  *)

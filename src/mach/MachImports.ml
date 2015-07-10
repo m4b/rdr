@@ -229,10 +229,10 @@ let get_imports binary dyld_info libs segments =
   let lazy_imports = bind_interpreter lazy_bytes 0 lazy_bind_size true in
   let nl = List.map
 	     (mach_import_to_goblin libs segments ~is_lazy:false)
-	     non_lazy_imports |> GoblinSymbol.sort_symbols ~nocompare_libs:true in
+	     non_lazy_imports |> GoblinSymbol.sort_symbols in
   let la = List.map
 	     (mach_import_to_goblin libs segments ~is_lazy:true)
-	     lazy_imports |> GoblinSymbol.sort_symbols ~nocompare_libs:true in
+	     lazy_imports |> GoblinSymbol.sort_symbols in
   nl,la
 
 let mach_import_data_to_string (data:mach_import_data) =
