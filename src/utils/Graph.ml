@@ -47,8 +47,16 @@ let from_dot_name =
   String.map (fun c -> match c with | '_' -> '.' | c' -> c')
 (* end helper *)
 
-(* exports *)
+let graph_with_dot file =
+  if (Command.program_in_path "dot") then
+    let output = (Filename.chop_suffix file ".gv") ^ ".png" in
+    Sys.command
+    @@ Printf.sprintf "dot -o %s -n -Tpng %s" output file
+    |> ignore
+  else
+    Printf.eprintf "Error: dot not installed; raw graphviz file %s written to disk\n" file
 
+(* exports *)
 let get_html_exports_header name fullname nexports = 
   (* multiline strings whitespace significant *)
   Printf.sprintf "
@@ -184,9 +192,11 @@ node [shape=plaintext]\n";
 let graph_mach_binary ?draw_imports:(draw_imports=true) ?draw_libs:(draw_libs=true) binary filename = 
   let call_graph = mach_to_html_dot binary draw_imports draw_libs in
   (*   print_string call_graph; *)
-  let oc = open_out @@ filename ^ ".gv" in
+  let file = filename ^ ".gv" in
+  let oc = open_out file in
   Printf.fprintf oc "%s" call_graph;
-  close_out oc
+  close_out oc;
+  graph_with_dot file
 
 (* lib dependency graph *)
 (* [binary, [libs]] *)
@@ -354,12 +364,4 @@ let graph_goblin ?draw_imports:(draw_imports=true) ?draw_libs:(draw_libs=true) b
   let oc = open_out file in
   Printf.fprintf oc "%s" graph;
   close_out oc;
-  if (Command.program_in_path "dot") then
-    let output = (Filename.chop_suffix file ".gv") ^ ".png" in    
-    Sys.command
-    @@ Printf.sprintf "dot -o %s -n -Tpng %s" output file
-    |> ignore
-  else
-    Printf.eprintf "Error: dot not installed; raw graphviz file %s written to disk\n" file
-			    
-    
+  graph_with_dot file
