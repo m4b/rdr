@@ -191,7 +191,7 @@ let build_polymorphic_map config =
 	 let imports = binary.Mach.imports in
 	 Array.iter
 	   (fun import ->
-	    let symbol = import.MachImports.bi.MachImports.symbol_name in
+	    let symbol = MachImports.import_name import in
 	    if (Hashtbl.mem tbl symbol) then
 	      let count = Hashtbl.find tbl symbol in
 	      Hashtbl.replace tbl symbol (count + 1)

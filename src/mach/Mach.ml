@@ -12,7 +12,7 @@ open Config (* only contains a record *)
 type mach_binary = {
   name: string;
   install_name: string;
-  imports: MachImports.import array;
+  imports: MachImports.mach_import_data array;
   nimports: int;
   exports: MachExports.mach_export_data array;
   nexports: int;
@@ -25,14 +25,18 @@ type mach_binary = {
 let imports_to_string imports = 
   let b = Buffer.create (Array.length imports) in
   Array.fold_left (fun acc import -> 
-      Buffer.add_string acc @@ Printf.sprintf "%s" @@ MachImports.import_to_string import;
+      Buffer.add_string acc
+      @@ Printf.sprintf "%s"
+      @@ MachImports.mach_import_data_to_string import;
       acc
     ) b imports |> Buffer.contents
 
 let exports_to_string exports =
   let b = Buffer.create (Array.length exports) in
   Array.fold_left (fun acc export -> 
-      Buffer.add_string acc @@ Printf.sprintf "%s" @@ MachExports.mach_export_data_to_string export;
+      Buffer.add_string acc
+      @@ Printf.sprintf "%s"
+      @@ MachExports.mach_export_data_to_string export;
       acc
     ) b exports |> Buffer.contents
 
@@ -48,47 +52,8 @@ let binary_to_string binary =
 let debug = false
 
 let create_binary (name,install_name) (nls,las) exports islib libs =
-  (*   
-  Array.iter (fun e -> Printf.printf "%s\n" e) libraries;
-  Printf.printf "nls (%d)\n" (Array.length nls);
-  Printf.printf "las (%d)\n" (Array.length las);
-  *)
-
-  let imports = [||] in
-  (* TODO: comment this for now, too annoying *)
-  (*   let len = Array.length nls in *)
   (* flatten and condense import info *)
-  (* let imports = Array.init ((Array.length nls) + (Array.length las))
-      (fun index ->
-         if (debug) then Printf.printf "index %d\n" index;
-         if (debug) then Printf.printf "len %d\n" len;
-         let bi,is_lazy = if (index < len) then nls.(index),false else las.(index - len),true in
-         let dylib = 
-           if (bi.MachImports.special_dylib = BindOpcodes.kBIND_SPECIAL_DYLIB_SELF) then 
-             begin
-               if (debug) then Printf.printf "dylib self\n";
-               name 
-             end
-           else if 
-             (bi.MachImports.special_dylib = BindOpcodes.kBIND_SPECIAL_DYLIB_FLAT_LOOKUP) then
-             begin
-               if (debug) then Printf.printf "flatlookup\n";
-               "@FLAT_LOOKUP"
-             end
-           else if(bi.MachImports.special_dylib = BindOpcodes.kBIND_SPECIAL_DYLIB_MAIN_EXECUTABLE) then
-             begin
-               if (debug) then Printf.printf "main executable\n";
-               "@MAIN_EXE"
-             end
-           else
-             begin
-               if (debug) then Printf.printf "regular %d\n" bi.MachImports.special_dylib;
-               (* this will crash the app if we come across a different ordinal *)
-               libs.(bi.MachImports.symbol_library_ordinal) 
-             end
-         in
-         {MachImports.bi; dylib; is_lazy}) in
-   *)
+  let imports = nls @ las |> Array.of_list in
   let nimports = Array.length imports in
   let exports = Array.of_list exports in
   let nexports = Array.length exports in (* careful here, due to aliasing, if order swapped, in trouble *)
@@ -111,10 +76,15 @@ let to_goblin mach =
   let nexports = mach.nexports in
   let imports =
     Array.init (mach.nimports)    
-	       (fun i ->
-		let import = mach.imports.(i) in
-		{Goblin.Import.name = import.MachImports.bi.MachImports.symbol_name; lib = import.MachImports.dylib; is_lazy = import.MachImports.is_lazy; idx = 0x0; offset = 0x0; size = 0x0 })
-  in
+      (fun i ->
+	 let import = mach.imports.(i) in
+         let name = GoblinSymbol.find_symbol_name import in
+         let lib = GoblinSymbol.find_symbol_lib import |> fst in
+         let is_lazy = MachImports.is_lazy import in 
+         let idx = i in
+         let offset = GoblinSymbol.find_symbol_offset import in
+         let size = GoblinSymbol.find_symbol_size import in  
+  {Goblin.Import.name = name; lib; is_lazy; idx; offset; size}) in
   let nimports = mach.nimports in
   let islib = mach.islib in
   let code = mach.code in
@@ -180,6 +150,7 @@ let find_export_symbol symbol binary =
     else
       loop (i + 1)
   in loop 0    
+
 
 let find_import_symbol symbol binary =
   MachImports.find symbol binary.imports
