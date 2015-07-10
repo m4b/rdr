@@ -400,6 +400,6 @@ let sort = GoblinSymbol.sort_symbols
 let map = ToL.get ()
 let flat = flatten_polymorphic_map_to_list map
 let sflat = GoblinSymbol.sort_symbols flat
-let small = List.find_all  (findf ["/usr/lib/libz.dylib"; "/usr/lib/libobjc.dylib"]) flat
+let small = List.find_all  (findf ["/usr/lib/libz.1.dylib"; "/usr/lib/libobjc.A.dylib"]) flat
 *)
 
