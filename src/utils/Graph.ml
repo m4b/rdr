@@ -125,12 +125,14 @@ let get_html_imports_header name fullname nimports =
 " name fullname nimports
 
 let get_html_import_row name import = 
-  let color = if (import.is_lazy) then "#e0ffda" else "#ffffff" in
+  let is_lazy = MachImports.is_lazy import in
+  let name = MachImports.import_name import in
+  let lib = MachImports.import_lib import in
+  let color = if (is_lazy) then "#e0ffda" else "#ffffff" in
   Printf.sprintf "   <TR>
     <TD BGCOLOR=\"%s\" PORT=\"%s\">%s</TD><TD BGCOLOR=\"%s\">%s</TD>
    </TR>
-" color import.bi.symbol_name import.bi.symbol_name color import.dylib
-
+" color name name color lib
 (* end *)
 
 (* todo: add header and footer to a wrapper function? *)
