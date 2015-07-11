@@ -6,11 +6,11 @@ build:
 install:
 	cp rdr ${HOME}/bin/
 
-map:
-	ocamlbuild.native -lib unix -lib str src/Rdr.native && mv _build/src/Rdr.native rdr && rm Rdr.native && ./rdr -b && ./rdr -m -w
+map: build
+	 ./rdr -b && ./rdr -m -w
 
-machgraph:
-	ocamlbuild.native -lib unix -lib str src/Rdr.native && mv _build/src/Rdr.native rdr && rm Rdr.native && ./rdr -g /usr/lib/libz.dylib
+machgraph: build
+	./rdr -g /usr/lib/libz.dylib
 
-elfgraph:
-	ocamlbuild.native -lib unix -lib str src/Rdr.native && mv _build/src/Rdr.native rdr && rm Rdr.native && ./rdr -g /usr/lib/libz.so.1
+elfgraph: build
+	./rdr -g /usr/lib/libz.so.1
