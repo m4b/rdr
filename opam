@@ -1,6 +1,6 @@
 opam-version: "1.2"
 name: "rdr"
-version: "1.0"
+version: "1.1"
 license: "BSD"
 maintainer: "m4b <m4b.github.io@gmail.com>"
 authors: "m4b <m4b.github.io@gmail.com>"
