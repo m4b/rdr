@@ -73,7 +73,7 @@ let get_html_exports_header name fullname nexports =
 let html_footer = "  </TABLE>\n>];\n"
 
 let get_html_export_row symbol_name export libraries =
-  let size = try GoblinSymbol.find_symbol_size export |> Printf.sprintf "%d" with Not_found -> "" in
+  let size = try Goblin.Symbol.find_symbol_size export |> Printf.sprintf "%d" with Not_found -> "" in
   (* i'm being lazy as shit and converting it back *)
   match MachExports.mach_export_data_to_export_info export with
   | Regular info ->
@@ -171,7 +171,7 @@ node [shape=plaintext]\n";
   Buffer.add_string b @@ Printf.sprintf "{ rank=same; 1->%s [style=invis]}" nodename;
   Buffer.add_string b @@ get_html_exports_header nodename binary.name binary.nexports;
   Array.iter (fun mach_export_data ->
-      let name = GoblinSymbol.find_symbol_name mach_export_data in
+      let name = Goblin.Symbol.find_symbol_name mach_export_data in
       Buffer.add_string b @@ get_html_export_row name mach_export_data binary.libs
     ) binary.exports;
   Buffer.add_string b html_footer;

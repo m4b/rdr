@@ -110,7 +110,7 @@ let analyze config binary =
        try
          ReadElf.find_export_symbol
 	   config.search_term
-	   binary |> Goblin.print_export
+	   binary |> Goblin.Export.print
        with Not_found ->
          Printf.printf "";
      else

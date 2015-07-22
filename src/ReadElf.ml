@@ -11,16 +11,16 @@ let get_goblin_kind entry bind stype =
        && entry.Elf.SymbolTable.st_shndx = 0
        && entry.Elf.SymbolTable.name <> "") (* ignore first \0 entry *)
   then
-    GoblinSymbol.Import
+    Goblin.Symbol.Import
   else if (bind = "LOCAL") then
-    GoblinSymbol.Local
+    Goblin.Symbol.Local
   else if ((bind = "GLOBAL"
 	    || (bind = "WEAK" && (stype = "FUNC"
 				  || stype = "IFUNC"
 				  || stype = "OBJECT")))
 	   && entry.Elf.SymbolTable.st_value <> 0) then
-    GoblinSymbol.Export
-  else GoblinSymbol.Other
+    Goblin.Symbol.Export
+  else Goblin.Symbol.Other
 
 (* polymorphic variants don't need to be qualified by module
  since they are open and the symbol is unique *)
@@ -42,9 +42,9 @@ let symbol_entry_to_goblin_symbol
   let lib =
     (* TODO: this is a complete disaster; *)
     match kind with
-    | `Kind GoblinSymbol.Export ->
+    | `Kind Goblin.Symbol.Export ->
        `Lib (soname,install_name)
-    | `Kind GoblinSymbol.Import ->
+    | `Kind Goblin.Symbol.Import ->
        if (ToL.is_empty tol) then
 	 `Lib ("∅","∅")
        else
@@ -76,12 +76,12 @@ let create_goblin_binary soname install_name libraries islib goblin_exports gobl
   let nlibs = Array.length libs in
   let exports =
     Array.of_list
-    @@ List.map (GoblinSymbol.to_goblin_export) goblin_exports
+    @@ List.map (Goblin.Symbol.to_goblin_export) goblin_exports
   in
   let nexports = Array.length exports in
   let imports =
     Array.of_list
-    @@ List.map (GoblinSymbol.to_goblin_import) goblin_imports
+    @@ List.map (Goblin.Symbol.to_goblin_import) goblin_imports
   in
   let nimports = Array.length imports in
   (* empty code *)
@@ -106,7 +106,7 @@ let analyze config binary =
 	(soname,config.install_name)
 	elf.Elf.dynamic_symbols
 	elf.Elf.relocations
-      |> GoblinSymbol.sort_symbols
+      |> Goblin.Symbol.sort_symbols
       |> function | [] -> [] | syms -> List.tl syms
       (* because the head (the first entry, after sorting)
          is a null entry, and also _DYNAMIC can be empty *)
@@ -114,17 +114,17 @@ let analyze config binary =
     let goblin_imports =
       List.filter
 	(fun symbol ->
-	 GoblinSymbol.find_symbol_kind symbol
+	 Goblin.Symbol.find_symbol_kind symbol
 	 |> function
-	   | GoblinSymbol.Import -> true
+	   | Goblin.Symbol.Import -> true
 	   | _ -> false) goblin_symbols
     in
     let goblin_exports =
       List.filter
 	(fun symbol ->
-	 GoblinSymbol.find_symbol_kind symbol
+	 Goblin.Symbol.find_symbol_kind symbol
 	 |> function
-	   | GoblinSymbol.Export -> true
+	   | Goblin.Symbol.Export -> true
 	   | _ -> false) goblin_symbols
     in
     (* print switches *)
@@ -139,9 +139,9 @@ let analyze config binary =
 	if (config.print_headers) then Elf.Dynamic.print_dynamic elf.Elf._dynamic;
 	if (config.print_nlist) then
 	  symbols_to_goblin ~use_tol:config.use_tol ~libs:elf.Elf.libraries (soname,config.install_name) elf.Elf.symbol_table elf.Elf.relocations
-	  |> GoblinSymbol.sort_symbols
+	  |> Goblin.Symbol.sort_symbols
 	  |> List.iter
-	       (GoblinSymbol.print_symbol_data ~like_nlist:true);
+	       (Goblin.Symbol.print_symbol_data ~like_nlist:true);
 	if (config.verbose || config.print_libraries) then
 	  begin
 	    if (elf.Elf.is_lib) then Printf.printf "Soname: %s\n" soname;
@@ -151,12 +151,12 @@ let analyze config binary =
 	if (config.verbose || config.print_exports) then
 	  begin
 	    Printf.printf "Exports (%d)\n" (List.length goblin_exports);
-	    List.iter (GoblinSymbol.print_symbol_data) goblin_exports
+	    List.iter (Goblin.Symbol.print_symbol_data) goblin_exports
 	  end;
 	if (config.verbose || config.print_imports) then
 	  begin
 	    Printf.printf "Imports (%d)\n" (List.length goblin_imports);
-	    List.iter (GoblinSymbol.print_symbol_data ~with_lib:true) goblin_imports
+	    List.iter (Goblin.Symbol.print_symbol_data ~with_lib:true) goblin_imports
 	  end
       end;
     (* ============== *)

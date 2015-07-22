@@ -24,7 +24,7 @@ for testing
 #load "Command.cmo";;
 #load "Storage.cmo";;
 
-#load "GoblinSymbol.cmo";;
+#load "Goblin.Symbol.cmo";;
 #load "Goblin.cmo";;
 
 #load "MachExports.cmo";;
@@ -226,7 +226,7 @@ let build_polymorphic_map config =
 	   Array.fold_left
 	     (fun acc data -> 
 	      (* this is bad, not checking for weird state of no export symbol name, but since i construct the data it isn't possible... right? *)
-	      let symbol = GoblinSymbol.find_symbol_name data in
+	      let symbol = Goblin.Symbol.find_symbol_name data in
 	      try 
 		(* if the symbol has a library-data mapping, then add the new lib-export data object to the export data list *)
 		let data' = ToL.find symbol acc in
@@ -258,7 +258,7 @@ let build_polymorphic_map config =
 	   Array.fold_left
 	     (fun acc data -> 
 	      let symbol = data.Goblin.Export.name in
-	      let data = GoblinSymbol.from_goblin_export
+	      let data = Goblin.Symbol.from_goblin_export
 			   data ~libname:binary.Goblin.name ~libinstall_name:binary.Goblin.install_name
 	      in (* yea, i know, whatever; it keeps the cross-platform polymorphism, aieght *)
 	      try 
@@ -323,13 +323,13 @@ let use_symbol_map config =
           ToL.find_symbol symbol map
           |> List.iter 
 	       (fun data ->
-		GoblinSymbol.print_symbol_data ~with_lib:true data;
+		Goblin.Symbol.print_symbol_data ~with_lib:true data;
 		if (config.disassemble) then
 		  begin
 
-		    let lib = GoblinSymbol.find_symbol_lib data in
-		    let startsym = GoblinSymbol.find_symbol_offset data in
-		    let size = GoblinSymbol.find_symbol_size data in (* this may not be correct size... but i do it for the lulz *)
+		    let lib = Goblin.Symbol.find_symbol_lib data in
+		    let startsym = Goblin.Symbol.find_symbol_offset data in
+		    let size = Goblin.Symbol.find_symbol_size data in (* this may not be correct size... but i do it for the lulz *)
 		    let ic = open_in_bin (snd lib) in
 		    seek_in ic startsym;
 		    let code = really_input_string ic size |> Binary.to_hex_string in
@@ -355,7 +355,7 @@ let use_symbol_map config =
       else
       (* rdr -m -w *)
       let export_list = flatten_polymorphic_map_to_list map
-                        |> GoblinSymbol.sort_symbols ~compare_libs:true
+                        |> Goblin.Symbol.sort_symbols ~compare_libs:true
       in
       let export_list_string = polymorphic_list_to_string export_list in
       if (config.write_symbols) then
@@ -392,14 +392,14 @@ let build_symbol_map config =
 (* unit testing *)
 (*  
 let findf libs elem = 
-  let lib = GoblinSymbol.find_symbol_lib elem |> fst in
+  let lib = Goblin.Symbol.find_symbol_lib elem |> fst in
   List.mem lib libs
 
-let sort = GoblinSymbol.sort_symbols
+let sort = Goblin.Symbol.sort_symbols
 
 let map = ToL.get ()
 let flat = flatten_polymorphic_map_to_list map
-let sflat = GoblinSymbol.sort_symbols flat
+let sflat = Goblin.Symbol.sort_symbols flat
 let small = List.find_all  (findf ["/usr/lib/libz.1.dylib"; "/usr/lib/libobjc.A.dylib"]) flat
 *)
 

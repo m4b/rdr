@@ -71,19 +71,19 @@ let to_goblin mach =
 	       (fun i ->
 		let export = mach.exports.(i) in
 		(MachExports.mach_export_data_to_symbol_data export
-		 |> GoblinSymbol.to_goblin_export))
+		 |> Goblin.Symbol.to_goblin_export))
   in
   let nexports = mach.nexports in
   let imports =
     Array.init (mach.nimports)    
       (fun i ->
 	 let import = mach.imports.(i) in
-         let name = GoblinSymbol.find_symbol_name import in
-         let lib = GoblinSymbol.find_symbol_lib import |> fst in
+         let name = Goblin.Symbol.find_symbol_name import in
+         let lib = Goblin.Symbol.find_symbol_lib import |> fst in
          let is_lazy = MachImports.is_lazy import in 
          let idx = i in
-         let offset = GoblinSymbol.find_symbol_offset import in
-         let size = GoblinSymbol.find_symbol_size import in  
+         let offset = Goblin.Symbol.find_symbol_offset import in
+         let size = Goblin.Symbol.find_symbol_size import in  
   {Goblin.Import.name = name; lib; is_lazy; idx; offset; size}) in
   let nimports = mach.nimports in
   let islib = mach.islib in
@@ -121,7 +121,7 @@ let analyze config binary =
       with Not_found ->
         []
     in
-    let locals = Nlist.filter_by_kind GoblinSymbol.Local symbols in
+    let locals = Nlist.filter_by_kind Goblin.Symbol.Local symbols in
     ignore locals;
     let exports = MachExports.get_exports binary dyld_info libraries in 
     (* TODO: yea, need to fix imports like machExports; send in the libraries,
@@ -145,7 +145,7 @@ let find_export_symbol symbol binary =
   let len = binary.nexports in
   let rec loop i =
     if (i >= len) then raise Not_found
-    else if (GoblinSymbol.find_symbol_name binary.exports.(i) = symbol) then
+    else if (Goblin.Symbol.find_symbol_name binary.exports.(i) = symbol) then
       binary.exports.(i)
     else
       loop (i + 1)

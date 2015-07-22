@@ -1,9 +1,9 @@
 (* Trie of Life is in goblin because it's cross platform *)
-(* Map from symbolname -> GoblinSymbol *)
+(* Map from symbolname -> Goblin.Symbol *)
 
 module SystemSymbolMap = Map.Make(String)
 
-type t = [ `Kind of GoblinSymbol.symbol_kind
+type t = [ `Kind of Goblin.Symbol.symbol_kind
            | `Lib of string * string
            | `Name of string
            | `Offset of int
@@ -17,7 +17,7 @@ type t = [ `Kind of GoblinSymbol.symbol_kind
 	   list list SystemSymbolMap.t
 
 (* type 'goblin t =
-  ([> `Kind of GoblinSymbol.symbol_kind
+  ([> `Kind of Goblin.Symbol.symbol_kind
            | `Lib of string
            | `Name of string
            | `Offset of int
@@ -50,7 +50,7 @@ let get_libraries ?bin_libs:(bin_libs=[]) symbol map =
     Generics.list_with_stringer
       ~newline:true ~omit_singleton_braces:true
       (fun symbol ->
-       let libname,libinstall_name = GoblinSymbol.find_symbol_lib symbol in
+       let libname,libinstall_name = Goblin.Symbol.find_symbol_lib symbol in
        libname (* TODO: check if correct *)
       )
       symbols
@@ -63,7 +63,7 @@ let print_map map =
       Printf.printf "%s -> %s\n" key
       @@ (Generics.list_with_stringer
 	    (fun export ->
-	     GoblinSymbol.find_symbol_lib export |> fst)
+	     Goblin.Symbol.find_symbol_lib export |> fst)
 	    (* TODO: check if correct *)
 	    values)) map
 
