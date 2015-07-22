@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 7d80c804cab5b6aadf841e1027c5fdff) *)
+(* DO NOT EDIT (digest: f61aea61876797f2a58644dafb26d478) *)
 module OASISGettext = struct
 (* # 22 "src/oasis/OASISGettext.ml" *)
 
@@ -609,21 +609,20 @@ let package_default =
   {
      MyOCamlbuildBase.lib_ocaml =
        [
-          ("utils", ["src/utils"], []);
-          ("goblin", ["src/goblin"], []);
-          ("mach", ["src/mach"], []);
-          ("elf", ["src/elf"], []);
-          ("rdrutils", ["src/rdr"], [])
+          ("utils", ["lib/utils"], []);
+          ("goblin", ["lib/goblin"], []);
+          ("mach", ["lib/mach"], []);
+          ("elf", ["lib/elf"], []);
+          ("rdrutils", ["src"], [])
        ];
      lib_c = [];
      flags = [];
      includes =
        [
-          ("src/rdr", ["src/elf"; "src/goblin"; "src/mach"; "src/utils"]);
-          ("src/mach", ["src/goblin"; "src/utils"]);
-          ("src/goblin", ["src/utils"]);
-          ("src/elf", ["src/goblin"; "src/utils"]);
-          ("src", ["src/rdr"])
+          ("src", ["lib/elf"; "lib/goblin"; "lib/mach"; "lib/utils"]);
+          ("lib/mach", ["lib/goblin"; "lib/utils"]);
+          ("lib/goblin", ["lib/utils"]);
+          ("lib/elf", ["lib/goblin"; "lib/utils"])
        ]
   }
   ;;
@@ -632,6 +631,6 @@ let conf = {MyOCamlbuildFindlib.no_automatic_syntax = false}
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default conf package_default;;
 
-# 636 "myocamlbuild.ml"
+# 635 "myocamlbuild.ml"
 (* OASIS_STOP *)
 Ocamlbuild_plugin.dispatch dispatch_default;;

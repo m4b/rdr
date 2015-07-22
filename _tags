@@ -1,0 +1,47 @@
+# OASIS_START
+# DO NOT EDIT (digest: 1a4d3250e8eaa6072884ce1dfe4503c6)
+# Ignore VCS directories, you can use the same kind of rule outside
+# OASIS_START/STOP if you want to exclude directories that contains
+# useless stuff for the build process
+true: annot, bin_annot
+<**/.svn>: -traverse
+<**/.svn>: not_hygienic
+".bzr": -traverse
+".bzr": not_hygienic
+".hg": -traverse
+".hg": not_hygienic
+".git": -traverse
+".git": not_hygienic
+"_darcs": -traverse
+"_darcs": not_hygienic
+# Library utils
+"lib/utils/utils.cmxs": use_utils
+# Library goblin
+"lib/goblin/goblin.cmxs": use_goblin
+<lib/goblin/*.ml{,i,y}>: use_utils
+# Library mach
+"lib/mach/mach.cmxs": use_mach
+<lib/mach/*.ml{,i,y}>: use_goblin
+<lib/mach/*.ml{,i,y}>: use_utils
+# Library elf
+"lib/elf/elf.cmxs": use_elf
+<lib/elf/*.ml{,i,y}>: use_goblin
+<lib/elf/*.ml{,i,y}>: use_utils
+# Library rdrutils
+"src/rdrutils.cmxs": use_rdrutils
+# Executable rdr
+<src/Rdr.{native,byte}>: pkg_str
+<src/Rdr.{native,byte}>: pkg_unix
+<src/Rdr.{native,byte}>: use_elf
+<src/Rdr.{native,byte}>: use_goblin
+<src/Rdr.{native,byte}>: use_mach
+<src/Rdr.{native,byte}>: use_rdrutils
+<src/Rdr.{native,byte}>: use_utils
+<src/*.ml{,i,y}>: pkg_str
+<src/*.ml{,i,y}>: pkg_unix
+<src/*.ml{,i,y}>: use_elf
+<src/*.ml{,i,y}>: use_goblin
+<src/*.ml{,i,y}>: use_mach
+<src/*.ml{,i,y}>: use_rdrutils
+<src/*.ml{,i,y}>: use_utils
+# OASIS_STOP

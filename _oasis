@@ -7,17 +7,18 @@ Authors:     m4b
 License:     BSD-3-clause
 
 Library "utils"
-  Path: src/utils
+  Path: lib/utils
   BuildTools: ocamlbuild
   Modules:
     Binary,
     Leb128,    
-    Command,
-    InputUtils,
-    Generics
+    Command
+  InternalModules:
+    Generics,
+    InputUtils
 
 Library "goblin"
-  Path: src/goblin
+  Path: lib/goblin
   BuildTools: ocamlbuild
   Modules:
     Goblin,
@@ -26,7 +27,7 @@ Library "goblin"
     utils
 
 Library "mach"
-  Path: src/mach
+  Path: lib/mach
   BuildTools: ocamlbuild
   Modules:
     BindOpcodes,
@@ -46,7 +47,7 @@ Library "mach"
     goblin
 
 Library "elf"
-  Path:       src/elf
+  Path: lib/elf
   BuildTools: ocamlbuild
   Modules:
    Dynamic,
@@ -61,8 +62,9 @@ Library "elf"
    utils
 
 Library "rdrutils"
-  Path: src/rdr
+  Path: src
   BuildTools: ocamlbuild
+  Install: false
   Modules:
     Config,
     Object,
