@@ -13,7 +13,8 @@
            } Elf64_Shdr;
  *)
 
-type section_header =
+(* 64 bits; t32 will be 32-bits *)
+type t =
   {
     mutable name: string;
     sh_name: int; 		(* 4 *)
@@ -182,7 +183,7 @@ let get_section_names binary offset size =
   in loop offset (IntMap.empty)
 (* unused *)
 
-let rec find_shstrtab (shs:section_header list) =
+let rec find_shstrtab shs =
   match shs with
   | [] -> None
   | sh::shs ->

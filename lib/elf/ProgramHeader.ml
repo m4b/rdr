@@ -15,7 +15,9 @@ open Printf
                uint64_t   p_align;
            } Elf64_Phdr;
  *)
-type program_header64 =
+
+(* 64 bit; t32 will be for projected 32-bit binaries *)
+type t =
   {
     p_type: int;   (* 4 *)
     p_flags: int;  (* 4 *)
