@@ -17,10 +17,11 @@ type t = {
   is_lib: bool;
   soname: string;
   libraries: string list;
+  size: int;
   code: bytes;
 }
 
-(* TODO: locate code section, or rest of raw binary *)
+(* TODO: locate code section, or rest of raw binary, should be length - (sum of headers) *)
 let get binary =
   let header = Header.get_elf_header64 binary in
   let program_headers =
@@ -40,12 +41,14 @@ let get binary =
       header.Header.e_shentsize
       header.Header.e_shnum
   in
+  let size = Bytes.length binary in
   if (not (Header.is_supported header)) then
     (* for relocs, esp /usr/lib/crt1.o *)
     {
         header;
         program_headers;
         section_headers;
+        size;
         _dynamic = [];
         dynamic_symbols = [];
         symbol_table = [];
@@ -88,6 +91,7 @@ let get binary =
         header;
         program_headers;
         section_headers;
+        size;
         _dynamic;
         dynamic_symbols;
         symbol_table;
