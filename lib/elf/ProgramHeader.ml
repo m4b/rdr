@@ -17,7 +17,7 @@ open Printf
  *)
 
 (* 64 bit; t32 will be for projected 32-bit binaries *)
-type t =
+type program_header64 =
   {
     p_type: int;   (* 4 *)
     p_flags: int;  (* 4 *)
@@ -28,6 +28,8 @@ type t =
     p_memsz: int;  (* 8 *)
     p_align: int;  (* 8 *)
   }
+
+type t = program_header64 list
 
 (* p type *)
 let kPT_NULL =		0		(* Program header table entry unused *)

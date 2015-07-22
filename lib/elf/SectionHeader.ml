@@ -13,8 +13,7 @@
            } Elf64_Shdr;
  *)
 
-(* 64 bits; t32 will be 32-bits *)
-type t =
+type section_header64 =
   {
     mutable name: string;
     sh_name: int; 		(* 4 *)
@@ -30,6 +29,9 @@ type t =
   }
 
 let sizeof_section_header = 64 	(* bytes *)    
+
+(* 64 bits; t32 will be 32-bits *)
+type t = section_header64 array
 
 let kSHT_NULL=  0(* Section header table entry unused *)
 let kSHT_PROGBITS=  1(* Program data *)

@@ -106,7 +106,7 @@ let analyze config binary =
   else
     let is_lib = (Elf.Header.is_lib header) in
     let symbol_table = Elf.SymbolTable.get_symbol_table binary section_headers in
-    let _DYNAMIC = Elf.Dynamic.get_DYNAMIC binary program_headers in
+    let _DYNAMIC = Elf.Dynamic.get_dynamic binary program_headers in
     let symtab_offset, strtab_offset, strtab_size =
       Elf.Dynamic.get_dynamic_symbol_offset_data _DYNAMIC slide_sectors
     in
@@ -163,7 +163,7 @@ let analyze config binary =
     (* print switches *)
     if (not config.silent) then
       begin
-	if (config.print_headers) then Elf.Dynamic.print_DYNAMIC _DYNAMIC;
+	if (config.print_headers) then Elf.Dynamic.print_dynamic _DYNAMIC;
 	if (config.print_nlist) then
 	  symbols_to_goblin ~use_tol:config.use_tol ~libs:libraries (soname,config.install_name) symbol_table relocs
 	  |> GoblinSymbol.sort_symbols

@@ -249,30 +249,33 @@ let get_dynamic_entry bytes offset =
   let d_un = Binary.u64 bytes (offset + 8) in
   {d_tag; d_un}
 
-let get_dynamic bytes offset size =
-  let len = offset + size in
-  let rec loop pos acc =
-    let entry = get_dynamic_entry bytes pos in
-    if (pos > len || is_null entry) then
-      List.rev acc
-    else
-      loop (pos + sizeof_dyn64) (entry::acc)
-  in loop offset []
-
 (* we use program headers in case the section headers were stripped *)
-let get_DYNAMIC binary program_headers =
+let get_dynamic binary program_headers =
   match ProgramHeader.get_dynamic_program_header program_headers with
   | None -> []
   | Some section ->
-     get_dynamic
-       binary
+    (* let _get_dynamic bytes offset size = *)
+    let offset = section.ProgramHeader.p_offset in
+    let size = section.ProgramHeader.p_filesz in
+    let len = offset + size in
+    let rec loop pos acc =
+      let entry = get_dynamic_entry binary pos in
+      if (pos > len || is_null entry) then
+        List.rev acc
+      else
+        loop (pos + sizeof_dyn64) (entry::acc)
+    in loop offset []
+
+(*
+        binary
        section.ProgramHeader.p_offset
        section.ProgramHeader.p_filesz
+ *)
 	  
 let print_dyn64 dyn64 =
      dyn64_to_string dyn64 |> Printf.printf "%s\n"
 	  
-let print_DYNAMIC dynamic =
+let print_dynamic dynamic =
   Printf.printf "Dynamic (%d):\n" @@ List.length dynamic;
   List.iter print_dyn64 dynamic
 
