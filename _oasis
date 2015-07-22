@@ -62,12 +62,12 @@ Library "elf"
   Modules:
    Elf
   InternalModules:
-   Dynamic,
-   ElfConstants,
    Header,
-   ElfReloc,
    ProgramHeader,
    SectionHeader,
+   Constants,
+   Dynamic,
+   Reloc,
    SymbolTable
   BuildDepends:
    rdr.goblin,

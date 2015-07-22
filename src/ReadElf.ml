@@ -7,19 +7,19 @@ let debug = false
  since they are open and the symbol is unique *)
 let symbol_entry_to_goblin_symbol
       ~tol:tol ~libs:libs ~relocs:relocs (soname,install_name) index entry =
-  let bind   = (SymbolTable.get_bind entry.SymbolTable.st_info |> SymbolTable.symbol_bind_to_string) in
-  let stype  = (SymbolTable.get_type entry.SymbolTable.st_info |> SymbolTable.symbol_type_to_string) in
-  let name   = `Name entry.SymbolTable.name in
+  let bind   = (Elf.SymbolTable.get_bind entry.Elf.SymbolTable.st_info |> Elf.SymbolTable.symbol_bind_to_string) in
+  let stype  = (Elf.SymbolTable.get_type entry.Elf.SymbolTable.st_info |> Elf.SymbolTable.symbol_type_to_string) in
+  let name   = `Name entry.Elf.SymbolTable.name in
   let offset =
     `Offset (
-       if (entry.SymbolTable.st_value = 0) then
+       if (entry.Elf.SymbolTable.st_value = 0) then
 	 (* this _could_ be relatively expensive *)
-	 ElfReloc.get_size index relocs
+	 Elf.Reloc.get_size index relocs
        else
-	 entry.SymbolTable.st_value)
+	 entry.Elf.SymbolTable.st_value)
   in
-  let size = `Size entry.SymbolTable.st_size in
-  let kind = `Kind (SymbolTable.get_goblin_kind entry bind stype) in
+  let size = `Size entry.Elf.SymbolTable.st_size in
+  let kind = `Kind (Elf.SymbolTable.get_goblin_kind entry bind stype) in
   let lib =
     (* TODO: this is a complete disaster; *)
     match kind with
@@ -29,7 +29,7 @@ let symbol_entry_to_goblin_symbol
        if (ToL.is_empty tol) then
 	 `Lib ("∅","∅")
        else
-	 let l = (ToL.get_libraries ~bin_libs:libs entry.SymbolTable.name tol) in
+	 let l = (ToL.get_libraries ~bin_libs:libs entry.Elf.SymbolTable.name tol) in
 	 `Lib (l,l)
     | _ ->
        `Lib ("","")
@@ -74,17 +74,17 @@ let create_goblin_binary soname install_name libraries islib goblin_exports gobl
 let analyze config binary =
   let header = Elf.Header.get_elf_header64 binary in
   let program_headers =
-    ProgramHeader.get_program_headers
+    Elf.ProgramHeader.get_program_headers
       binary
       header.Elf.Header.e_phoff
       header.Elf.Header.e_phentsize
       header.Elf.Header.e_phnum
   in
   let slide_sectors =
-    ProgramHeader.get_slide_sectors program_headers
+    Elf.ProgramHeader.get_slide_sectors program_headers
   in
   let section_headers =
-    SectionHeader.get_section_headers
+    Elf.SectionHeader.get_section_headers
       binary
       header.Elf.Header.e_shoff
       header.Elf.Header.e_shentsize
@@ -95,8 +95,8 @@ let analyze config binary =
       if (not config.search) then Elf.Header.print_elf_header64 header;
       if (config.verbose || config.print_headers) then
 	begin
-	  ProgramHeader.print_program_headers program_headers;
-	  SectionHeader.print_section_headers section_headers
+	  Elf.ProgramHeader.print_program_headers program_headers;
+	  Elf.SectionHeader.print_section_headers section_headers
 	end;
     end;
   if (not (Elf.Header.is_supported header)) then
@@ -105,17 +105,17 @@ let analyze config binary =
       config.name config.install_name [] false [] []
   else
     let is_lib = (Elf.Header.is_lib header) in
-    let symbol_table = SymbolTable.get_symbol_table binary section_headers in
-    let _DYNAMIC = Dynamic.get_DYNAMIC binary program_headers in
+    let symbol_table = Elf.SymbolTable.get_symbol_table binary section_headers in
+    let _DYNAMIC = Elf.Dynamic.get_DYNAMIC binary program_headers in
     let symtab_offset, strtab_offset, strtab_size =
-      Dynamic.get_dynamic_symbol_offset_data _DYNAMIC slide_sectors
+      Elf.Dynamic.get_dynamic_symbol_offset_data _DYNAMIC slide_sectors
     in
     let dynamic_strtab =
-      Dynamic.get_dynamic_strtab binary strtab_offset strtab_size
+      Elf.Dynamic.get_dynamic_strtab binary strtab_offset strtab_size
     in
-    let libraries = Dynamic.get_libraries _DYNAMIC dynamic_strtab in
+    let libraries = Elf.Dynamic.get_libraries _DYNAMIC dynamic_strtab in
     let dynamic_symbols =
-      Dynamic.get_dynamic_symbols
+      Elf.Dynamic.get_dynamic_symbols
 	binary
 	slide_sectors
 	symtab_offset
@@ -124,13 +124,13 @@ let analyze config binary =
     in
     let soname =
       try 
-	let offset = Dynamic.get_soname_offset _DYNAMIC in
+	let offset = Elf.Dynamic.get_soname_offset _DYNAMIC in
 	Binary.string binary (strtab_offset + offset)
       with Not_found -> config.name (* we're not a dylib *)
     in
     let relocs =
-      Dynamic.get_reloc_data _DYNAMIC slide_sectors
-      |> ElfReloc.get_relocs64 binary
+      Elf.Dynamic.get_reloc_data _DYNAMIC slide_sectors
+      |> Elf.Reloc.get_relocs64 binary
     in
     let goblin_symbols =
       symbols_to_goblin
@@ -163,7 +163,7 @@ let analyze config binary =
     (* print switches *)
     if (not config.silent) then
       begin
-	if (config.print_headers) then Dynamic.print_DYNAMIC _DYNAMIC;
+	if (config.print_headers) then Elf.Dynamic.print_DYNAMIC _DYNAMIC;
 	if (config.print_nlist) then
 	  symbols_to_goblin ~use_tol:config.use_tol ~libs:libraries (soname,config.install_name) symbol_table relocs
 	  |> GoblinSymbol.sort_symbols
