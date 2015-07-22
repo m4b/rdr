@@ -70,7 +70,6 @@ Library "elf"
    Reloc,
    SymbolTable
   BuildDepends:
-   rdr.goblin,
    rdr.utils
 
 Library "rdr"

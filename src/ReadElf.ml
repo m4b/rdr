@@ -2,6 +2,26 @@ open Config
 
 let debug = false
 
+(* goblin *)
+
+(* hacky function to filter imports from exports, etc. *)
+(* todo use proper variants here ffs *)
+let get_goblin_kind entry bind stype =
+  if (entry.Elf.SymbolTable.st_value = 0x0
+       && entry.Elf.SymbolTable.st_shndx = 0
+       && entry.Elf.SymbolTable.name <> "") (* ignore first \0 entry *)
+  then
+    GoblinSymbol.Import
+  else if (bind = "LOCAL") then
+    GoblinSymbol.Local
+  else if ((bind = "GLOBAL"
+	    || (bind = "WEAK" && (stype = "FUNC"
+				  || stype = "IFUNC"
+				  || stype = "OBJECT")))
+	   && entry.Elf.SymbolTable.st_value <> 0) then
+    GoblinSymbol.Export
+  else GoblinSymbol.Other
+
 (* polymorphic variants don't need to be qualified by module
  since they are open and the symbol is unique *)
 let symbol_entry_to_goblin_symbol
@@ -18,7 +38,7 @@ let symbol_entry_to_goblin_symbol
 	 entry.Elf.SymbolTable.st_value)
   in
   let size = `Size entry.Elf.SymbolTable.st_size in
-  let kind = `Kind (Elf.SymbolTable.get_goblin_kind entry bind stype) in
+  let kind = `Kind (get_goblin_kind entry bind stype) in
   let lib =
     (* TODO: this is a complete disaster; *)
     match kind with
@@ -71,7 +91,8 @@ let create_goblin_binary soname install_name libraries islib goblin_exports gobl
    imports; nimports; code}
 
 let analyze config binary =
-  let (elf:Elf.t) = Elf.get binary in
+  let elf = Elf.get binary in
+  (* for consistency and display, goblin makes everything have names *)
   let soname = if (elf.Elf.soname = "") then config.name else elf.Elf.soname in
   if (not (Elf.Header.is_supported elf.Elf.header)) then
     (* for relocs, esp /usr/lib/crt1.o *)
