@@ -1,4 +1,5 @@
 S src
+S src/rdrutils
 S src/mach
 S src/elf
 S src/goblin

@@ -3,6 +3,53 @@ open Config
 
 let debug = false
 
+(* polymorphic variants don't need to be qualified by module
+ since they are open and the symbol is unique *)
+let symbol_entry_to_goblin_symbol
+      ~tol:tol ~libs:libs ~relocs:relocs (soname,install_name) index entry =
+  let bind   = (SymbolTable.get_bind entry.SymbolTable.st_info |> SymbolTable.symbol_bind_to_string) in
+  let stype  = (SymbolTable.get_type entry.SymbolTable.st_info |> SymbolTable.symbol_type_to_string) in
+  let name   = `Name entry.SymbolTable.name in
+  let offset =
+    `Offset (
+       if (entry.SymbolTable.st_value = 0) then
+	 (* this _could_ be relatively expensive *)
+	 ElfReloc.get_size index relocs
+       else
+	 entry.SymbolTable.st_value)
+  in
+  let size = `Size entry.SymbolTable.st_size in
+  let kind = `Kind (SymbolTable.get_goblin_kind entry bind stype) in
+  let lib =
+    (* TODO: this is a complete disaster; *)
+    match kind with
+    | `Kind GoblinSymbol.Export ->
+       `Lib (soname,install_name)
+    | `Kind GoblinSymbol.Import ->
+       if (ToL.is_empty tol) then
+	 `Lib ("∅","∅")
+       else
+	 let l = (ToL.get_libraries ~bin_libs:libs entry.name tol) in
+	 `Lib (l,l)
+    | _ ->
+       `Lib ("","")
+  in
+  let data = `PrintableData
+	      (Printf.sprintf
+		 "%s %s" bind stype) in
+  [name; lib; offset; size; kind; data]
+
+let symbols_to_goblin ?use_tol:(use_tol=true) ~libs:libs soname dynsyms relocs =
+  let tol =
+    try
+      if (use_tol) then ToL.get () else ToL.empty
+    with ToL.Not_built ->
+      ToL.empty
+  in
+  List.mapi
+    (symbol_entry_to_goblin_symbol
+       ~tol:tol ~libs:libs ~relocs:relocs soname) dynsyms
+              
 let create_goblin_binary soname install_name libraries islib goblin_exports goblin_imports =
   let name = soname in
   let install_name = install_name in
@@ -86,7 +133,7 @@ let analyze config binary =
       |> ElfReloc.get_relocs64 binary
     in
     let goblin_symbols =
-      SymbolTable.symbols_to_goblin
+      symbols_to_goblin
 	~use_tol:config.use_tol
 	~libs:libraries
 	(soname,config.install_name)
@@ -118,7 +165,7 @@ let analyze config binary =
       begin
 	if (config.print_headers) then Dynamic.print_DYNAMIC _DYNAMIC;
 	if (config.print_nlist) then
-	  SymbolTable.symbols_to_goblin ~use_tol:config.use_tol ~libs:libraries (soname,config.install_name) symbol_table relocs
+	  symbols_to_goblin ~use_tol:config.use_tol ~libs:libraries (soname,config.install_name) symbol_table relocs
 	  |> GoblinSymbol.sort_symbols
 	  |> List.iter
 	       (GoblinSymbol.print_symbol_data ~like_nlist:true);

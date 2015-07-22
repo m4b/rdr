@@ -1,0 +1,91 @@
+OASISFormat: 0.4
+Plugins: META (0.4), DevFiles (0.4)
+Name:        rdr
+Version:     1.1
+Synopsis:    Lightweight, cross platform binary parsing and analysis library with no dependencies
+Authors:     m4b
+License:     BSD-3-clause
+
+Library "utils"
+  Path: src/utils
+  BuildTools: ocamlbuild
+  Modules:
+    Binary,
+    Leb128,    
+    Command,
+    InputUtils,
+    Generics
+
+Library "goblin"
+  Path: src/goblin
+  BuildTools: ocamlbuild
+  Modules:
+    Goblin,
+    GoblinSymbol
+  BuildDepends:
+    utils
+
+Library "mach"
+  Path: src/mach
+  BuildTools: ocamlbuild
+  Modules:
+    BindOpcodes,
+    CpuTypes,
+    Fat,
+    LoadCommand,
+    MachConstants,
+    MachExports,
+    MachHeader,
+    MachImports,
+    MachSegment64,
+    Nlist,
+    RebaseOpcodes,
+    Version
+  BuildDepends:
+    utils,
+    goblin
+
+Library "elf"
+  Path:       src/elf
+  BuildTools: ocamlbuild
+  Modules:
+   Dynamic,
+   ElfConstants,
+   ElfHeader,
+   ElfReloc,
+   ProgramHeader,
+   SectionHeader,
+   SymbolTable
+  BuildDepends:
+   goblin,
+   utils
+
+Library "rdrutils"
+  Path: src/rdr
+  BuildTools: ocamlbuild
+  Modules:
+    Config,
+    Object,
+    Graph,
+    Storage,
+    SymbolMap,
+    Mach,
+    Elf,
+    ToL
+  BuildDepends:
+    goblin,
+    utils,
+    elf,
+    mach,
+    str,
+    unix
+
+Executable "rdr"
+  Path: src
+  MainIs: Rdr.ml
+  BuildTools: ocamlbuild
+  CompiledObject: best
+  BuildDepends:
+    rdrutils,
+    str
+
