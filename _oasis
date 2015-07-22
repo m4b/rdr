@@ -19,7 +19,6 @@ Library "utils"
 #  InternalModules:
     Generics
 
-
 Library "goblin"
   Path: lib/goblin
   BuildTools: ocamlbuild
@@ -83,7 +82,7 @@ Library "rdr"
     LibRdr
   BuildDepends:
    rdr.goblin,
-   rdr.utils,   
+   rdr.utils,
    rdr.mach,
    rdr.elf
 
