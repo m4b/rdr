@@ -20,7 +20,8 @@ type t = {
   code: bytes;
 }
 
-let get binary name =
+(* TODO: locate code section, or rest of raw binary *)
+let get binary =
   let header = Header.get_elf_header64 binary in
   let program_headers =
     ProgramHeader.get_program_headers
@@ -50,7 +51,7 @@ let get binary name =
         symbol_table = [];
         relocations = [];
         is_lib = false;
-        soname = name;
+        soname = "";
         libraries = [];
         code = Bytes.create 0;  (* TODO: fix  *)
     }
@@ -77,7 +78,7 @@ let get binary name =
       try 
 	let offset = Dynamic.get_soname_offset _dynamic in
 	Binary.string binary (strtab_offset + offset)
-      with Not_found -> name (* we're not a dylib *)
+      with Not_found -> "" (* we're not a dylib *)
     in
     let relocations =
       Dynamic.get_reloc_data _dynamic slide_sectors
@@ -94,5 +95,5 @@ let get binary name =
         is_lib;
         soname;
         libraries;
-        code = Bytes.create 0;
+        code = Bytes.create 0;  (* TODO: fix *)
     }
