@@ -1,8 +1,3 @@
-(* 
-TODO:
-(1) MAJOR TODO: change the exports and imports from maps to arrays or lists --- terrible mistake to use maps in first place...
- *)
-
 (*
  GOBLIN:
  Generic Object Binary Logical Information Node
@@ -23,26 +18,11 @@ TODO:
 (* tol#find import.lib -> AbstractBinary.t *)
 (* (ab#get_import name).idx *)
 
-module Import = struct 
-  type t = 
-    {
-      name: string;        (* name of the imported symbol *)
-      lib: string;         (* library which contains the binary *)
-      is_lazy: bool;
-      mutable idx: int;    (* the index into some goblin's export code section, typically generated via the dynamic linker *)
-      mutable offset: int; (* offset into (tol#find import.lib).code *)
-      size: int;           (* size of the imported symbol, in bytes *)
-    }
-end
+module Symbol = GoblinSymbol
 
-module Export = struct 
-  type t = 
-    {
-      name: string;     (* name of the exported symbol *)
-      offset: int;      (* offset into the containing binary's byte array *)
-      size: int;        (* size of the routine, in bytes *)
-    }
-end
+module Import = Import
+
+module Export = Export
 
 module StringMap = Map.Make(String)
 

@@ -2,7 +2,6 @@
 module Elf = Elf
 module Mach = Mach
 module Goblin = Goblin
-module GoblinSymbol = GoblinSymbol
 (* todo, make these Input.Binary , etc. *)
 module Binary = Binary
 module Command = Command

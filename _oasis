@@ -26,8 +26,11 @@ Library "goblin"
   FindLibParent: rdr
   FindLibName: goblin
   Modules:
-    Goblin,
-    GoblinSymbol
+    Goblin
+  InternalModules:
+    GoblinSymbol,
+    Export,
+    Import
   BuildDepends:
     rdr.utils
 

@@ -35,6 +35,8 @@ type symbol_datum =
   | `PrintableData of string
   ]
 
+type t = symbol_datum list
+
 let kORDINAL_LEFT = 1
 let kORDINAL_CENTER = 5
 let kORDINAL_RIGHT = 11
@@ -232,12 +234,12 @@ let to_goblin_export symbol =
   let name = find_symbol_name symbol in
   let offset = try find_symbol_offset symbol with Not_found -> 0x0 in
   let size = try find_symbol_size symbol with Not_found -> 0x0 in
-  {Goblin.Export.name; offset; size}
+  {Export.name; offset; size}
 
 let from_goblin_export symbol ~libname:libname ~libinstall_name:libinstall_name =
-  let name = `Name symbol.Goblin.Export.name in
-  let offset = `Offset symbol.Goblin.Export.offset in
-  let size = `Size symbol.Goblin.Export.size in
+  let name = `Name symbol.Export.name in
+  let offset = `Offset symbol.Export.offset in
+  let size = `Size symbol.Export.size in
   let lib = `Lib (libname,libinstall_name) in
   let kind = `Kind Export in
   [name; offset; size; lib; kind]
@@ -250,7 +252,7 @@ let to_goblin_import symbol =
   let idx = 0x0 in
   let size = find_symbol_size symbol in
   let offset = try find_symbol_offset symbol with Not_found -> 0 in
-  {Goblin.Import.name; lib=libinstall_name; is_lazy; idx; offset; size}
+  {Import.name; lib=libinstall_name; is_lazy; idx; offset; size}
 
 (* 
 let sortunit1 = [
