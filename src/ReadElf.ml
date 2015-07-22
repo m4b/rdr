@@ -1,4 +1,3 @@
-open Binary
 open Config
 
 let debug = false
@@ -72,73 +71,20 @@ let create_goblin_binary soname install_name libraries islib goblin_exports gobl
    imports; nimports; code}
 
 let analyze config binary =
-  let header = Elf.Header.get_elf_header64 binary in
-  let program_headers =
-    Elf.ProgramHeader.get_program_headers
-      binary
-      header.Elf.Header.e_phoff
-      header.Elf.Header.e_phentsize
-      header.Elf.Header.e_phnum
-  in
-  let slide_sectors =
-    Elf.ProgramHeader.get_slide_sectors program_headers
-  in
-  let section_headers =
-    Elf.SectionHeader.get_section_headers
-      binary
-      header.Elf.Header.e_shoff
-      header.Elf.Header.e_shentsize
-      header.Elf.Header.e_shnum
-  in
-  if (not config.silent) then
-    begin
-      if (not config.search) then Elf.Header.print_elf_header64 header;
-      if (config.verbose || config.print_headers) then
-	begin
-	  Elf.ProgramHeader.print_program_headers program_headers;
-	  Elf.SectionHeader.print_section_headers section_headers
-	end;
-    end;
-  if (not (Elf.Header.is_supported header)) then
+  let (elf:Elf.t) = Elf.get binary in
+  let soname = if (elf.Elf.soname = "") then config.name else elf.Elf.soname in
+  if (not (Elf.Header.is_supported elf.Elf.header)) then
     (* for relocs, esp /usr/lib/crt1.o *)
     create_goblin_binary
       config.name config.install_name [] false [] []
   else
-    let is_lib = (Elf.Header.is_lib header) in
-    let symbol_table = Elf.SymbolTable.get_symbol_table binary section_headers in
-    let _DYNAMIC = Elf.Dynamic.get_dynamic binary program_headers in
-    let symtab_offset, strtab_offset, strtab_size =
-      Elf.Dynamic.get_dynamic_symbol_offset_data _DYNAMIC slide_sectors
-    in
-    let dynamic_strtab =
-      Elf.Dynamic.get_dynamic_strtab binary strtab_offset strtab_size
-    in
-    let libraries = Elf.Dynamic.get_libraries _DYNAMIC dynamic_strtab in
-    let dynamic_symbols =
-      Elf.Dynamic.get_dynamic_symbols
-	binary
-	slide_sectors
-	symtab_offset
-	strtab_offset
-	strtab_size
-    in
-    let soname =
-      try 
-	let offset = Elf.Dynamic.get_soname_offset _DYNAMIC in
-	Binary.string binary (strtab_offset + offset)
-      with Not_found -> config.name (* we're not a dylib *)
-    in
-    let relocs =
-      Elf.Dynamic.get_reloc_data _DYNAMIC slide_sectors
-      |> Elf.Reloc.get_relocs64 binary
-    in
     let goblin_symbols =
       symbols_to_goblin
 	~use_tol:config.use_tol
-	~libs:libraries
+	~libs:elf.Elf.libraries
 	(soname,config.install_name)
-	dynamic_symbols
-	relocs
+	elf.Elf.dynamic_symbols
+	elf.Elf.relocations
       |> GoblinSymbol.sort_symbols
       |> function | [] -> [] | syms -> List.tl syms
       (* because the head (the first entry, after sorting)
@@ -160,20 +106,27 @@ let analyze config binary =
 	   | GoblinSymbol.Export -> true
 	   | _ -> false) goblin_symbols
     in
+    
     (* print switches *)
     if (not config.silent) then
       begin
-	if (config.print_headers) then Elf.Dynamic.print_dynamic _DYNAMIC;
+      if (not config.search) then Elf.Header.print_elf_header64 elf.Elf.header;
+      if (config.verbose || config.print_headers) then
+	begin
+	  Elf.ProgramHeader.print_program_headers elf.Elf.program_headers;
+	  Elf.SectionHeader.print_section_headers elf.Elf.section_headers
+	end;
+	if (config.print_headers) then Elf.Dynamic.print_dynamic elf.Elf._dynamic;
 	if (config.print_nlist) then
-	  symbols_to_goblin ~use_tol:config.use_tol ~libs:libraries (soname,config.install_name) symbol_table relocs
+	  symbols_to_goblin ~use_tol:config.use_tol ~libs:elf.Elf.libraries (soname,config.install_name) elf.Elf.symbol_table elf.Elf.relocations
 	  |> GoblinSymbol.sort_symbols
 	  |> List.iter
 	       (GoblinSymbol.print_symbol_data ~like_nlist:true);
 	if (config.verbose || config.print_libraries) then
 	  begin
-	    if (is_lib) then Printf.printf "Soname: %s\n" soname;
-	    Printf.printf "Libraries (%d)\n" (List.length libraries);
-	    List.iter (Printf.printf "\t%s\n") libraries
+	    if (elf.Elf.is_lib) then Printf.printf "Soname: %s\n" soname;
+	    Printf.printf "Libraries (%d)\n" (List.length elf.Elf.libraries);
+	    List.iter (Printf.printf "\t%s\n") elf.Elf.libraries
 	  end;
 	if (config.verbose || config.print_exports) then
 	  begin
@@ -191,8 +144,8 @@ let analyze config binary =
     create_goblin_binary
       soname      
       config.install_name
-      libraries
-      is_lib
+      elf.Elf.libraries
+      elf.Elf.is_lib
       goblin_exports
       goblin_imports    
 

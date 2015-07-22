@@ -1,3 +1,6 @@
+(* TODO: Consider moving this and mach's deps on goblin into goblin with from_elf, from_mach *)
+(* TODO: locate code section, or rest of raw binary, should be length - (sum of headers) *)
+
 module Header = Header
 module ProgramHeader = ProgramHeader
 module SectionHeader = SectionHeader
@@ -101,3 +104,25 @@ let get binary =
         libraries;
         code = Bytes.create 0;  (* TODO: fix *)
     }
+
+(* TODO: Consider moving this and mach's deps on goblin into goblin with from_elf, from_mach *)
+let create_goblin_binary soname install_name libraries islib goblin_exports goblin_imports =
+  let name = soname in
+  let install_name = install_name in
+  let libs = Array.of_list (soname::libraries) in (* to be consistent... for graphing, etc. *)
+  let nlibs = Array.length libs in
+  let exports =
+    Array.of_list
+    @@ List.map (GoblinSymbol.to_goblin_export) goblin_exports
+  in
+  let nexports = Array.length exports in
+  let imports =
+    Array.of_list
+    @@ List.map (GoblinSymbol.to_goblin_import) goblin_imports
+  in
+  let nimports = Array.length imports in
+  (* TODO: empty code *)
+  let code = Bytes.empty in
+  {Goblin.name;
+   install_name; islib; libs; nlibs; exports; nexports;
+   imports; nimports; code}
