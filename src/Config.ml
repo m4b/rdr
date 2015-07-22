@@ -1,5 +1,3 @@
-(* a fucking config file cause david told me I'm dumb for not having one... and DAVID BE MAD RIGHT *)
-
 type basic_config =
   {
     (* internal *)
