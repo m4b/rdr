@@ -10,11 +10,11 @@ let get_bytes ?verbose:(verbose=false) filename =
     (* 4 bytes, less than any magic number we're looking for *)
     Unknown
   else
-    let magic = InputUtils.input_i32be ic in
+    let magic = Input.input_i32be ic in
     if (verbose) then
       Printf.printf "opening %s with magic: 0x%x\n" filename magic;
     if (magic = Fat.kFAT_MAGIC) (* cafe babe *) then
-      let nfat_arch = InputUtils.input_i32be ic in
+      let nfat_arch = Input.input_i32be ic in
       let sizeof_arch_bytes = nfat_arch * Fat.sizeof_fat_arch in
       let fat_arch_bytes = Bytes.create sizeof_arch_bytes in
       really_input ic fat_arch_bytes 0 sizeof_arch_bytes;
@@ -23,7 +23,7 @@ let get_bytes ?verbose:(verbose=false) filename =
       match offset with
       | Some (offset, size) ->
 	 seek_in ic offset;
-	 let magic = InputUtils.input_i32be ic in
+	 let magic = Input.input_i32be ic in
 	 if (magic = MachHeader.kMH_CIGAM_64) then
            begin
              seek_in ic offset;
@@ -50,13 +50,13 @@ let get_bytes ?verbose:(verbose=false) filename =
 	close_in ic;
 	Mach binary
       end 
-    else if (magic = ElfHeader.kMAGIC_ELF) then
+    else if (magic = Elf.Header.kMAGIC_ELF) then
       begin
 	seek_in ic 0;  
 	let binary = Bytes.create (in_channel_length ic) in
 	really_input ic binary 0 (in_channel_length ic);
 	close_in ic;
-	if (ElfHeader.check_64bit binary) then
+	if (Elf.Header.check_64bit binary) then
 	  Elf binary
 	else
 	  Unknown

@@ -28,6 +28,8 @@ type rela64 =
 
 let sizeof_rela64 = 24 		(* bytes *)
 
+type t = rela64 list
+
 let get_sym64  i = i asr 32
 let get_type64 i = i land 0xffffffff
 

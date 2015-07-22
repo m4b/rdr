@@ -233,6 +233,8 @@ type dyn64 =
     d_un: int;
   }
 
+type t = dyn64 list
+
 let sizeof_dyn64 = 16
 
 let is_null dyn64 =

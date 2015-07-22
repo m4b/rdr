@@ -4,7 +4,9 @@ S lib/elf
 S lib/goblin
 S lib/utils
 
-S src
+S src/*
 
+B _build/lib
 B _build/lib/*
 B _build/src/*
+B _build/src

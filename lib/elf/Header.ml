@@ -15,8 +15,9 @@ let sizeof_e_ident = 16 (* bytes *)
 
 let kMAGIC_ELF = 0x7f454c46
 let kCIGAM_ELF = 0x464c457f 
-		   
-type elf_header64 =
+
+(* 64 bit is default; 32 will be t32 *)
+type t =
   {
     e_ident: e_ident;
     e_type: int; (* 2 bytes 1 = relocatable, 2 = executable, 3 = shared 4 = core *)

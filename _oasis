@@ -13,11 +13,12 @@ Library "utils"
   FindLibName: utils
   Modules:
     Binary,
-    Leb128,    
+    Input,
+    Leb128,
     Command,
 #  InternalModules:
-    Generics,
-    InputUtils
+    Generics
+
 
 Library "goblin"
   Path: lib/goblin
@@ -59,10 +60,11 @@ Library "elf"
   FindLibName: elf
   BuildTools: ocamlbuild
   Modules:
-   Elf,
+   Elf
+  InternalModules:
    Dynamic,
    ElfConstants,
-   ElfHeader,
+   Header,
    ElfReloc,
    ProgramHeader,
    SectionHeader,

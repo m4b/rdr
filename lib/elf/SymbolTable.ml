@@ -114,6 +114,8 @@ type symbol_entry =
 
 let sizeof_symbol_entry = 24
 
+type t = symbol_entry list
+
 let symbol_to_string symbol =
   Printf.sprintf "%s 0x%x %s %s %s size: %d index: %d "
    symbol.name

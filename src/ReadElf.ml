@@ -49,7 +49,7 @@ let symbols_to_goblin ?use_tol:(use_tol=true) ~libs:libs soname dynsyms relocs =
   List.mapi
     (symbol_entry_to_goblin_symbol
        ~tol:tol ~libs:libs ~relocs:relocs soname) dynsyms
-              
+
 let create_goblin_binary soname install_name libraries islib goblin_exports goblin_imports =
   let name = soname in
   let install_name = install_name in
@@ -72,13 +72,13 @@ let create_goblin_binary soname install_name libraries islib goblin_exports gobl
    imports; nimports; code}
 
 let analyze config binary =
-  let header = ElfHeader.get_elf_header64 binary in
+  let header = Elf.Header.get_elf_header64 binary in
   let program_headers =
     ProgramHeader.get_program_headers
       binary
-      header.ElfHeader.e_phoff
-      header.ElfHeader.e_phentsize
-      header.ElfHeader.e_phnum
+      header.Elf.Header.e_phoff
+      header.Elf.Header.e_phentsize
+      header.Elf.Header.e_phnum
   in
   let slide_sectors =
     ProgramHeader.get_slide_sectors program_headers
@@ -86,25 +86,25 @@ let analyze config binary =
   let section_headers =
     SectionHeader.get_section_headers
       binary
-      header.ElfHeader.e_shoff
-      header.ElfHeader.e_shentsize
-      header.ElfHeader.e_shnum
+      header.Elf.Header.e_shoff
+      header.Elf.Header.e_shentsize
+      header.Elf.Header.e_shnum
   in
   if (not config.silent) then
     begin
-      if (not config.search) then ElfHeader.print_elf_header64 header;
+      if (not config.search) then Elf.Header.print_elf_header64 header;
       if (config.verbose || config.print_headers) then
 	begin
 	  ProgramHeader.print_program_headers program_headers;
 	  SectionHeader.print_section_headers section_headers
 	end;
     end;
-  if (not (ElfHeader.is_supported header)) then
+  if (not (Elf.Header.is_supported header)) then
     (* for relocs, esp /usr/lib/crt1.o *)
     create_goblin_binary
       config.name config.install_name [] false [] []
   else
-    let is_lib = (ElfHeader.is_lib header) in
+    let is_lib = (Elf.Header.is_lib header) in
     let symbol_table = SymbolTable.get_symbol_table binary section_headers in
     let _DYNAMIC = Dynamic.get_DYNAMIC binary program_headers in
     let symtab_offset, strtab_offset, strtab_size =
