@@ -127,7 +127,6 @@ let analyze config binary =
 	   | GoblinSymbol.Export -> true
 	   | _ -> false) goblin_symbols
     in
-    
     (* print switches *)
     if (not config.silent) then
       begin
