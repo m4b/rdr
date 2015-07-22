@@ -66,12 +66,23 @@ type t =
       *)
 
 let get_symbol collection i = Array.get collection i
-      
+
+let _find pred arr =
+  let size = Array.length arr in
+  let rec loop i =
+    if (i >= size) then raise Not_found
+    else
+      if (pred arr.(i)) then
+	arr.(i)
+      else
+	loop (i + 1)
+  in loop 0
+                                        
 let get_import import  =
-  Generics.find (fun symbol -> symbol.Import.name = import) 
+  _find (fun symbol -> symbol.Import.name = import) 
 
 let get_export export =
-  Generics.find (fun symbol -> symbol.Export.name = export)
+  _find (fun symbol -> symbol.Export.name = export)
 
 let iter = 
   Array.iter
@@ -90,7 +101,7 @@ let imports_to_string imports =
       let squiggle = if (import.Import.is_lazy) then "~>" else "->" in
       Buffer.add_string b @@ Printf.sprintf "%s (%d) %s %s\n" import.Import.name import.Import.size squiggle import.Import.lib) imports;
   Buffer.contents b
-
+                  
 let exports_to_string exports = 
   let b = Buffer.create @@ (Array.length exports) * 15 in (* just ballpark *)
   Array.iter (fun export -> 

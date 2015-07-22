@@ -29,7 +29,7 @@ let symbol_entry_to_goblin_symbol
        if (ToL.is_empty tol) then
 	 `Lib ("∅","∅")
        else
-	 let l = (ToL.get_libraries ~bin_libs:libs entry.name tol) in
+	 let l = (ToL.get_libraries ~bin_libs:libs entry.SymbolTable.name tol) in
 	 `Lib (l,l)
     | _ ->
        `Lib ("","")

@@ -9,27 +9,34 @@ License:     BSD-3-clause
 Library "utils"
   Path: lib/utils
   BuildTools: ocamlbuild
+  FindLibParent: rdr  
+  FindLibName: utils
   Modules:
     Binary,
     Leb128,    
-    Command
-  InternalModules:
+    Command,
+#  InternalModules:
     Generics,
     InputUtils
 
 Library "goblin"
   Path: lib/goblin
   BuildTools: ocamlbuild
+  FindLibParent: rdr
+  FindLibName: goblin
   Modules:
     Goblin,
     GoblinSymbol
   BuildDepends:
-    utils
+    rdr.utils
 
 Library "mach"
   Path: lib/mach
   BuildTools: ocamlbuild
+  FindLibParent: rdr
+  FindLibName: mach
   Modules:
+    Mach,
     BindOpcodes,
     CpuTypes,
     Fat,
@@ -43,13 +50,16 @@ Library "mach"
     RebaseOpcodes,
     Version
   BuildDepends:
-    utils,
-    goblin
+    rdr.utils,
+    rdr.goblin
 
 Library "elf"
   Path: lib/elf
+  FindLibParent: rdr  
+  FindLibName: elf
   BuildTools: ocamlbuild
   Modules:
+   Elf,
    Dynamic,
    ElfConstants,
    ElfHeader,
@@ -58,8 +68,20 @@ Library "elf"
    SectionHeader,
    SymbolTable
   BuildDepends:
-   goblin,
-   utils
+   rdr.goblin,
+   rdr.utils
+
+Library "rdr"
+  Path: lib
+  FindLibName: rdr
+  BuildTools: ocamlbuild
+  Modules:
+    LibRdr
+  BuildDepends:
+   rdr.goblin,
+   rdr.utils,   
+   rdr.mach,
+   rdr.elf
 
 Library "rdrutils"
   Path: src
@@ -71,14 +93,15 @@ Library "rdrutils"
     Graph,
     Storage,
     SymbolMap,
-    Mach,
-    Elf,
+    ReadMach,
+    ReadElf,
     ToL
   BuildDepends:
-    goblin,
-    utils,
-    elf,
-    mach,
+#    rdr,
+    rdr.elf,
+    rdr.mach,
+    rdr.goblin,
+    rdr.utils,
     str,
     unix
 
@@ -90,4 +113,3 @@ Executable "rdr"
   BuildDepends:
     rdrutils,
     str
-

@@ -75,10 +75,10 @@ so... I should do it, right?
 let analyze config binary =
   match binary with
   | Mach bytes ->
-     let binary = Mach.analyze config bytes in     
+     let binary = ReadMach.analyze config bytes in     
      if (config.search) then
        try
-         Mach.find_export_symbol
+         ReadMach.find_export_symbol
 	   config.search_term binary
 	 |> MachExports.print_mach_export_data ~simple:true
        (* TODO: add find import symbol *)
@@ -88,7 +88,7 @@ let analyze config binary =
        if (config.graph) then
          if (config.use_goblin) then
            begin
-             let goblin = Mach.to_goblin binary in
+             let goblin = ReadMach.to_goblin binary in
              Graph.graph_goblin
 	       ~draw_imports:true
 	       ~draw_libs:true goblin
@@ -105,10 +105,10 @@ let analyze config binary =
   (* ===================== *)
   | Elf binary ->
      (* analyze the binary and print program headers, etc. *)
-     let binary = Elf.analyze config binary in
+     let binary = ReadElf.analyze config binary in
      if (config.search) then
        try
-         Elf.find_export_symbol
+         ReadElf.find_export_symbol
 	   config.search_term
 	   binary |> Goblin.print_export
        with Not_found ->

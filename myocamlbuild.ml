@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: f61aea61876797f2a58644dafb26d478) *)
+(* DO NOT EDIT (digest: aa10c353b2a8a42f1631eca13c2cee38) *)
 module OASISGettext = struct
 (* # 22 "src/oasis/OASISGettext.ml" *)
 
@@ -613,6 +613,7 @@ let package_default =
           ("goblin", ["lib/goblin"], []);
           ("mach", ["lib/mach"], []);
           ("elf", ["lib/elf"], []);
+          ("rdr", ["lib"], []);
           ("rdrutils", ["src"], [])
        ];
      lib_c = [];
@@ -622,7 +623,8 @@ let package_default =
           ("src", ["lib/elf"; "lib/goblin"; "lib/mach"; "lib/utils"]);
           ("lib/mach", ["lib/goblin"; "lib/utils"]);
           ("lib/goblin", ["lib/utils"]);
-          ("lib/elf", ["lib/goblin"; "lib/utils"])
+          ("lib/elf", ["lib/goblin"; "lib/utils"]);
+          ("lib", ["lib/elf"; "lib/goblin"; "lib/mach"; "lib/utils"])
        ]
   }
   ;;
@@ -631,6 +633,6 @@ let conf = {MyOCamlbuildFindlib.no_automatic_syntax = false}
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default conf package_default;;
 
-# 635 "myocamlbuild.ml"
+# 637 "myocamlbuild.ml"
 (* OASIS_STOP *)
 Ocamlbuild_plugin.dispatch dispatch_default;;

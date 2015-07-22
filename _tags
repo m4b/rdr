@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 1a4d3250e8eaa6072884ce1dfe4503c6)
+# DO NOT EDIT (digest: f38e0e54eab9e3c421c54f474e685035)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -27,6 +27,12 @@ true: annot, bin_annot
 "lib/elf/elf.cmxs": use_elf
 <lib/elf/*.ml{,i,y}>: use_goblin
 <lib/elf/*.ml{,i,y}>: use_utils
+# Library rdr
+"lib/rdr.cmxs": use_rdr
+<lib/*.ml{,i,y}>: use_elf
+<lib/*.ml{,i,y}>: use_goblin
+<lib/*.ml{,i,y}>: use_mach
+<lib/*.ml{,i,y}>: use_utils
 # Library rdrutils
 "src/rdrutils.cmxs": use_rdrutils
 # Executable rdr

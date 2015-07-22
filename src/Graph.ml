@@ -23,7 +23,7 @@ for testing
 open Binary
 open MachImports
 open MachExports
-open Mach
+open ReadMach
 
 (* 
 digraph structs { 

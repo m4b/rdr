@@ -36,11 +36,11 @@ for testing
 #load "Version.cmo";;
 #load "LoadCommand.cmo";;
 #load "Fat.cmo";;
-#load "Mach.cmo";;
+#load "ReadMach.cmo";;
 
 #load "ToL.cmo";;
 
-#load "Elf.cmo";;
+#load "ReadElf.cmo";;
 #load "ElfReloc.cmo";;
 #load "ElfHeader.cmo";;
 #load "ElfConstants.cmo";;
@@ -206,10 +206,10 @@ let build_polymorphic_map config =
       let install_name = lib in
       let config = {config with silent=true; verbose=false; name; install_name; filename=lib} in
       match bytes with
-      (* could do a |> Mach.to_goblin here ? --- better yet, to goblin, then map building code after to avoid DRY violations *)
+      (* could do a |> ReadMach.to_goblin here ? --- better yet, to goblin, then map building code after to avoid DRY violations *)
       | Object.Mach binary ->
-         let binary = Mach.analyze config binary in
-	 let imports = binary.Mach.imports in
+         let binary = ReadMach.analyze config binary in
+	 let imports = binary.ReadMach.imports in
 	 Array.iter
 	   (fun import ->
 	    let symbol = MachImports.import_name import in
@@ -219,8 +219,8 @@ let build_polymorphic_map config =
 	    else
 	      Hashtbl.add tbl symbol 1
 	   ) imports;
-         (* let symbols = MachExports.export_map_to_mach_export_data_list binary.Mach.exports in *)
-         let symbols = binary.Mach.exports in
+         (* let symbols = MachExports.export_map_to_mach_export_data_list binary.ReadMach.exports in *)
+         let symbols = binary.ReadMach.exports in
          (* now we fold over the export -> polymorphic variant list of [mach_export_data] mappings returned from above *)
          let map' =
 	   Array.fold_left
@@ -239,10 +239,10 @@ let build_polymorphic_map config =
 		 ToL.add symbol [data] acc
 	     ) map symbols
 	 in
-         loop map' ((binary.Mach.name, binary.Mach.libs)::lib_deps)
+         loop map' ((binary.ReadMach.name, binary.ReadMach.libs)::lib_deps)
       | Object.Elf binary ->
          (* hurr durr iman elf *)
-         let binary = Elf.analyze config binary in
+         let binary = ReadElf.analyze config binary in
 	 let imports = binary.Goblin.imports in
 	 Array.iter
 	   (fun import ->
