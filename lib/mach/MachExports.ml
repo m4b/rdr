@@ -16,7 +16,7 @@ for testing
 #load "Nlist.cmo";;
 #load "LoadCommand.cmo";;
 #load "BindOpcodes.cmo";;
-#load "GoblinSymbol.cmo";;
+#load "Goblin.Symbol.cmo";;
 #load "Leb128.cmo";;
 #load "Imports.cmo";;
 #load "Exports.cmo";;
@@ -72,7 +72,7 @@ module ExportMap = Map.Make(String)
     so data is a list of such possible datums *)
 type mach_export_data = 
   [ 
-    | GoblinSymbol.symbol_datum 
+    | Goblin.Symbol.symbol_datum 
     (* we extend with mach specific details: *)
     | `Reexport of [`As of string * string | `From of string]
     | `Stub of int * int
@@ -89,7 +89,7 @@ let export_info_to_mach_export_data name soname =
     [
       `Name name;
       `Offset symbol.address;
-      `Kind GoblinSymbol.Export;
+      `Kind Goblin.Symbol.Export;
       `Flags symbol.flags;
       `Lib (soname, soname);
     ]
@@ -101,7 +101,7 @@ let export_info_to_mach_export_data name soname =
           `Name name;
           `Reexport (`As (name',symbol.lib));
           `PrintableData (Printf.sprintf "REEX as %s from %s" name' symbol.lib);
-          `Kind GoblinSymbol.Export;
+          `Kind Goblin.Symbol.Export;
           `Flags symbol.flags;
           `Lib (soname, soname);
         ]
@@ -110,7 +110,7 @@ let export_info_to_mach_export_data name soname =
           `Name name;
           `Reexport (`From symbol.lib);
           `PrintableData (Printf.sprintf "REEX from %s" symbol.lib);
-          `Kind GoblinSymbol.Export;
+          `Kind Goblin.Symbol.Export;
           `Flags symbol.flags;
           `Lib (soname, soname);
         ]
@@ -120,7 +120,7 @@ let export_info_to_mach_export_data name soname =
       `Name name;
       `Stub (symbol.stub_offset, symbol.resolver_offset);
       `PrintableData (Printf.sprintf "STUB 0x%x 0x%x" symbol.stub_offset symbol.resolver_offset);
-      `Kind GoblinSymbol.Export;
+      `Kind Goblin.Symbol.Export;
       `Flags symbol.flags;
       `Lib (soname, soname);
     ]
@@ -166,14 +166,14 @@ let rec find_flags =
       let flags = find_flags data in
       Stub {stub_offset;resolver_offset; flags}
     with Not_found ->
-      let address = GoblinSymbol.find_symbol_offset data in
+      let address = Goblin.Symbol.find_symbol_offset data in
       let flags = find_flags data in
       Regular {address; flags}
 
 let mach_export_datum_to_string ?use_kind:(use_kind=true) ?use_flags:(use_flags=false) ?use_lib:(use_lib=true) datum =
   match datum with
-  | #GoblinSymbol.symbol_datum as datum ->
-     GoblinSymbol.symbol_datum_to_string
+  | #Goblin.Symbol.symbol_datum as datum ->
+     Goblin.Symbol.symbol_datum_to_string
        ~use_kind:use_kind
        ~use_lib:use_lib
        ~use_printable:false datum
@@ -190,12 +190,12 @@ let mach_export_datum_to_string ?use_kind:(use_kind=true) ?use_flags:(use_flags=
 
 let mach_export_datum_ordinal =
   function
-  | #GoblinSymbol.symbol_datum as datum ->
-     GoblinSymbol.symbol_datum_ordinal datum
+  | #Goblin.Symbol.symbol_datum as datum ->
+     Goblin.Symbol.symbol_datum_ordinal datum
   | `Reexport `As (_,_)         (* fall through *)
   | `Flags _
   | `Reexport `From _
-  | `Stub _ -> GoblinSymbol.kORDINAL_RIGHT
+  | `Stub _ -> Goblin.Symbol.kORDINAL_RIGHT
 
 let sort_mach_export_data (data) =
   List.sort (fun a b ->
@@ -231,7 +231,7 @@ let mach_export_data_to_symbol_data list =
     (
       function
       (* this is sweet *)
-      | #GoblinSymbol.symbol_datum as datum ->
+      | #Goblin.Symbol.symbol_datum as datum ->
 	 ignore datum; true
       (* ignore the warning, can't use _ 
          :( we just need to see if it's a subset of goblin symbols,
@@ -263,7 +263,7 @@ let export_map_to_string map =
          this will be used disassembling single binaries,
          so more mach info, the better *)
      Buffer.add_string b
-     @@ GoblinSymbol.symbol_data_to_string
+     @@ Goblin.Symbol.symbol_data_to_string
 	  ~basic_export:true symbol;
     ) map;
   Buffer.contents b
@@ -275,7 +275,7 @@ let mach_export_data_list_to_export_map list =
   List.fold_left
     (fun acc export ->
      ExportMap.add
-       (GoblinSymbol.find_symbol_name export)
+       (Goblin.Symbol.find_symbol_name export)
        export acc
     ) ExportMap.empty list
 
@@ -298,7 +298,7 @@ let print_mach_export_data
       ~use_lib:(not simple) export
     |> Printf.printf "%s\n"
   else
-    GoblinSymbol.symbol_data_to_string
+    Goblin.Symbol.symbol_data_to_string
       ~basic_export:true export
     |> Printf.printf "%s\n"
 
@@ -308,7 +308,7 @@ let find_map export map =
 let find symbol = 
   List.find
     (fun export ->
-     (GoblinSymbol.find_symbol_name export) = symbol)
+     (Goblin.Symbol.find_symbol_name export) = symbol)
 
 let length exports = List.length exports
 
@@ -425,8 +425,8 @@ let get_exports binary dyld_info libs  =
   let base = dyld_info.LoadCommand.export_off in
   if (debug) then Printf.printf "export init: 0x%x 0x%x\n" base boundary;
   get_exports_it binary base boundary libs "" base []
-  |> GoblinSymbol.sort_symbols
-  |> GoblinSymbol.compute_size 0x0 (* FIX THIS WITH EXTRA NLIST DATA *)
+  |> Goblin.Symbol.sort_symbols
+  |> Goblin.Symbol.compute_size 0x0 (* FIX THIS WITH EXTRA NLIST DATA *)
   |> List.rev (* for some reason compute size wasn't reversing... ? *)
 
 (* ======================== *)

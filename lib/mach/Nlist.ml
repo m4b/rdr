@@ -84,12 +84,13 @@ let get_symlist binary (cmd, cmdsize, symtab_command) nlists =
     get_symlist_it str_bytes symtab.strsize nlists []
   | _ -> []
 
+(* Move this out to remove goblin deps *)
 let nlist_flag_to_symbol_kind = 
   function
-  | 0xe -> GoblinSymbol.Local
-  | 0xf -> GoblinSymbol.Export
-  | 0x1 -> GoblinSymbol.Import
-  | _ -> GoblinSymbol.Other
+  | 0xe -> Goblin.Symbol.Local
+  | 0xf -> Goblin.Symbol.Export
+  | 0x1 -> Goblin.Symbol.Import
+  | _ -> Goblin.Symbol.Other
 
 let nlist_to_symbol_data (nlist, symbol) =
   let kind = `Kind (nlist_flag_to_symbol_kind @@ (nlist.n_type)) in
@@ -107,7 +108,7 @@ let get_symbols binary ((_,_, symtab_command) as cmd) =
     goblin_symbols
   | _ -> []
 
-let filter_by_kind kind = List.filter (fun symbol -> try GoblinSymbol.find_symbol_kind symbol = kind with Not_found -> false)
+let filter_by_kind kind = List.filter (fun symbol -> try Goblin.Symbol.find_symbol_kind symbol = kind with Not_found -> false)
 
 let print_symbols symbols =
-  List.iter (GoblinSymbol.print_symbol_data ~like_nlist:true) symbols
+  List.iter (Goblin.Symbol.print_symbol_data ~like_nlist:true) symbols

@@ -30,7 +30,7 @@ type import = {
 
 type mach_import_data = 
   [ 
-    | GoblinSymbol.symbol_datum 
+    | Goblin.Symbol.symbol_datum 
     (* we extend with mach specific details: *)
     | `Flags of int
     | `IsLazy of bool (* this is getting too hacky *)
@@ -211,7 +211,7 @@ let mach_import_to_goblin libraries segments ~is_lazy:is_lazy (import:bind_infor
   [
     `Name import.symbol_name;
     `Offset offset;
-    `Kind GoblinSymbol.Import;
+    `Kind Goblin.Symbol.Import;
     `Size size;
     `Lib (libname, libname);
     `Flags import.symbol_flags;
@@ -229,14 +229,14 @@ let get_imports binary dyld_info libs segments =
   let lazy_imports = bind_interpreter lazy_bytes 0 lazy_bind_size true in
   let nl = List.map
 	     (mach_import_to_goblin libs segments ~is_lazy:false)
-	     non_lazy_imports |> GoblinSymbol.sort_symbols in
+	     non_lazy_imports |> Goblin.Symbol.sort_symbols in
   let la = List.map
 	     (mach_import_to_goblin libs segments ~is_lazy:true)
-	     lazy_imports |> GoblinSymbol.sort_symbols in
+	     lazy_imports |> Goblin.Symbol.sort_symbols in
   nl,la
 
 let mach_import_data_to_string (data:mach_import_data) =
-  GoblinSymbol.symbol_data_to_string data
+  Goblin.Symbol.symbol_data_to_string data
 
 let rec is_lazy = 
   function
@@ -244,9 +244,9 @@ let rec is_lazy =
   | `IsLazy islazy :: _ -> islazy
   | _::remainder -> is_lazy remainder
 
-let import_name = GoblinSymbol.find_symbol_name
+let import_name = Goblin.Symbol.find_symbol_name
 
-let import_lib import = GoblinSymbol.find_symbol_lib import |> fst
+let import_lib import = Goblin.Symbol.find_symbol_lib import |> fst
 
 let print_imports (nlas,las) = 
   let n1 = List.length nlas in
@@ -255,11 +255,11 @@ let print_imports (nlas,las) =
   Printf.printf "  Non-lazy (%d):\n" n1;
   List.iter
     (fun data ->
-     GoblinSymbol.print_symbol_data ~with_lib:true data) nlas;
+     Goblin.Symbol.print_symbol_data ~with_lib:true data) nlas;
   Printf.printf "  Lazy (%d):\n" n2;
   List.iter
     (fun data ->
-     GoblinSymbol.print_symbol_data ~with_lib:true data) las
+     Goblin.Symbol.print_symbol_data ~with_lib:true data) las
        
 let print_imports_deprecated (nlas, las) = 
   let n1 = Array.length nlas in

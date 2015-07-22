@@ -26,8 +26,8 @@ Library "goblin"
   FindLibParent: rdr
   FindLibName: goblin
   Modules:
-    Goblin
-  InternalModules:
+    Goblin,
+#  InternalModules:
     GoblinSymbol,
     Export,
     Import
@@ -63,8 +63,8 @@ Library "elf"
   FindLibName: elf
   BuildTools: ocamlbuild
   Modules:
-   Elf
-  InternalModules:
+   Elf,
+#  InternalModules:
    Header,
    ProgramHeader,
    SectionHeader,
@@ -101,7 +101,6 @@ Library "rdrutils"
     ReadElf,
     ToL
   BuildDepends:
-#    rdr,
     rdr.elf,
     rdr.mach,
     rdr.goblin,
