@@ -8,6 +8,7 @@ License:     BSD-3-clause
 
 Library "utils"
   Path: lib/utils
+  Pack: true
   BuildTools: ocamlbuild
   FindLibParent: rdr  
   FindLibName: utils
@@ -26,7 +27,6 @@ Library "goblin"
   FindLibName: goblin
   Modules:
     Goblin,
-#  InternalModules:
     GoblinSymbol,
     Export,
     Import

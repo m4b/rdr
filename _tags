@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 561c0ff1381a99f143e3c3b7c8381ca7)
+# DO NOT EDIT (digest: 97f6bcaa6a9012022b99c613603075c6)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -16,6 +16,11 @@ true: annot, bin_annot
 "_darcs": not_hygienic
 # Library utils
 "lib/utils/utils.cmxs": use_utils
+"lib/utils/Binary.cmx": for-pack(Utils)
+"lib/utils/Input.cmx": for-pack(Utils)
+"lib/utils/Leb128.cmx": for-pack(Utils)
+"lib/utils/Command.cmx": for-pack(Utils)
+"lib/utils/Generics.cmx": for-pack(Utils)
 # Library goblin
 "lib/goblin/goblin.cmxs": use_goblin
 <lib/goblin/*.ml{,i,y}>: use_utils
