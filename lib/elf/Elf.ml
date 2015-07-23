@@ -1,12 +1,12 @@
 (* TODO: locate code section, or rest of raw binary, should be length - (sum of headers) *)
 
-module Header = Header
-module ProgramHeader = ProgramHeader
-module SectionHeader = SectionHeader
-module Reloc = Reloc
-module Constants = Constants
-module Dynamic = Dynamic                        
-module SymbolTable = SymbolTable
+module Header = ElfHeader
+module ProgramHeader = ElfProgramHeader
+module SectionHeader = ElfSectionHeader
+module Reloc = ElfReloc
+module Constants = ElfConstants
+module Dynamic = ElfDynamic                        
+module SymbolTable = ElfSymbolTable
 
 type t = {
   header: Header.t;

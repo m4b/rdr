@@ -63,14 +63,13 @@ Library "elf"
   BuildTools: ocamlbuild
   Modules:
    Elf,
-#  InternalModules:
-   Header,
-   ProgramHeader,
-   SectionHeader,
-   Constants,
-   Dynamic,
-   Reloc,
-   SymbolTable
+   ElfHeader,
+   ElfProgramHeader,
+   ElfSectionHeader,
+   ElfConstants,
+   ElfDynamic,
+   ElfReloc,
+   ElfSymbolTable
   BuildDepends:
    rdr.utils
 

@@ -64,8 +64,8 @@ let print_verbose_elf_header64 header =
 
 let print_elf_header64 header =
   Printf.printf "ELF %s %s @ 0x%x\n"
-		(Constants.machine_to_string header.e_machine)
-		(Constants.etype_to_string header.e_type)
+		(ElfConstants.machine_to_string header.e_machine)
+		(ElfConstants.etype_to_string header.e_type)
 		(header.e_entry)
 
 (* hack to check whether 64 bit without consuming stuff *)

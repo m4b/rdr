@@ -1,6 +1,6 @@
 (* builds the debug symbol table; will be empty if stripped *)
 
-open SectionHeader
+open ElfSectionHeader
 
 (* Legal values for ST_BIND subfield of st_info (symbol binding).  *)
 let kSTB_LOCAL = 0  (* Local symbol *)
@@ -150,7 +150,7 @@ let get_symbol_entry_adjusted bytes masks offset =
     let st_info = Binary.u8 bytes (offset + 4) in 
     let st_other = Binary.u8 bytes (offset + 5) in
     let st_shndx = Binary.u16 bytes (offset + 6) in
-    let st_value = Binary.u64 bytes (offset + 8) |> ProgramHeader.adjust masks in
+    let st_value = Binary.u64 bytes (offset + 8) |> ElfProgramHeader.adjust masks in
     let st_size = Binary.u64 bytes (offset + 16) in
     {
       name;
@@ -193,7 +193,7 @@ let print_symbol_table entries =
   List.iteri (fun i elem -> Printf.printf "(%d) %s\n" i @@ symbol_to_string elem) entries
 
 let get_symbol_table binary section_headers =
-  match find_sections_by_type SectionHeader.kSHT_SYMTAB section_headers with
+  match find_sections_by_type ElfSectionHeader.kSHT_SYMTAB section_headers with
   | [] -> []
   | sh::shs ->
      let offset = sh.sh_offset in

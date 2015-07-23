@@ -251,12 +251,12 @@ let get_dynamic_entry bytes offset =
 
 (* we use program headers in case the section headers were stripped *)
 let get_dynamic binary program_headers =
-  match ProgramHeader.get_dynamic_program_header program_headers with
+  match ElfProgramHeader.get_dynamic_program_header program_headers with
   | None -> []
   | Some section ->
     (* let _get_dynamic bytes offset size = *)
-    let offset = section.ProgramHeader.p_offset in
-    let size = section.ProgramHeader.p_filesz in
+    let offset = section.ElfProgramHeader.p_offset in
+    let size = section.ElfProgramHeader.p_filesz in
     let len = offset + size in
     let rec loop pos acc =
       let entry = get_dynamic_entry binary pos in
@@ -268,8 +268,8 @@ let get_dynamic binary program_headers =
 
 (*
         binary
-       section.ProgramHeader.p_offset
-       section.ProgramHeader.p_filesz
+       section.ElfProgramHeader.p_offset
+       section.ElfProgramHeader.p_filesz
  *)
 	  
 let print_dyn64 dyn64 =
@@ -286,10 +286,10 @@ let get_dynamic_symbol_offset_data dynamic slides =
   | elem::dynamic ->
      match elem.d_tag with
      | SYMTAB ->
-	let x = ProgramHeader.adjust slides elem.d_un in
+	let x = ElfProgramHeader.adjust slides elem.d_un in
 	loop (x, y, z) dynamic
      | STRTAB ->
-	let y = ProgramHeader.adjust slides elem.d_un in
+	let y = ElfProgramHeader.adjust slides elem.d_un in
 	loop (x, y, z) dynamic
      | STRSZ ->
 	let z = elem.d_un in
@@ -318,10 +318,10 @@ let get_dynamic_strtab_data dynamic slides =
     (fun (x,y) elem ->
      match elem.d_tag with
      | STRTAB ->
-	let x = ProgramHeader.adjust slides elem.d_un in
+	let x = ElfProgramHeader.adjust slides elem.d_un in
 	x,y
      | STRSZ ->
-	let y = ProgramHeader.adjust slides elem.d_un in
+	let y = ElfProgramHeader.adjust slides elem.d_un in
 	x,y
      | _ ->
 	x,y
@@ -348,16 +348,16 @@ let get_reloc_data dynamic slides =
     (fun (x,y,z,w) elem ->
      match elem.d_tag with
      | RELASZ ->
-	let x = ProgramHeader.adjust slides elem.d_un in
+	let x = ElfProgramHeader.adjust slides elem.d_un in
 	x,y,z,w
      | RELA ->
-	let y = ProgramHeader.adjust slides elem.d_un in
+	let y = ElfProgramHeader.adjust slides elem.d_un in
 	x,y,z,w
      | PLTRELSZ ->
-	let z = ProgramHeader.adjust slides elem.d_un in
+	let z = ElfProgramHeader.adjust slides elem.d_un in
 	x,y,z,w
      | JMPREL ->
-	let w = ProgramHeader.adjust slides elem.d_un in
+	let w = ElfProgramHeader.adjust slides elem.d_un in
 	x,y,z,w
      | _ -> x,y,z,w)
     (-1,-1,-1,-1) dynamic
@@ -373,7 +373,7 @@ let get_dynamic_symbols
   =
   let symtab_size = strtab_offset - symtab_offset in
   (*   Printf.printf "DEBUG 0x%x 0x%x 0x%x 0x%x\n" symtab_offset strtab_offset symtab_size strtab_size; *)
-  SymbolTable.get_symbol_table_adjusted
+  ElfSymbolTable.get_symbol_table_adjusted
     binary masks symtab_offset symtab_size strtab_offset strtab_size
 					    
 let kDT_NULL =  0  (* Marks end of dynamic section *)
