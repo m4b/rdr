@@ -1,4 +1,5 @@
 (* TODO: locate code section, or rest of raw binary, should be length - (sum of headers) *)
+(* TODO: add header section, in case user wants to investigate it further, etc. *)
 
 module Header = ElfHeader
 module ProgramHeader = ElfProgramHeader
@@ -20,7 +21,11 @@ type t = {
   soname: string;
   libraries: string list;
   size: int;
-  code: bytes;
+  (* add header section here *)
+  (* 
+raw_header: bytes;
+ *)
+  raw_code: bytes;
 }
 
 (* TODO: locate code section, or rest of raw binary, should be length - (sum of headers) *)
@@ -58,7 +63,7 @@ let get binary =
         is_lib = false;
         soname = "";
         libraries = [];
-        code = Bytes.create 0;  (* TODO: fix  *)
+        raw_code = Bytes.create 0;  (* TODO: fix  *)
     }
   else
     let is_lib = (Header.is_lib header) in
@@ -101,5 +106,5 @@ let get binary =
         is_lib;
         soname;
         libraries;
-        code = Bytes.create 0;  (* TODO: fix *)
+        raw_code = Bytes.create 0;  (* TODO: fix *)
     }

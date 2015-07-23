@@ -154,7 +154,8 @@ let kMH_APP_EXTENSION_SAFE = 0x02000000
 
 
 (* 8 fields, although "caps" adds 1 more *)
-type mach_header_64 = {
+(* 64 bits, 32 bit is t32 *)
+type t = {
   magic:int;
   cputype:int;
   cpusubtype:int;

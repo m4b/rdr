@@ -104,6 +104,7 @@ let get_symbols binary ((_,_, symtab_command) as cmd) =
     let nlist_bytes = Bytes.sub binary symtab.symoff (sizeof_nlist * symtab.nsyms) in
     let nlists = get_nlist_it nlist_bytes 0 symtab.nsyms [] in
     let symbols = get_symlist binary cmd nlists in
+    (* remove this dep here *)
     let goblin_symbols = List.map (nlist_to_symbol_data) symbols in
     goblin_symbols
   | _ -> []

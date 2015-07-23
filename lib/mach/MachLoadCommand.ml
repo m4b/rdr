@@ -660,7 +660,7 @@ let get_sections64 binary nsects offset =
       let section = get_section64 binary ((sizeof_section_64*count)+offset) in
       loop (count+1) (section::acc)
   in loop 0 []
-    
+
 let get_segment64 binary = 
   let segname = Binary.string binary 0 ~maxlen:15 in
   let vmaddr = Binary.u64 binary 16 in
@@ -673,7 +673,10 @@ let get_segment64 binary =
   let flags = Binary.u32 binary 60 in
   let sections = get_sections64 binary nsects 64 in
   {segname; vmaddr; vmsize; fileoff; filesize; maxprot; initprot; nsects; flags; sections;}
-    
+
+(* type of load commands; may need to change *)
+type t = (lc * int * lc_t) list
+
 let rec get_load_commands_it binary offset ncmds acc = 
   if (ncmds <= 0) then
     List.rev acc
@@ -753,9 +756,6 @@ let get_libraries lcs =
       else
         loop lcs acc
   in loop lcs []
-
-(* wtf dis do here? *)
-exception Impossible of string
 
 let print_libraries libs =
   if ((Array.length libs) <> 0) then
