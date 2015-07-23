@@ -22,6 +22,8 @@ type t = {
   nimports: int;
   exports: Exports.mach_export_data array;
   nexports: int;
+  nlist: Nlist.t;
+  nnlist: int;
   name: string;
   install_name: string;
   is_lib: bool;

@@ -69,6 +69,8 @@ let rec get_nlist_it binary offset nsyms acc =
     let nlist = {strx; n_type; n_sect; n_desc; n_value;} in
     get_nlist_it binary (offset + sizeof_nlist) (nsyms - 1) (nlist::acc)
 
+type t = (nlist * string) list
+
 let rec get_symlist_it binary strsize nlists acc = 
   match nlists with
     [] -> List.rev acc
