@@ -20,9 +20,9 @@
 
 module Symbol = GoblinSymbol
 
-module Import = Import
+module Import = GoblinImport
 
-module Export = Export
+module Export = GoblinExport
 
 module StringMap = Map.Make(String)
 

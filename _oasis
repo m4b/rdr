@@ -28,8 +28,8 @@ Library "goblin"
   Modules:
     Goblin,
     GoblinSymbol,
-    Export,
-    Import
+    GoblinExport,
+    GoblinImport
   BuildDepends:
     rdr.utils
 

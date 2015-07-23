@@ -234,12 +234,12 @@ let to_goblin_export symbol =
   let name = find_symbol_name symbol in
   let offset = try find_symbol_offset symbol with Not_found -> 0x0 in
   let size = try find_symbol_size symbol with Not_found -> 0x0 in
-  {Export.name; offset; size}
+  {GoblinExport.name; offset; size}
 
 let from_goblin_export symbol ~libname:libname ~libinstall_name:libinstall_name =
-  let name = `Name symbol.Export.name in
-  let offset = `Offset symbol.Export.offset in
-  let size = `Size symbol.Export.size in
+  let name = `Name symbol.GoblinExport.name in
+  let offset = `Offset symbol.GoblinExport.offset in
+  let size = `Size symbol.GoblinExport.size in
   let lib = `Lib (libname,libinstall_name) in
   let kind = `Kind Export in
   [name; offset; size; lib; kind]
@@ -252,7 +252,7 @@ let to_goblin_import symbol =
   let idx = 0x0 in
   let size = find_symbol_size symbol in
   let offset = try find_symbol_offset symbol with Not_found -> 0 in
-  {Import.name; lib=libinstall_name; is_lazy; idx; offset; size}
+  {GoblinImport.name; lib=libinstall_name; is_lazy; idx; offset; size}
 
 (* 
 let sortunit1 = [
