@@ -29,7 +29,7 @@ let kNLIST_TYPE_LOCAL = 0x0
 
 type symbol = nlist * string
 
-let sizeof_nlist = 4 + 1 + 1 + 2 + 8
+let sizeof_nlist = 16
 
 (* printing *)
 
