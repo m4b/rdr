@@ -1,6 +1,6 @@
 open Printf
 open Binary
-open CpuTypes
+open MachCpuTypes
 
 (* big endian *)
 type fat_header = {

@@ -14,7 +14,7 @@ for testing
 #load "InputUtils.cmo";;
 #load "Version.cmo";;
 #load "Nlist.cmo";;
-#load "LoadCommand.cmo";;
+#load "MachLoadCommand.cmo";;
 #load "BindOpcodes.cmo";;
 #load "Goblin.Symbol.cmo";;
 #load "Leb128.cmo";;
@@ -23,7 +23,7 @@ for testing
 #load "Macho.cmo";;
 *)
 open Binary
-open LoadCommand
+open MachLoadCommand
 
 (*
  * "The following are used on the flags byte of a terminal node
@@ -421,8 +421,8 @@ and get_branches bytes base count current_symbol curr pos branches =
 (* TODO: see todos above *)
 (* entry point for doing the work *)
 let get_exports binary dyld_info libs  = 
-  let boundary = (dyld_info.LoadCommand.export_size + dyld_info.LoadCommand.export_off) in
-  let base = dyld_info.LoadCommand.export_off in
+  let boundary = (dyld_info.MachLoadCommand.export_size + dyld_info.MachLoadCommand.export_off) in
+  let base = dyld_info.MachLoadCommand.export_off in
   if (debug) then Printf.printf "export init: 0x%x 0x%x\n" base boundary;
   get_exports_it binary base boundary libs "" base []
   |> Goblin.Symbol.sort_symbols

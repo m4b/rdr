@@ -532,7 +532,7 @@ let lc_t_to_string =
         load_dylib.compatibility_version
   *)     
   | VERSION version ->
-    Printf.sprintf "\n\tversion: %s sdk: %s" (Version.version_to_string version.version) (Version.version_to_string version.sdk)
+    Printf.sprintf "\n\tversion: %s sdk: %s" (MachVersion.version_to_string version.version) (MachVersion.version_to_string version.sdk)
   | ENTRY_POINT ep ->
     Printf.sprintf "\n\toffset: 0x%x stacksize: 0x%x" ep.entryoff ep.stacksize
   | _ ->

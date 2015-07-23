@@ -40,18 +40,18 @@ Library "mach"
   FindLibName: mach
   Modules:
     Mach,
-    BindOpcodes,
-    CpuTypes,
-    Fat,
-    LoadCommand,
+    MachBindOpcodes,
+    MachCpuTypes,
+    MachFat,
+    MachLoadCommand,
     MachConstants,
     MachExports,
     MachHeader,
     MachImports,
     MachSegment64,
-    Nlist,
-    RebaseOpcodes,
-    Version
+    MachNlist,
+    MachRebaseOpcodes,
+    MachVersion
   BuildDepends:
     rdr.utils,
     rdr.goblin

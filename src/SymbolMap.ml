@@ -27,11 +27,11 @@ for testing
 #load "Goblin.Symbol.cmo";;
 #load "Goblin.cmo";;
 
-#load "MachExports.cmo";;
+#load "Mach.Exports.cmo";;
 #load "Nlist.cmo";;
 #load "CpuTypes.cmo";;
 #load "BindOpcodes.cmo";;
-#load "MachImports.cmo";;
+#load "Mach.Imports.cmo";;
 #load "MachHeader.cmo";;
 #load "Version.cmo";;
 #load "LoadCommand.cmo";;
@@ -212,14 +212,14 @@ let build_polymorphic_map config =
 	 let imports = binary.ReadMach.imports in
 	 Array.iter
 	   (fun import ->
-	    let symbol = MachImports.import_name import in
+	    let symbol = Mach.Imports.import_name import in
 	    if (Hashtbl.mem tbl symbol) then
 	      let count = Hashtbl.find tbl symbol in
 	      Hashtbl.replace tbl symbol (count + 1)
 	    else
 	      Hashtbl.add tbl symbol 1
 	   ) imports;
-         (* let symbols = MachExports.export_map_to_mach_export_data_list binary.ReadMach.exports in *)
+         (* let symbols = Mach.Exports.export_map_to_mach_export_data_list binary.ReadMach.exports in *)
          let symbols = binary.ReadMach.exports in
          (* now we fold over the export -> polymorphic variant list of [mach_export_data] mappings returned from above *)
          let map' =
@@ -293,7 +293,7 @@ let polymorphic_list_to_string list =
     | export::exports ->
        Buffer.add_string b
        (* need to not use mach export to string? *)
-       @@ MachExports.mach_export_data_to_string
+       @@ Mach.Exports.mach_export_data_to_string
 	    ~use_flags:false export;
        Buffer.add_string b "\n";
        loop exports

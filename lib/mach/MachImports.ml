@@ -3,8 +3,8 @@
  *)
 
 open Binary
-open BindOpcodes
-open LoadCommand
+open MachBindOpcodes
+open MachLoadCommand
 
 (* table of tuples:
    <seg-index, seg-offset, type, symbol-library-ordinal, symbol-name, addend>
@@ -47,11 +47,11 @@ let imports_to_string imports =
       (Printf.sprintf "%s" @@ import_to_string import) ^ acc
     ) "" imports
 
-(* TODO: dyld lazy binder sets bind type to initial record as BindOpcodes.kBIND_TYPE_POINTER *)
+(* TODO: dyld lazy binder sets bind type to initial record as MachBindOpcodes.kBIND_TYPE_POINTER *)
 let empty_bind_information  = { seg_index = 0; seg_offset = 0x0; bind_type = 0x0; special_dylib = 1; symbol_library_ordinal = 0; symbol_name = ""; symbol_flags = 0; addend = 0}
 
 let empty_bind_information is_lazy = 
-  let bind_type = if (is_lazy) then BindOpcodes.kBIND_TYPE_POINTER else 0x0 in
+  let bind_type = if (is_lazy) then MachBindOpcodes.kBIND_TYPE_POINTER else 0x0 in
 { seg_index = 0; seg_offset = 0x0; bind_type = bind_type; special_dylib = 1; symbol_library_ordinal = 0; symbol_name = ""; symbol_flags = 0; addend = 0}
 
 let bind_information_to_string bi =
@@ -94,7 +94,7 @@ let bind_interpreter bytes pos size is_lazy =
         end;
       if (debug) then 
         begin
-          Printf.printf "%s -> 0x%x\n0x%x with %s\n" (BindOpcodes.opcode_to_string @@ BindOpcodes.get_opcode @@ opcode land kBIND_OPCODE_MASK) opcode pos (bind_information_to_string bind_info);
+          Printf.printf "%s -> 0x%x\n0x%x with %s\n" (MachBindOpcodes.opcode_to_string @@ MachBindOpcodes.get_opcode @@ opcode land kBIND_OPCODE_MASK) opcode pos (bind_information_to_string bind_info);
         end;
       match (get_opcode @@ opcode land kBIND_OPCODE_MASK) with
       
@@ -206,7 +206,7 @@ let bind_interpreter bytes pos size is_lazy =
 
 let mach_import_to_goblin libraries segments ~is_lazy:is_lazy (import:bind_information) =
   let offset = (List.nth segments import.seg_index).fileoff + import.seg_offset in
-  let size = if (import.bind_type == BindOpcodes.kBIND_TYPE_POINTER) then 8 else 0 in
+  let size = if (import.bind_type == MachBindOpcodes.kBIND_TYPE_POINTER) then 8 else 0 in
   let libname = libraries.(import.symbol_library_ordinal) in
   [
     `Name import.symbol_name;
@@ -219,10 +219,10 @@ let mach_import_to_goblin libraries segments ~is_lazy:is_lazy (import:bind_infor
   ]
   	  
 let get_imports binary dyld_info libs segments =
-  let bind_off = dyld_info.LoadCommand.bind_off in
-  let bind_size = dyld_info.LoadCommand.bind_size in
-  let lazy_bind_off = dyld_info.LoadCommand.lazy_bind_off in
-  let lazy_bind_size = dyld_info.LoadCommand.lazy_bind_size in
+  let bind_off = dyld_info.MachLoadCommand.bind_off in
+  let bind_size = dyld_info.MachLoadCommand.bind_size in
+  let lazy_bind_off = dyld_info.MachLoadCommand.lazy_bind_off in
+  let lazy_bind_size = dyld_info.MachLoadCommand.lazy_bind_size in
   let non_lazy_bytes = Bytes.sub binary bind_off bind_size in
   let lazy_bytes = Bytes.sub binary lazy_bind_off lazy_bind_size in
   let non_lazy_imports = bind_interpreter non_lazy_bytes 0 bind_size false in

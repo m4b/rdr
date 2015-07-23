@@ -1,7 +1,7 @@
 open Printf
 
 open Binary
-open LoadCommand
+open MachLoadCommand
 
 (*
 struct nlist_64 {

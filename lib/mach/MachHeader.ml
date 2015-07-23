@@ -202,7 +202,7 @@ let filetype_to_string filetype =
   | 0x9 -> "DYLIB_STUB"  
   | 0xa -> "DSYM"        
   | 0xb -> "KEXT_BUNDLE" 
-  | _ ->   "UNKNOWN FILETYPE"
+  | _ ->   "Unknown FILETYPE"
 
 let sizeof_mach_header = 32 (*bytes*)
 
@@ -213,7 +213,7 @@ let print_long_header header =
   Printf.printf "0x%x %d %d 0x%x %d %d %d 0x%x %x\n" header.magic header.cputype header.cpusubtype header.caps header.filetype header.ncmds header.sizeofcmds header.flags header.reserved
 
 let print_header header = 
-  Printf.printf "Mach-O %s %s\n" (CpuTypes.cpu_type_to_string header.cputype) (filetype_to_string header.filetype) (*  (flags_to_string header.flags) *)
+  Printf.printf "Mach-O %s %s\n" (MachCpuTypes.cpu_type_to_string header.cputype) (filetype_to_string header.filetype) (*  (flags_to_string header.flags) *)
 
 let get_mach_header binary = 
   let magic = Binary.u32 binary 0 in
