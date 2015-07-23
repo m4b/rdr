@@ -1,5 +1,7 @@
 # Welcome
 
+[![Floobits Status](https://floobits.com/m4b/rdr.svg)](https://floobits.com/m4b/rdr/redirect)
+
 Welcome to the `rdr` project.
 
 `rdr` is an OCaml tool/library for doing cross-platform analysis of binaries.  I typically use it for looking up symbol names, finding the address offset, and then running `gdb` or `lldb` to mess around (you should be using both if you even know what you're doing).
