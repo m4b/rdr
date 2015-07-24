@@ -91,7 +91,7 @@ let create_goblin_binary soname install_name libraries islib goblin_exports gobl
    imports; nimports; code}
 
 let analyze config binary =
-  let elf = Elf.get binary in
+  let elf = Elf.get ~meta_only:true binary in
   (* for consistency and display, goblin makes everything have names *)
   let soname = if (elf.Elf.soname = "") then config.name else elf.Elf.soname in
   if (not (Elf.Header.is_supported elf.Elf.header)) then

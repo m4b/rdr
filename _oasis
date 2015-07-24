@@ -8,16 +8,15 @@ License:     BSD-3-clause
 
 Library "utils"
   Path: lib/utils
-  Pack: true
   BuildTools: ocamlbuild
   FindLibParent: rdr  
   FindLibName: utils
   Modules:
+    RdrUtils,
     Binary,
     Input,
     Leb128,
     Command,
-#  InternalModules:
     Generics
 
 Library "goblin"

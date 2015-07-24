@@ -1,5 +1,6 @@
 (* TODO: locate code section, or rest of raw binary, should be length - (sum of headers) *)
 (* TODO: add header section, in case user wants to investigate it further, etc. *)
+(* TODO: implement an elf printer *)
 
 module Header = ElfHeader
 module ProgramHeader = ElfProgramHeader
@@ -29,7 +30,7 @@ raw_header: bytes;
 }
 
 (* TODO: locate code section, or rest of raw binary, should be length - (sum of headers) *)
-let get binary =
+let get ?meta_only:(meta_only=false) binary =
   let header = Header.get_elf_header64 binary in
   let program_headers =
     ProgramHeader.get_program_headers
@@ -94,6 +95,8 @@ let get binary =
       Dynamic.get_reloc_data _dynamic slide_sectors
       |> Reloc.get_relocs64 binary
     in
+    (* TODO: fix *)
+    let raw_code = if (meta_only) then Bytes.create 0 else Bytes.create 0 in
     {
         header;
         program_headers;
@@ -106,5 +109,8 @@ let get binary =
         is_lib;
         soname;
         libraries;
-        raw_code = Bytes.create 0;  (* TODO: fix *)
+        raw_code;
     }
+
+(* unimpelemented *)
+let print elf = ()

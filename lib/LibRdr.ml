@@ -3,9 +3,5 @@ module Elf = Elf
 module Mach = Mach
 module Goblin = Goblin
 (* todo, make these Input.Binary , etc. *)
-module Binary = Binary
-module Command = Command
-module Generics = Generics
-module Input = Input
-module Leb128 = Leb128                 
+module Utils = RdrUtils
 
