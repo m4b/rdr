@@ -169,3 +169,49 @@ let res2 = u64L e2 0 = -1L
  *)
 
 (* ==================== *)
+
+(* To Bytes *)
+
+(* 1,2,4,8 *)
+let get_size i =
+  if (i >= 0 && i <= 255) then
+    1
+  else if (i > 255 && i <= 65535) then
+    2
+  else if (i > 65535 && i <= 4294967295) then
+    4
+  else
+    8
+
+let set_uint bytes integer size offset = 
+  for i = 0 to (size - 1) do
+    let byte = Char.chr @@ ((integer lsr (8 * i)) land 0xff) in
+    Bytes.set bytes i byte
+  done;
+  offset + size
+
+let uint_to_bytes integer size =
+  let bytes = Bytes.create size in
+  let _ = set_uint bytes integer size 0 in
+  bytes
+
+(* this is probably unreliable, due to ocaml's tagging and signage *)
+let int_to_bytes integer =
+  let size = get_size integer in
+  let bytes = Bytes.create size in
+  let _ = set_uint bytes integer size 0 in
+  bytes
+
+(* big endian *)
+(* 
+let set_uint_be bytes integer size offset = 
+  for i = 0 to (size - 1) do
+    let byte = Char.chr @@ ((integer lsl (8 * i)) land (0xff lsl (8 * i))) in
+    Bytes.set bytes i byte
+  done;
+  offset + size
+ *)
+let u1 = (u16 (uint_to_bytes 0xdead 2) 0) = 0xdead
+let u2 = (u32 (uint_to_bytes 0xdeadbeef 4) 0) = 0xdeadbeef
+let u3 = (u64 (uint_to_bytes 0x7eadbeefbeefdead 8) 0) = 0x7eadbeefbeefdead
+let u4 = (u32 (uint_to_bytes 1179403647 4) 0) = 1179403647

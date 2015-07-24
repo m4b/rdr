@@ -2,12 +2,12 @@ open Binary
        
 type e_ident =
   {
-    ei_magic: int; (* 7fELF *)
-    ei_class: int; (* 1 = 32 bit, 2 = 64 bit *)
-    ei_data: int; (* 1 = little endian, 2 = big endian *)
-    ei_version: int;
-    ei_osabi: int; (* often set to zero for all platforms linux = 3 *)
-    ei_abiversion: int; (* after kernel 2.6 set to zero *)
+    ei_magic: int; (* 7fELF 4 bytes *)
+    ei_class: int; (* 1 = 32 bit, 2 = 64 bit, 1 byte *)
+    ei_data: int; (* 1 = little endian, 2 = big endian, 1 byte *)
+    ei_version: int;            (* 1 byte  *)
+    ei_osabi: int; (* often set to zero for all platforms linux = 3 1 byte *)
+    ei_abiversion: int; (* after kernel 2.6 set to zero 1 byte *)
     ei_pad: int; (* 7 bytes of padding, making next offset 0x10 *)
   }
 
@@ -113,3 +113,11 @@ let get_elf_header64 binary =
     e_shoff; e_flags; e_ehsize; e_phentsize; e_phnum;
     e_shentsize; e_shnum; e_shstrndx;
   }
+
+let e_ident_to_bytes bytes offset ident = ()
+  (* kCIGAM_ELF  set                 (*  *) *)
+
+let to_bytes bytes offset header = 
+  let b = Bytes.create sizeof_elf_header64 in
+  ()
+  (*   Bytes.blit *)
