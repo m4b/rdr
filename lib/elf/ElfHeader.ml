@@ -131,6 +131,11 @@ let set_e_ident bytes ident offset =
   |> Binary.set_uint bytes ident.ei_abiversion 1
   |> Binary.set_uint bytes ident.ei_pad 7
 
+let e_ident_to_bytes ident =
+  let b = Bytes.create sizeof_e_ident in
+  ignore @@ set_e_ident b ident 0;
+  b
+
 let set bytes header offset =
   set_e_ident bytes header.e_ident offset
   |> Binary.set_uint bytes header.e_type 2
@@ -153,6 +158,7 @@ let to_bytes header =
   ignore offset;
   b
 
+(* 
 let h0 =
 {e_ident =
   {ei_magic = 1179403647; ei_class = 2; ei_data = 1; ei_version = 1;
@@ -166,6 +172,5 @@ let h01 = to_bytes h0 |> get_elf_header64 = h0
 let h1 = "\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00\x01\x00\x00\x00\x68\xe7\x41\x00\x00\x00\x00\x00\x40\x00\x00\x00\x00\x00\x00\x00\x68\xe7\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x40\x00\x38\x00\x07\x00\x40\x00\x1b\x00\x1a\x00"
 
 let h101 = get_elf_header64 h1 |> to_bytes = h1
+ *)
 
-
-(* let u1 = get_elf_header64 h1 |> print_elf_header64 *)

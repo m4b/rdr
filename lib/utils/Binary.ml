@@ -215,10 +215,12 @@ let uint_be_to_bytes integer size =
   let bytes = Bytes.create size in
   let _ = set_uint_be bytes integer size 0 in
   bytes
-  
+
+(* 
 let elfk = 0x7f454c46
 
 let u1 = (u16 (uint_to_bytes 0xdead 2) 0) = 0xdead
 let u2 = (u32 (uint_to_bytes 0xdeadbeef 4) 0) = 0xdeadbeef
 let u3 = (u64 (uint_to_bytes 0x7eadbeefbeefdead 8) 0) = 0x7eadbeefbeefdead
 let u4 = (u32 (uint_be_to_bytes elfk 4) 0) = elfk
+ *)
