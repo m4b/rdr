@@ -186,7 +186,7 @@ let get_size i =
 let set_uint bytes integer size offset = 
   for i = 0 to (size - 1) do
     let byte = Char.chr @@ ((integer lsr (8 * i)) land 0xff) in
-    Bytes.set bytes i byte
+    Bytes.set bytes (i + offset) byte
   done;
   offset + size
 
@@ -203,15 +203,22 @@ let int_to_bytes integer =
   bytes
 
 (* big endian *)
-(* 
 let set_uint_be bytes integer size offset = 
-  for i = 0 to (size - 1) do
-    let byte = Char.chr @@ ((integer lsl (8 * i)) land (0xff lsl (8 * i))) in
+  for i = (size - 1) downto 0 do
+    let shift = i * 8 in
+    let byte = Char.chr @@ (integer lsr shift) land 0xff in
     Bytes.set bytes i byte
   done;
   offset + size
- *)
+
+let uint_be_to_bytes integer size = 
+  let bytes = Bytes.create size in
+  let _ = set_uint_be bytes integer size 0 in
+  bytes
+  
+let elfk = 0x7f454c46
+
 let u1 = (u16 (uint_to_bytes 0xdead 2) 0) = 0xdead
 let u2 = (u32 (uint_to_bytes 0xdeadbeef 4) 0) = 0xdeadbeef
 let u3 = (u64 (uint_to_bytes 0x7eadbeefbeefdead 8) 0) = 0x7eadbeefbeefdead
-let u4 = (u32 (uint_to_bytes 1179403647 4) 0) = 1179403647
+let u4 = (u32 (uint_be_to_bytes elfk 4) 0) = elfk

@@ -1,12 +1,12 @@
 (* TODO: refactor get_elf_header64 to not use explicit additions and use a bytes offset *)
 
 open Binary
-(* 
+(*
 #directory "/Users/matthewbarney/git/rdr/_build/lib/utils/";;
 #directory "/Users/matthewbarney/git/rdr/_build/lib/elf/";;
 #load "Binary.cmo";;
 #load "ElfConstants.cmo";;
- *)
+*)
        
 type e_ident =
   {
@@ -43,7 +43,7 @@ type t =
     e_shstrndx: int (* Contains index of the section header table entry that contains the section names. *);        
   }
 
-let sizeof_elf_header64 = 48 (* bytes *)        
+let sizeof_elf_header64 = sizeof_e_ident + 48 (* bytes *)        
 
 let e_ident_to_string e_ident =
   Printf.sprintf "magic: %x \nclass: 0x%x \ndata: 0x%x \nversion: 0x%x \nosabi: 0x%x \nabiversion: 0x%x\n"
@@ -123,7 +123,7 @@ let get_elf_header64 binary =
   }
 
 let set_e_ident bytes ident offset = 
-  Binary.set_uint bytes ident.ei_magic 4 offset (* this should be big-endian i believe *)
+  Binary.set_uint_be bytes ident.ei_magic 4 offset (* this should be big-endian i believe *)
   |> Binary.set_uint bytes ident.ei_class 1
   |> Binary.set_uint bytes ident.ei_data 1
   |> Binary.set_uint bytes ident.ei_version 1
@@ -158,11 +158,14 @@ let h0 =
   {ei_magic = 1179403647; ei_class = 2; ei_data = 1; ei_version = 1;
    ei_osabi = 0; ei_abiversion = 0; ei_pad = 0};
  e_type = 2; e_machine = 183; e_version = 1; e_entry = 4319080; e_phoff = 64;
- e_shoff = 845672; e_flags = 0; e_ehsize = 0; e_phentsize = 0; e_phnum = 0;
- e_shentsize = 0; e_shnum = 0; e_shstrndx = 0}
+ e_shoff = 845672; e_flags = 0; e_ehsize = 64; e_phentsize = 56; e_phnum = 7;
+ e_shentsize = 64; e_shnum = 27; e_shstrndx = 26}
 
-let h1 = "\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00\x01\x00\x00\x00\x68\xe7\x41\x00\x00\x00\x00\x00\x40\x00\x00\x00\x00\x00\x00\x00\x68\xe7\x0c\x00\x00\x00\x00\x00"
+let h01 = to_bytes h0 |> get_elf_header64 = h0
 
-let h2 = "\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00\x01\x00\x00\x00\x68\xe7\x41\x00\x00\x00\x00\x00\x40\x00\x00\x00\x00\x00\x00\x00\x68\xe7\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+let h1 = "\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00\x01\x00\x00\x00\x68\xe7\x41\x00\x00\x00\x00\x00\x40\x00\x00\x00\x00\x00\x00\x00\x68\xe7\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x40\x00\x38\x00\x07\x00\x40\x00\x1b\x00\x1a\x00"
+
+let h101 = get_elf_header64 h1 |> to_bytes = h1
+
 
 (* let u1 = get_elf_header64 h1 |> print_elf_header64 *)
