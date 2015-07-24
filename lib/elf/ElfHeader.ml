@@ -1,4 +1,12 @@
+(* TODO: refactor get_elf_header64 to not use explicit additions and use a bytes offset *)
+
 open Binary
+(* 
+#directory "/Users/matthewbarney/git/rdr/_build/lib/utils/";;
+#directory "/Users/matthewbarney/git/rdr/_build/lib/elf/";;
+#load "Binary.cmo";;
+#load "ElfConstants.cmo";;
+ *)
        
 type e_ident =
   {
@@ -77,47 +85,84 @@ let is_lib header = header.e_type = 3
 let is_supported header = header.e_type = 2 || header.e_type = 3 (* executable or dy lib *)
 
 let get_e_ident bytes =
-  let one = Char.code @@ Bytes.get bytes 0 in
-  let two = (Char.code @@ Bytes.get bytes 1) lsl 8 in
-  let three = (Char.code @@ Bytes.get bytes 2) lsl 16 in
-  let four = (Char.code @@ Bytes.get bytes 3) lsl 24 in
+  let one = u8 bytes 0 in
+  let two = (u8 bytes 1) lsl 8 in
+  let three = (u8 bytes 2) lsl 16 in
+  let four = (u8 bytes 3) lsl 24 in
   let ei_magic = one lor two lor three lor four in
-  let ei_class = Char.code @@ Bytes.get bytes 4 in
-  let ei_data = Char.code @@ Bytes.get bytes 5 in
-  let ei_version = Char.code @@ Bytes.get bytes 6 in
-  let ei_osabi = Char.code @@ Bytes.get bytes 7 in
-  let ei_abiversion = Char.code @@ Bytes.get bytes 8 in
+  let ei_class,o = u8o bytes 4 in
+  let ei_data,o = u8o bytes o in
+  let ei_version,o = u8o bytes o in
+  let ei_osabi,o = u8o bytes o in
+  let ei_abiversion,o = u8o bytes o in
   let ei_pad = 0x0 in
   {ei_magic; ei_class; ei_data; ei_version; ei_osabi; ei_abiversion; ei_pad;}
 
 let is_64bit e_ident = e_ident.ei_class = 2
-		       
+
 let get_elf_header64 binary =
   let e_ident = get_e_ident binary in
-  let i = sizeof_e_ident in
-  let e_type = u16 binary i in
-  let e_machine = u16 binary (i + 2) in
-  let e_version = u32 binary (i + 4) in
-  let e_entry = u64 binary (i + 8) in
-  let e_phoff = u64 binary (i + 16) in
-  let e_shoff = u64 binary (i + 24) in
-  let e_flags = u32 binary (i + 32) in
-  let e_ehsize = u16 binary (i + 36) in
-  let e_phentsize = u16 binary (i + 38) in
-  let e_phnum = u16 binary (i +  40) in
-  let e_shentsize = u16 binary (i + 42) in
-  let e_shnum = u16 binary (i + 44) in
-  let e_shstrndx = u16 binary (i + 46) in
+  let o = sizeof_e_ident in
+  let e_type,o = u16o binary o in
+  let e_machine,o = u16o binary o in
+  let e_version,o = u32o binary o in
+  let e_entry,o = u64o binary o in
+  let e_phoff,o = u64o binary o in
+  let e_shoff,o = u64o binary o in
+  let e_flags,o = u32o binary o in
+  let e_ehsize,o = u16o binary o in
+  let e_phentsize,o = u16o binary o in
+  let e_phnum,o = u16o binary o in
+  let e_shentsize,o = u16o binary o in
+  let e_shnum,o = u16o binary o in
+  let e_shstrndx,o = u16o binary o in
   {
     e_ident; e_type; e_machine; e_version; e_entry; e_phoff;
     e_shoff; e_flags; e_ehsize; e_phentsize; e_phnum;
     e_shentsize; e_shnum; e_shstrndx;
   }
 
-let e_ident_to_bytes bytes offset ident = ()
-  (* kCIGAM_ELF  set                 (*  *) *)
+let set_e_ident bytes ident offset = 
+  Binary.set_uint bytes ident.ei_magic 4 offset (* this should be big-endian i believe *)
+  |> Binary.set_uint bytes ident.ei_class 1
+  |> Binary.set_uint bytes ident.ei_data 1
+  |> Binary.set_uint bytes ident.ei_version 1
+  |> Binary.set_uint bytes ident.ei_osabi 1
+  |> Binary.set_uint bytes ident.ei_abiversion 1
+  |> Binary.set_uint bytes ident.ei_pad 7
 
-let to_bytes bytes offset header = 
+let set bytes header offset =
+  set_e_ident bytes header.e_ident offset
+  |> Binary.set_uint bytes header.e_type 2
+  |> Binary.set_uint bytes header.e_machine 2
+  |> Binary.set_uint bytes header.e_version 4
+  |> Binary.set_uint bytes header.e_entry 8
+  |> Binary.set_uint bytes header.e_phoff 8
+  |> Binary.set_uint bytes header.e_shoff 8
+  |> Binary.set_uint bytes header.e_flags 4
+  |> Binary.set_uint bytes header.e_ehsize 2
+  |> Binary.set_uint bytes header.e_phentsize 2
+  |> Binary.set_uint bytes header.e_phnum 2
+  |> Binary.set_uint bytes header.e_shentsize 2
+  |> Binary.set_uint bytes header.e_shnum 2
+  |> Binary.set_uint bytes header.e_shstrndx 2
+
+let to_bytes header = 
   let b = Bytes.create sizeof_elf_header64 in
-  ()
-  (*   Bytes.blit *)
+  let offset = set b header 0 in
+  ignore offset;
+  b
+
+let h0 =
+{e_ident =
+  {ei_magic = 1179403647; ei_class = 2; ei_data = 1; ei_version = 1;
+   ei_osabi = 0; ei_abiversion = 0; ei_pad = 0};
+ e_type = 2; e_machine = 183; e_version = 1; e_entry = 4319080; e_phoff = 64;
+ e_shoff = 845672; e_flags = 0; e_ehsize = 0; e_phentsize = 0; e_phnum = 0;
+ e_shentsize = 0; e_shnum = 0; e_shstrndx = 0}
+
+let h1 = "\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00\x01\x00\x00\x00\x68\xe7\x41\x00\x00\x00\x00\x00\x40\x00\x00\x00\x00\x00\x00\x00\x68\xe7\x0c\x00\x00\x00\x00\x00"
+
+let h2 = "\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00\x01\x00\x00\x00\x68\xe7\x41\x00\x00\x00\x00\x00\x40\x00\x00\x00\x00\x00\x00\x00\x68\xe7\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+
+(* let u1 = get_elf_header64 h1 |> print_elf_header64 *)

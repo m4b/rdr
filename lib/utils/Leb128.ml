@@ -1,6 +1,6 @@
 (* 
 for testing
-#directory "/Users/matthewbarney/projects/binreader/_build/src/utils/";;
+#directory "/Users/matthewbarney/git/rdr/_build/lib/utils/";;
 #load "Binary.cmo";;
  *)
 
