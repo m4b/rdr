@@ -18,6 +18,8 @@ Library "utils"
     Leb128,
     Command,
     Generics
+  BuildDepends:
+    unix
 
 Library "goblin"
   Path: lib/goblin

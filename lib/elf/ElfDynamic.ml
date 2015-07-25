@@ -77,6 +77,7 @@ type tag =
   | VERDEFNUM
   | VERNEED
   | VERNEEDNUM
+  | UnknownTag of int * string
 
 let tag_to_string =
   function
@@ -147,7 +148,7 @@ let tag_to_string =
   | VERDEFNUM -> "VERDEFNUM"
   | VERNEED -> "VERNEED"
   | VERNEEDNUM -> "VERNEEDNUM"
-
+  | UnknownTag (_,tag) -> tag
 		    
 exception Unknown_tag of string
 	     
@@ -200,7 +201,6 @@ let get_tag =
   | 0x6ffffdfd -> POSFLAG_1
   | 0x6ffffdfe -> SYMINSZ
   | 0x6ffffdff -> SYMINENT
-
 (* ptr *)
   | 0x6ffffef5 -> GNU_HASH
   | 0x6ffffef6 -> TLSDESC_PLT
@@ -222,7 +222,8 @@ let get_tag =
   | 0x6ffffffd -> VERDEFNUM
   | 0x6ffffffe -> VERNEED
   | 0x6fffffff -> VERNEEDNUM
-  | tag -> raise @@ Unknown_tag (Printf.sprintf "0x%x" tag)
+  (* raise @@ Unknown_tag (Printf.sprintf "0x%x" tag) *)
+  | tag -> UnknownTag (tag, "UNKOWN_TAG")
 
 let from_tag =
   function
@@ -290,6 +291,7 @@ let from_tag =
   | VERDEFNUM -> 0x6ffffffd
   | VERNEED -> 0x6ffffffe
   | VERNEEDNUM -> 0x6fffffff
+  | UnknownTag (tag,_) -> tag
 
 type dyn64 =
   {
