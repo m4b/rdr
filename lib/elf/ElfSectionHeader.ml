@@ -144,16 +144,16 @@ let print_section_headers shs =
   Array.iteri (fun i sh -> Printf.printf "(%2d) %s\n" i @@ to_string sh) shs
 
 let get_section_header binary offset =
-  let sh_name = Binary.u32 binary offset in
-  let sh_type = Binary.u32 binary (offset + 4) in
-  let sh_flags = Binary.u64 binary (offset + 8) in
-  let sh_addr = Binary.u64 binary (offset + 16) in
-  let sh_offset = Binary.u64 binary (offset + 24) in
-  let sh_size = Binary.u64 binary (offset + 32) in
-  let sh_link = Binary.u32 binary (offset + 40) in
-  let sh_info = Binary.u32 binary (offset + 44) in
-  let sh_addralign = Binary.u64 binary (offset + 48) in
-  let sh_entsize = Binary.u64 binary (offset + 56) in
+  let sh_name,o = Binary.u32o binary offset in
+  let sh_type,o = Binary.u32o binary o in
+  let sh_flags,o = Binary.u64o binary o in
+  let sh_addr,o = Binary.u64o binary o in
+  let sh_offset,o = Binary.u64o binary o in
+  let sh_size,o = Binary.u64o binary o in
+  let sh_link,o = Binary.u32o binary o in
+  let sh_info,o = Binary.u32o binary o in
+  let sh_addralign,o = Binary.u64o binary o in
+  let sh_entsize,o = Binary.u64o binary o in
   let name = "" in
   {
     name;
@@ -168,22 +168,6 @@ let get_section_header binary offset =
     sh_addralign;
     sh_entsize;
   }
-
-(* unused *)
-module IntMap = Map.Make(struct type t = int let compare = compare end)
-
-let print_map = IntMap.iter (fun key elem -> Printf.printf "0x%x -> %s\n" key elem) 
-
-let get_name key map = try IntMap.find key map with Not_found -> ""
-
-let get_section_names binary offset size =
-  let rec loop pos map =
-    if (pos >= (offset + size)) then map
-    else
-      let string, pos' = Binary.stringo binary pos in
-      loop pos' (IntMap.add (pos - offset) string map)
-  in loop offset (IntMap.empty)
-(* unused *)
 
 let rec find_shstrtab shs =
   match shs with
