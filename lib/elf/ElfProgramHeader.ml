@@ -16,8 +16,8 @@ open Printf
            } Elf64_Phdr;
  *)
 
-(* 64 bit; t32 will be for projected 32-bit binaries *)
-type program_header64 =
+(* 64 bit *)
+type program_header =
   {
     p_type: int;   (* 4 *)
     p_flags: int;  (* 4 *)
@@ -29,7 +29,8 @@ type program_header64 =
     p_align: int;  (* 8 *)
   }
 
-type t = program_header64 list
+(* 64 bit; t32 will be for projected 32-bit binaries *)
+type t = program_header list
 
 (* p type *)
 let kPT_NULL =		0		(* Program header table entry unused *)
@@ -204,8 +205,35 @@ let adjust sectors offset =
 		    offset - sector.slide
 		  else
 		    acc) offset sectors
-					  
-		 (*		    
+
+let set_program_header bytes ph offset =
+  Binary.set_uint bytes ph.p_type 4 offset
+  |> Binary.set_uint bytes ph.p_flags 4
+  |> Binary.set_uint bytes ph.p_offset 8
+  |> Binary.set_uint bytes ph.p_vaddr 8
+  |> Binary.set_uint bytes ph.p_paddr 8
+  |> Binary.set_uint bytes ph.p_filesz 8
+  |> Binary.set_uint bytes ph.p_memsz 8
+  |> Binary.set_uint bytes ph.p_align 8
+
+let program_header_to_bytes ph =
+  let b = Bytes.create sizeof_program_header in
+  ignore @@ set_program_header b ph 0;
+  b
+
+let set bytes phs offset =
+  (* fold over the list, accumulating the offset,
+     and return the final offset *)
+  List.fold_left (fun acc ph -> set_program_header bytes ph acc) offset phs
+
+let to_bytes phs =
+  let b = Bytes.create ((List.length phs) * sizeof_program_header) in
+  ignore @@ set b phs 0;
+  b
+
+(* TODO: test to_bytes and set *)
+
+(*
 let get_p_type p_type =
   match p_type with
   | 0 -> PT_NULL		
@@ -229,3 +257,4 @@ let get_p_type p_type =
   | 0x70000000 -> PT_LOPROC
   | 0x7fffffff -> PT_HIPROC
 		  *)
+

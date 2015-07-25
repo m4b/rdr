@@ -13,7 +13,7 @@
            } Elf64_Shdr;
  *)
 
-type section_header64 =
+type section_header =
   {
     mutable name: string;
     sh_name: int; 		(* 4 *)
@@ -31,7 +31,7 @@ type section_header64 =
 let sizeof_section_header = 64 	(* bytes *)    
 
 (* 64 bits; t32 will be 32-bits *)
-type t = section_header64 array
+type t = section_header array
 
 let kSHT_NULL=  0(* Section header table entry unused *)
 let kSHT_PROGBITS=  1(* Program data *)
@@ -241,3 +241,24 @@ let get_dynamic_section shs =
 		   else
 		     acc) None shs 
 		  
+
+let set_section_header bytes sh offset =
+    Binary.set_uint bytes sh.sh_name 4 offset
+  |> Binary.set_uint bytes sh.sh_type 4
+  |> Binary.set_uint bytes sh.sh_flags 8
+  |> Binary.set_uint bytes sh.sh_addr 8
+  |> Binary.set_uint bytes sh.sh_offset 8
+  |> Binary.set_uint bytes sh.sh_size 8
+  |> Binary.set_uint bytes sh.sh_link 4
+  |> Binary.set_uint bytes sh.sh_info 4
+  |> Binary.set_uint bytes sh.sh_addralign 8
+  |> Binary.set_uint bytes sh.sh_entsize 8
+
+let set bytes shs offset =
+    Array.fold_left (fun acc sh -> set_section_header bytes sh acc) offset shs
+
+let to_bytes shs =
+  let b = Bytes.create ((Array.length shs) * sizeof_section_header) in
+  ignore @@ set b shs 0;
+  b
+
