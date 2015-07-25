@@ -116,6 +116,22 @@ let sizeof_symbol_entry = 24
 
 type t = symbol_entry list
 
+let set_symbol_entry bytes sym offset =
+  Binary.set_uint bytes sym.st_name 4 offset
+  |> Binary.set_uint bytes sym.st_info 1
+  |> Binary.set_uint bytes sym.st_other 1
+  |> Binary.set_uint bytes sym.st_shndx 2
+  |> Binary.set_uint bytes sym.st_value 8
+  |> Binary.set_uint bytes sym.st_size 8
+
+let set bytes syms offset =
+  List.fold_left (fun acc sym -> set_symbol_entry bytes sym acc) offset syms
+
+let to_bytes syms =
+  let b = Bytes.create (List.length syms * sizeof_symbol_entry) in
+  ignore @@ set b syms 0;
+  b
+
 let symbol_to_string symbol =
   Printf.sprintf "%s 0x%x %s %s %s size: %d index: %d "
    symbol.name

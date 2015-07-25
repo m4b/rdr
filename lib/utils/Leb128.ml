@@ -68,7 +68,6 @@ let encode_uleb128 integer =
 
 (*  624485  = 0xE5 0x8E 0x26  = "\229\142&" *)
 
-(* TODO: I'm pretty sure some bind commands might be relying on integer overflow, but since ocaml tags using a bit, we might not get this effect? *)
 (* returns decoded uleb128 and next position in stream *)
 let get_uleb128 byte_stream pos =
   let rec loop pos shift acc =

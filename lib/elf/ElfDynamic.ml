@@ -41,7 +41,6 @@ type tag =
   | FINI_ARRAYSZ
   | RUNPATH
   | FLAGS
-  | ENCODING
   | PREINIT_ARRAY
   | PREINIT_ARRAYSZ
   | NUM
@@ -112,7 +111,6 @@ let tag_to_string =
   | FINI_ARRAYSZ -> "FINI_ARRAYSZ"
   | RUNPATH -> "RUNPATH"
   | FLAGS -> "FLAGS"
-  | ENCODING -> "ENCODING"
   | PREINIT_ARRAY -> "PREINIT_ARRAY"
   | PREINIT_ARRAYSZ -> "PREINIT_ARRAYSZ"
   | NUM -> "NUM"
@@ -224,8 +222,74 @@ let get_tag =
   | 0x6ffffffd -> VERDEFNUM
   | 0x6ffffffe -> VERNEED
   | 0x6fffffff -> VERNEEDNUM
-		    
   | tag -> raise @@ Unknown_tag (Printf.sprintf "0x%x" tag)
+
+let from_tag =
+  function
+  | NULL -> 0
+  | NEEDED  -> 1
+  | PLTRELSZ -> 2
+  | PLTGOT -> 3
+  | HASH -> 4
+  | STRTAB -> 5
+  | SYMTAB -> 6
+  | RELA -> 7
+  | RELASZ -> 8
+  | RELAENT -> 9
+  | STRSZ -> 10
+  | SYMENT -> 11
+  | INIT -> 12
+  | FINI -> 13
+  | SONAME -> 14
+  | RPATH -> 15
+  | SYMBOLIC -> 16
+  | REL -> 17
+  | RELSZ -> 18
+  | RELENT -> 19
+  | PLTREL -> 20
+  | DEBUG -> 21
+  | TEXTREL -> 22
+  | JMPREL -> 23
+  | BIND_NOW -> 24 
+  | INIT_ARRAY -> 25 
+  | FINI_ARRAY -> 26 
+  | INIT_ARRAYSZ -> 27 
+  | FINI_ARRAYSZ -> 28 
+  | RUNPATH -> 29
+  | FLAGS -> 30
+  | PREINIT_ARRAY -> 32 
+  | PREINIT_ARRAYSZ -> 33 
+  | NUM -> 34
+  | GNU_PRELINKED -> 0x6ffffdf5 
+  | GNU_CONFLICTSZ -> 0x6ffffdf6 
+  | GNU_LIBLISTSZ -> 0x6ffffdf7 
+  | CHECKSUM -> 0x6ffffdf8
+  | PLTPADSZ -> 0x6ffffdf9
+  | MOVEENT -> 0x6ffffdfa
+  | MOVESZ -> 0x6ffffdfb
+  | FEATURE_1 -> 0x6ffffdfc 
+  | POSFLAG_1 -> 0x6ffffdfd 
+  | SYMINSZ -> 0x6ffffdfe
+  | SYMINENT -> 0x6ffffdff
+  | GNU_HASH -> 0x6ffffef5 
+  | TLSDESC_PLT -> 0x6ffffef6 
+  | TLSDESC_GOT -> 0x6ffffef7 
+  | GNU_CONFLICT -> 0x6ffffef8 
+  | GNU_LIBLIST -> 0x6ffffef9 
+  | CONFIG -> 0x6ffffefa
+  | DEPAUDIT -> 0x6ffffefb
+  | AUDIT -> 0x6ffffefc
+  | PLTPAD -> 0x6ffffefd
+  | MOVETAB -> 0x6ffffefe
+  | SYMINFO -> 0x6ffffeff
+  | VERSYM -> 0x6ffffff0
+  | RELACOUNT -> 0x6ffffff9
+  | RELCOUNT -> 0x6ffffffa
+  | FLAGS_1 -> 0x6ffffffb 
+  | VERDEF -> 0x6ffffffc
+  | VERDEFNUM -> 0x6ffffffd
+  | VERNEED -> 0x6ffffffe
+  | VERNEEDNUM -> 0x6fffffff
 
 type dyn64 =
   {
@@ -241,6 +305,18 @@ let is_null dyn64 =
   match dyn64.d_tag with
   | NULL -> true
   | _ -> false
+
+let set_dyn64 bytes dyn64 offset =
+  Binary.set_uint bytes (from_tag dyn64.d_tag) 8 offset
+  |> Binary.set_uint bytes dyn64.d_un 8
+
+let set bytes dyns offset =
+  List.fold_left (fun acc dyn64 -> set_dyn64 bytes dyn64 acc) offset dyns
+
+let to_bytes dyns =
+  let b = Bytes.create (List.length dyns * sizeof_dyn64) in
+  ignore @@ set b dyns 0;
+  b
 		     
 let dyn64_to_string dyn64 = Printf.sprintf "%s 0x%x" (tag_to_string dyn64.d_tag) dyn64.d_un
 
@@ -265,12 +341,6 @@ let get_dynamic binary program_headers =
       else
         loop (pos + sizeof_dyn64) (entry::acc)
     in loop offset []
-
-(*
-        binary
-       section.ElfProgramHeader.p_offset
-       section.ElfProgramHeader.p_filesz
- *)
 	  
 let print_dyn64 dyn64 =
      dyn64_to_string dyn64 |> Printf.printf "%s\n"
