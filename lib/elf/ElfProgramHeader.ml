@@ -152,6 +152,27 @@ let get_main_program_header phs =
 	 Elf_invalid_binary (Printf.sprintf "Elf binary has no PHDR")
      end
 
+let get_interpreter_header phs =
+  match
+    List.fold_left (fun acc elem ->
+        if (elem.p_type = kPT_INTERP) then
+          Some elem
+        else
+          acc) None phs
+  with
+  | Some phdr -> phdr
+  | None ->
+    begin 
+      raise @@
+      Elf_invalid_binary
+        (Printf.sprintf "Elf binary has no INTERP")
+    end
+
+let get_interpreter binary phs =
+  let ph = get_interpreter_header phs in
+  Binary.string binary ~maxlen:(ph.p_filesz + ph.p_offset) ph.p_offset
+  
+
 (* optional return because binary can be statically linked... ewww *)
 let get_dynamic_program_header phs =
   List.fold_left (fun acc elem ->

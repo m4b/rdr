@@ -193,7 +193,7 @@ let update_section_headers_with_names binary shs =
      (* just return the unmodifed section headers if we can't find the shstrtab *)
      shs
 
-(* TODO: use array? *)
+(* TODO: use list? *)
 let get_section_headers binary shoff shentsize shnum =
     let rec loop count offset acc =
     if (count >= shnum) then

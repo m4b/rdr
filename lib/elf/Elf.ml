@@ -1,6 +1,4 @@
-(* TODO: locate code section, or rest of raw binary, should be length - (sum of headers) *)
-(* TODO: add header section, in case user wants to investigate it further, etc. *)
-(* TODO: implement an elf printer *)
+(* TODO: implement a "byte accountant", which determines percent of known inert/or flagged bytes, and remainder is unknown data/code *)
 
 module Header = ElfHeader
 module ProgramHeader = ElfProgramHeader
@@ -20,16 +18,19 @@ type t = {
   relocations: Reloc.t;
   is_lib: bool;
   soname: string;
+  interpreter: string;
   libraries: string list;
   size: int;
-  (* add header section here *)
-  (* 
-raw_header: bytes;
- *)
-  raw_code: bytes;
+  raw_code: bytes;              (* list *)
 }
 
-(* TODO: locate code section, or rest of raw binary, should be length - (sum of headers) *)
+(* TODO: make this it's own module *)
+module ByteAccountant = Map.Make(
+  struct 
+   type t=int*int
+   let compare= (fun (a,b) (c,d) -> Pervasives.compare a c)
+  end)
+
 let get ?meta_only:(meta_only=false) binary =
   let header = Header.get_elf_header64 binary in
   let program_headers =
@@ -39,6 +40,7 @@ let get ?meta_only:(meta_only=false) binary =
       header.Header.e_phentsize
       header.Header.e_phnum
   in
+  let interpreter = ProgramHeader.get_interpreter binary program_headers in
   let slide_sectors =
     ProgramHeader.get_slide_sectors program_headers
   in
@@ -50,6 +52,8 @@ let get ?meta_only:(meta_only=false) binary =
       header.Header.e_shnum
   in
   let size = Bytes.length binary in
+  (* TODO: remove this, and have everything return empty lists
+     , etc., this is redundant, and a DRY violation *)
   if (not (Header.is_supported header)) then
     (* for relocs, esp /usr/lib/crt1.o *)
     {
@@ -63,6 +67,7 @@ let get ?meta_only:(meta_only=false) binary =
         relocations = [];
         is_lib = false;
         soname = "";
+        interpreter;
         libraries = [];
         raw_code = Bytes.create 0;  (* TODO: fix  *)
     }
@@ -108,9 +113,17 @@ let get ?meta_only:(meta_only=false) binary =
         relocations;
         is_lib;
         soname;
+        interpreter;
         libraries;
         raw_code;
     }
 
-(* unimpelemented *)
-let print elf = ()
+let print elf = 
+  Header.print_elf_header64 ~verbose:true elf.header;
+  ProgramHeader.print_program_headers elf.program_headers;
+  SectionHeader.print_section_headers elf.section_headers;
+  Dynamic.print_dynamic elf._dynamic;
+  SymbolTable.print_symbol_table elf.dynamic_symbols;
+  SymbolTable.print_symbol_table elf.symbol_table;
+  Reloc.print_relocs64 elf.relocations
+  
