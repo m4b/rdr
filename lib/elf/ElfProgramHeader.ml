@@ -153,24 +153,17 @@ let get_main_program_header phs =
      end
 
 let get_interpreter_header phs =
-  match
-    List.fold_left (fun acc elem ->
-        if (elem.p_type = kPT_INTERP) then
-          Some elem
-        else
-          acc) None phs
-  with
-  | Some phdr -> phdr
-  | None ->
-    begin 
-      raise @@
-      Elf_invalid_binary
-        (Printf.sprintf "Elf binary has no INTERP")
-    end
+  List.fold_left (fun acc elem ->
+      if (elem.p_type = kPT_INTERP) then
+        Some elem
+      else
+        acc) None phs
 
 let get_interpreter binary phs =
-  let ph = get_interpreter_header phs in
-  Binary.string binary ~maxlen:(ph.p_filesz + ph.p_offset) ph.p_offset
+  match get_interpreter_header phs with
+  | Some ph ->
+    Binary.string binary ~maxlen:(ph.p_filesz + ph.p_offset) ph.p_offset
+  | None -> ""
   
 
 (* optional return because binary can be statically linked... ewww *)
