@@ -135,22 +135,12 @@ let get_program_headers binary phoff phentsize phnum =
       loop (count + 1) (offset + phentsize) (ph::acc)
   in loop 0 phoff []
 
-exception Elf_invalid_binary of string
-				  
 let get_main_program_header phs =
-  match 
-    List.fold_left (fun acc elem ->
-		    if (elem.p_type = kPT_PHDR) then
-		      Some elem
-		    else
-		      acc) None phs
-  with
-  | Some phdr -> phdr
-  | None ->
-     begin
-       raise @@
-	 Elf_invalid_binary (Printf.sprintf "Elf binary has no PHDR")
-     end
+  List.fold_left (fun acc elem ->
+      if (elem.p_type = kPT_PHDR) then
+	Some elem
+      else
+	acc) None phs
 
 let get_interpreter_header phs =
   List.fold_left (fun acc elem ->
@@ -164,7 +154,6 @@ let get_interpreter binary phs =
   | Some ph ->
     Binary.string binary ~maxlen:(ph.p_filesz + ph.p_offset) ph.p_offset
   | None -> ""
-  
 
 (* optional return because binary can be statically linked... ewww *)
 let get_dynamic_program_header phs =
