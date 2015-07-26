@@ -1,5 +1,3 @@
-(* TODO: refactor get_elf_header64 to not use explicit additions and use a bytes offset *)
-
 open Binary
 (*
 #directory "/Users/matthewbarney/git/rdr/_build/lib/utils/";;
