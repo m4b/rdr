@@ -81,7 +81,10 @@ let get ?meta_only:(meta_only=false) binary =
     |> Reloc.get_relocs64 binary
   in
   (* TODO: fix *)
-  let raw_code = if (meta_only) then Bytes.create 0 else Bytes.create 0 in
+  let raw_code = if (meta_only) then
+      Bytes.create 0 
+    else
+      Bytes.create 0 in
   {
     header;
     program_headers;
