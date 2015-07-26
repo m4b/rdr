@@ -70,11 +70,14 @@ let print_verbose_elf_header64 header =
 	 header.e_shnum
 	 header.e_shstrndx
 
-let print_elf_header64 header =
-  Printf.printf "ELF %s %s @ 0x%x\n"
-		(ElfConstants.machine_to_string header.e_machine)
-		(ElfConstants.etype_to_string header.e_type)
-		(header.e_entry)
+let print_elf_header64 ?verbose:(verbose=false) header =
+  if (verbose) then
+    print_verbose_elf_header64 header
+  else
+    Printf.printf "ELF %s %s @ 0x%x\n"
+      (ElfConstants.machine_to_string header.e_machine)
+      (ElfConstants.etype_to_string header.e_type)
+      (header.e_entry)
 
 (* hack to check whether 64 bit without consuming stuff *)
 let check_64bit bytes =

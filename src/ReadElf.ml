@@ -130,9 +130,13 @@ let analyze config binary =
     (* print switches *)
     if (not config.silent) then
       begin
-      if (not config.search) then Elf.Header.print_elf_header64 elf.Elf.header;
+      if (not config.search) then 
+        Elf.Header.print_elf_header64 elf.Elf.header;
       if (config.verbose || config.print_headers) then
 	begin
+        Elf.Header.print_elf_header64 
+          ~verbose:(config.verbose || config.print_headers) 
+          elf.Elf.header;
 	  Elf.ProgramHeader.print_program_headers elf.Elf.program_headers;
 	  Elf.SectionHeader.print_section_headers elf.Elf.section_headers
 	end;
