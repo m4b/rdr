@@ -46,7 +46,7 @@ type t =
 let sizeof_elf_header64 = sizeof_e_ident + 48 (* bytes *)        
 
 let e_ident_to_string e_ident =
-  Printf.sprintf "magic: %x \nclass: 0x%x \ndata: 0x%x \nversion: 0x%x \nosabi: 0x%x \nabiversion: 0x%x\n"
+  Printf.sprintf "magic: 0x%x \nclass: 0x%x \ndata: 0x%x \nversion: 0x%x \nosabi: 0x%x \nabiversion: 0x%x\n"
 	  e_ident.ei_magic
 	  e_ident.ei_class
 	  e_ident.ei_data
@@ -55,7 +55,7 @@ let e_ident_to_string e_ident =
 	  e_ident.ei_abiversion
 	  
 let print_verbose_elf_header64 header =
-  Printf.printf "%s type: %d machine: 0x%x version: %d entry: 0x%x phoff: 0x%x shoff: 0x%x flags: 0x%x ehsize: 0x%x phentsize: 0x%x phnum: 0x%x shentsize: 0x%x shnum: 0x%x shstrndx: 0x%x\n" (e_ident_to_string header.e_ident)
+  Printf.printf "%stype: %d machine: 0x%x version: %d entry: 0x%x\nphoff: 0x%x shoff: 0x%x flags: 0x%x ehsize: 0x%x\nphentsize: 0x%x phnum: 0x%x shentsize: 0x%x shnum: 0x%x shstrndx: 0x%x\n" (e_ident_to_string header.e_ident)
 	 header.e_type
 	 header.e_machine
 	 header.e_version
