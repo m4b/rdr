@@ -16,10 +16,7 @@ Library "utils"
     Binary,
     Input,
     Leb128,
-    Command,
     Generics
-  BuildDepends:
-    unix
 
 Library "goblin"
   Path: lib/goblin
@@ -92,6 +89,7 @@ Library "rdrutils"
   Install: false
   Modules:
     Config,
+    Command,
     Object,
     Graph,
     Storage,
