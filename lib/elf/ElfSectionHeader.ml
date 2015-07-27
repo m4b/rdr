@@ -123,6 +123,8 @@ let kSHF_MASKOS = 0x0ff00000	(* OS-specific.  *)
 let kSHF_MASKPROC = 0xf0000000	(* Processor-specific *)
 let kSHF_ORDERED = (1 lsl 30)	(* Special ordering requirement (Solaris).  *)
 let kSHF_EXCLUDE = (1 lsl 31)	(* Section is excluded unless referenced or allocated (Solaris).*)
+
+let is_empty shs = shs = [||]
 		     
 let to_string sh =
   Printf.sprintf "%-18s %-11s \n\tflags: 0x%02x addr: 0x%08x offset 0x%04x size: 0x%03x link: %2d info: %2d addralign: %2d entsize: %d"

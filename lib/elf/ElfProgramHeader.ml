@@ -110,6 +110,8 @@ let flags_to_string flags =
   | 6 -> "RW"
   | 7 -> "RW+X"
   | _ -> "UNKNOWN FLAG"
+
+let is_empty phs = phs = []
 	   
 let program_header_to_string ph =
   Printf.sprintf "%-12s %-4s offset: 0x%04x vaddr: 0x%08x paddr: 0x%08x filesz: 0x%04x memsz: 0x%04x align: %d"
@@ -135,19 +137,15 @@ let get_program_headers binary phoff phentsize phnum =
       loop (count + 1) (offset + phentsize) (ph::acc)
   in loop 0 phoff []
 
-let get_main_program_header phs =
-  List.fold_left (fun acc elem ->
-      if (elem.p_type = kPT_PHDR) then
-	Some elem
-      else
-	acc) None phs
+let get_header ph phs =
+  try Some (List.find (fun elem -> (elem.p_type = ph)) phs)
+  with _ -> None
 
-let get_interpreter_header phs =
-  List.fold_left (fun acc elem ->
-      if (elem.p_type = kPT_INTERP) then
-        Some elem
-      else
-        acc) None phs
+let get_main_program_header phs = get_header kPT_PHDR phs
+
+let get_interpreter_header phs = get_header kPT_INTERP phs
+
+let get_dynamic_program_header phs = get_header kPT_DYNAMIC phs
 
 let get_interpreter binary phs =
   match get_interpreter_header phs with
@@ -155,16 +153,7 @@ let get_interpreter binary phs =
     Binary.string binary ~maxlen:(ph.p_filesz + ph.p_offset) ph.p_offset
   | None -> ""
 
-(* optional return because binary can be statically linked... ewww *)
-let get_dynamic_program_header phs =
-  List.fold_left (fun acc elem ->
-		  if (elem.p_type = kPT_DYNAMIC) then
-		    Some elem
-		  else
-		    acc) None phs
-
 type slide_sector = {start_sector: int; end_sector: int; slide: int;}
-(* module IntSet = Set.Make(struct type t = int let compare = Pervasives.compare end) *)
 
 let is_in_sector offset sector =
   (* should this be offset <= sector.end_sector ? *)
