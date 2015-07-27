@@ -2,25 +2,8 @@ open ByteCoverage
 
 let debug = false
 
-let compute_section_coverage kind map section =
-  if (debug) then
-    Printf.printf "called: %s\n"
-      (ElfSectionHeader.shtype_to_string
-         section.ElfSectionHeader.sh_type);
-  let size = section.ElfSectionHeader.sh_size in
-  let range_start = section.ElfSectionHeader.sh_offset in
-  let range_end = size + range_start in
-  let extra =
-    section.ElfSectionHeader.name ^ " // " ^
-    ElfSectionHeader.shtype_to_string
-      section.ElfSectionHeader.sh_type
-  in
-  ByteCoverage.Map.add range_start
-    {size; understood = true; kind;
-     range_start; range_end; extra} map
-
 let compute_program_header_coverage phs m =
-  (* TODO: make this less dry and finish up known coverage *)
+  (* TODO: make this more DRY and finish up known coverage *)
   if (ElfProgramHeader.is_empty phs) then
     m
   else
@@ -72,6 +55,35 @@ let compute_program_header_coverage phs m =
         (fun m -> m)
     end
 
+let compute_section_coverage kind map section =
+  if (debug) then
+    Printf.printf "called: %s\n"
+      (ElfSectionHeader.shtype_to_string
+         section.ElfSectionHeader.sh_type);
+  let size = section.ElfSectionHeader.sh_size in
+  let range_start = section.ElfSectionHeader.sh_offset in
+  let range_end = size + range_start in
+  let extra =
+    section.ElfSectionHeader.name ^ " // " ^
+    ElfSectionHeader.shtype_to_string
+      section.ElfSectionHeader.sh_type
+  in
+  ByteCoverage.Map.add range_start
+    {size; understood = true; kind;
+     range_start; range_end; extra} map
+
+let known_sections =
+  [(ElfSectionHeader.kSHT_SYMTAB, Symbol);
+   (ElfSectionHeader.kSHT_STRTAB, StringTable);
+   (ElfSectionHeader.kSHT_PROGBITS, Code);
+   (ElfSectionHeader.kSHT_NOBITS, Code);
+   (ElfSectionHeader.kSHT_INIT_ARRAY, Code);
+   (ElfSectionHeader.kSHT_FINI_ARRAY, Code);
+   (ElfSectionHeader.kSHT_DYNAMIC, Symbol);
+   (ElfSectionHeader.kSHT_HASH, Symbol);
+   (ElfSectionHeader.kSHT_RELA, Rela);
+  ]
+
 let compute_section_header_coverage h shs m =
   if (ElfSectionHeader.is_empty shs) then
     m
@@ -88,18 +100,7 @@ let compute_section_header_coverage h shs m =
     end
     |>
     begin
-      let known_sections = 
-        [(ElfSectionHeader.kSHT_SYMTAB, Symbol);
-         (ElfSectionHeader.kSHT_STRTAB, StringTable);
-         (ElfSectionHeader.kSHT_PROGBITS, Code);
-         (ElfSectionHeader.kSHT_NOBITS, Code);
-         (ElfSectionHeader.kSHT_INIT_ARRAY, Code);
-         (ElfSectionHeader.kSHT_FINI_ARRAY, Code);
-         (ElfSectionHeader.kSHT_DYNAMIC, Symbol);
-         (ElfSectionHeader.kSHT_HASH, Symbol);
-         (ElfSectionHeader.kSHT_RELA, Rela);
-        ] in
-      let f = (fun m (section_type, kind) ->
+       let f = (fun m (section_type, kind) ->
           let sections = ElfSectionHeader.get_sections section_type shs in
           List.fold_left (compute_section_coverage kind) m sections
         ) in
