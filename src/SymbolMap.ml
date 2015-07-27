@@ -212,7 +212,7 @@ let build_polymorphic_map config =
 	 let imports = binary.ReadMach.imports in
 	 Array.iter
 	   (fun import ->
-	    let symbol = Mach.Imports.import_name import in
+	    let symbol = Goblin.Mach.Imports.import_name import in
 	    if (Hashtbl.mem tbl symbol) then
 	      let count = Hashtbl.find tbl symbol in
 	      Hashtbl.replace tbl symbol (count + 1)
@@ -293,7 +293,7 @@ let polymorphic_list_to_string list =
     | export::exports ->
        Buffer.add_string b
        (* need to not use mach export to string? *)
-       @@ Mach.Exports.mach_export_data_to_string
+       @@ Goblin.Mach.Exports.mach_export_data_to_string
 	    ~use_flags:false export;
        Buffer.add_string b "\n";
        loop exports

@@ -75,7 +75,7 @@ let html_footer = "  </TABLE>\n>];\n"
 let get_html_export_row symbol_name export libraries =
   let size = try Goblin.Symbol.find_symbol_size export |> Printf.sprintf "%d" with Not_found -> "" in
   (* i'm being lazy as shit and converting it back *)
-  match Mach.Exports.mach_export_data_to_export_info export with
+  match Goblin.Mach.Exports.mach_export_data_to_export_info export with
   | Regular info ->
     Printf.sprintf "   <TR>
     <TD PORT=\"%s\">%s</TD><TD>%s</TD><TD>0x%x</TD>
@@ -133,9 +133,9 @@ let get_html_imports_header name fullname nimports =
 " name fullname nimports
 
 let get_html_import_row name import = 
-  let is_lazy = Mach.Imports.is_lazy import in
-  let name = Mach.Imports.import_name import in
-  let lib = Mach.Imports.import_lib import in
+  let is_lazy = Goblin.Mach.Imports.is_lazy import in
+  let name = Goblin.Mach.Imports.import_name import in
+  let lib = Goblin.Mach.Imports.import_lib import in
   let color = if (is_lazy) then "#e0ffda" else "#ffffff" in
   Printf.sprintf "   <TR>
     <TD BGCOLOR=\"%s\" PORT=\"%s\">%s</TD><TD BGCOLOR=\"%s\">%s</TD>

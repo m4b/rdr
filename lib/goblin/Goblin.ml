@@ -19,10 +19,9 @@
 (* (ab#get_import name).idx *)
 
 module Symbol = GoblinSymbol
-
 module Import = GoblinImport
-
 module Export = GoblinExport
+module Mach = GoblinMach
 
 module StringMap = Map.Make(String)
 

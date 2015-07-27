@@ -12,9 +12,9 @@ open Config (* only contains a record *)
 type mach_binary = {
   name: string;
   install_name: string;
-  imports: Mach.Imports.mach_import_data array;
+  imports: Goblin.Mach.Imports.mach_import_data array;
   nimports: int;
-  exports: Mach.Exports.mach_export_data array;
+  exports: Goblin.Mach.Exports.mach_export_data array;
   nexports: int;
   islib: bool;
   libs: string array;
@@ -27,7 +27,7 @@ let imports_to_string imports =
   Array.fold_left (fun acc import -> 
       Buffer.add_string acc
       @@ Printf.sprintf "%s"
-      @@ Mach.Imports.mach_import_data_to_string import;
+      @@ Goblin.Mach.Imports.mach_import_data_to_string import;
       acc
     ) b imports |> Buffer.contents
 
@@ -36,7 +36,7 @@ let exports_to_string exports =
   Array.fold_left (fun acc export -> 
       Buffer.add_string acc
       @@ Printf.sprintf "%s"
-      @@ Mach.Exports.mach_export_data_to_string export;
+      @@ Goblin.Mach.Exports.mach_export_data_to_string export;
       acc
     ) b exports |> Buffer.contents
 
@@ -70,7 +70,7 @@ let to_goblin mach =
     Array.init (mach.nexports)
 	       (fun i ->
 		let export = mach.exports.(i) in
-		(Mach.Exports.mach_export_data_to_symbol_data export
+		(Goblin.Mach.Exports.mach_export_data_to_symbol_data export
 		 |> Goblin.Symbol.to_goblin_export))
   in
   let nexports = mach.nexports in
@@ -80,7 +80,7 @@ let to_goblin mach =
 	 let import = mach.imports.(i) in
          let name = Goblin.Symbol.find_symbol_name import in
          let lib = Goblin.Symbol.find_symbol_lib import |> fst in
-         let is_lazy = Mach.Imports.is_lazy import in 
+         let is_lazy = Goblin.Mach.Imports.is_lazy import in 
          let idx = i in
          let offset = Goblin.Symbol.find_symbol_offset import in
          let size = Goblin.Symbol.find_symbol_size import in  
@@ -90,7 +90,8 @@ let to_goblin mach =
   let code = mach.code in
   {Goblin.name; install_name; islib; libs; nlibs; exports; nexports; imports; nimports; code}
 
-let analyze config binary = 
+let analyze config binary =
+  (* 
   let mach_header = Mach.Header.get_mach_header binary in
   let lcs = Mach.LoadCommand.get_load_commands binary Mach.Header.sizeof_mach_header mach_header.Mach.Header.ncmds mach_header.Mach.Header.sizeofcmds in
   if (not config.silent) then
@@ -121,25 +122,26 @@ let analyze config binary =
       with Not_found ->
         []
     in
-    let locals = Mach.Nlist.filter_by_kind Goblin.Symbol.Local symbols in
+    let locals = Goblin.Mach.Nlist.filter_by_kind Goblin.Symbol.Local symbols in
     ignore locals;
     let exports = Mach.Exports.get_exports binary dyld_info libraries in 
     (* TODO: yea, need to fix imports like machExports; send in the libraries,
        do all that preprocessing there, and not in create binary *)
-    let imports = Mach.Imports.get_imports binary dyld_info libraries segments in
+    let imports = Goblin.Mach.Imports.get_imports binary dyld_info libraries segments in
     if (not config.silent) then
       begin
 	if (config.verbose || config.print_libraries) then Mach.LoadCommand.print_libraries libraries;
-	if (config.verbose || config.print_exports) then Mach.Exports.print_exports exports;
-	if (config.verbose || config.print_imports) then Mach.Imports.print_imports imports;
-	if (config.print_nlist) then Mach.Nlist.print_symbols symbols;	
+	if (config.verbose || config.print_exports) then Goblin.Mach.Exports.print exports;
+	if (config.verbose || config.print_imports) then Goblin.Mach.Imports.print imports;
+	if (config.print_nlist) then Goblin.Mach.Nlist.print_symbols symbols;
       end;
     (* TODO: compute final sizes here, after imports, locals, 
        and exports are glommed into a goblin soup, using all the information available*)
     create_binary (name,install_name) imports exports islib libraries
   | None ->
     if (config.verbose && not config.silent) then Printf.printf "No dyld_info_only\n";
-    create_binary (name,install_name) Mach.Imports.empty Mach.Exports.empty islib libraries
+ *)
+    create_binary ("NONE","NO INSTALL NAME") Goblin.Mach.Imports.empty Goblin.Mach.Exports.empty false [||]
 
 let find_export_symbol symbol binary =
   let len = binary.nexports in
@@ -153,4 +155,4 @@ let find_export_symbol symbol binary =
 
 
 let find_import_symbol symbol binary =
-  Mach.Imports.find symbol binary.imports
+  Goblin.Mach.Imports.find symbol binary.imports

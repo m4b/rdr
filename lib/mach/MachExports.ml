@@ -1,15 +1,14 @@
 (* TODO:
 
-   (* TOOO: make export data more generic, in a higher up module *)
    (1) Weak of regular_symbol_info type probably needs to be added ?
    (3) /usr/lib/libstdc++.6.0.9.dylib has flag 0xc at many offsets... they're weak 
 *)
 
 (*
 for testing
-#directory "/Users/matthewbarney/projects/binreader/_build/src/utils/";;
-#directory "/Users/matthewbarney/projects/binreader/_build/src/mach/";;
-#directory "/Users/matthewbarney/projects/binreader/_build/src/goblin/";;
+#directory "/Users/matthewbarney/git/rdr/_build/src/utils/";;
+#directory "/Users/matthewbarney/git/rdr/_build/src/mach/";;
+#directory "/Users/matthewbarney/git/rdr/_build/src/goblin/";;
 #load "Binary.cmo";;
 #load "InputUtils.cmo";;
 #load "Version.cmo";;
@@ -61,185 +60,18 @@ type reexport_symbol_info =
   {lib: string; lib_symbol_name: string option; flags: int}
 type regular_symbol_info = {address: int; flags: int}
 
-type export_symbol_info = 
+type export = 
   | Regular of regular_symbol_info
   | Reexport of reexport_symbol_info
   | Stub of stub_symbol_info
 
 module ExportMap = Map.Make(String)
 
- (* a datum is a single unit, 
-    so data is a list of such possible datums *)
-type mach_export_data = 
-  [ 
-    | Goblin.Symbol.symbol_datum 
-    (* we extend with mach specific details: *)
-    | `Reexport of [`As of string * string | `From of string]
-    | `Stub of int * int
-    | `Flags of int
-  ] list
-
-type export_map = mach_export_data ExportMap.t
+type t = export list
 
 exception Unimplemented_symbol_flag of int * string
 
-let export_info_to_mach_export_data name soname = 
-  function
-  | Regular symbol -> 
-    [
-      `Name name;
-      `Offset symbol.address;
-      `Kind Goblin.Symbol.Export;
-      `Flags symbol.flags;
-      `Lib (soname, soname);
-    ]
-  | Reexport symbol -> 
-    begin
-      match symbol.lib_symbol_name with
-      | Some name' ->
-        [
-          `Name name;
-          `Reexport (`As (name',symbol.lib));
-          `PrintableData (Printf.sprintf "REEX as %s from %s" name' symbol.lib);
-          `Kind Goblin.Symbol.Export;
-          `Flags symbol.flags;
-          `Lib (soname, soname);
-        ]
-      | None ->
-        [
-          `Name name;
-          `Reexport (`From symbol.lib);
-          `PrintableData (Printf.sprintf "REEX from %s" symbol.lib);
-          `Kind Goblin.Symbol.Export;
-          `Flags symbol.flags;
-          `Lib (soname, soname);
-        ]
-    end
-  | Stub symbol ->
-    [
-      `Name name;
-      `Stub (symbol.stub_offset, symbol.resolver_offset);
-      `PrintableData (Printf.sprintf "STUB 0x%x 0x%x" symbol.stub_offset symbol.resolver_offset);
-      `Kind Goblin.Symbol.Export;
-      `Flags symbol.flags;
-      `Lib (soname, soname);
-    ]
-
-let rec find_reexport =
-  function
-  | [] -> raise Not_found
-  | (`Reexport _) as reex :: _->
-    reex
-  | _::rest -> find_reexport rest
-
-let rec find_stub =
-  function
-  | [] -> raise Not_found
-  | `Stub stub :: _ ->
-    stub
-  | _::rest -> find_stub rest
-
-let rec find_flags =
-  function
-  | [] -> raise Not_found
-  | `Flags flags :: _ ->
-    flags
-  | _::rest -> find_flags rest
-
- let mach_export_data_to_export_info data = 
-  try 
-    let reex = find_reexport data in
-    begin
-      match reex with
-      | `Reexport (`As (name, lib)) ->
-        let lib_symbol_name = Some name in
-        let flags = find_flags data in
-        Reexport {lib; lib_symbol_name; flags}
-      | `Reexport (`From lib) -> 
-        let lib_symbol_name = None in
-        let flags = find_flags data in
-        Reexport {lib; lib_symbol_name; flags}
-    end
-  with Not_found ->
-    try
-      let stub_offset,resolver_offset = find_stub data in
-      let flags = find_flags data in
-      Stub {stub_offset;resolver_offset; flags}
-    with Not_found ->
-      let address = Goblin.Symbol.find_symbol_offset data in
-      let flags = find_flags data in
-      Regular {address; flags}
-
-let mach_export_datum_to_string ?use_kind:(use_kind=true) ?use_flags:(use_flags=false) ?use_lib:(use_lib=true) datum =
-  match datum with
-  | #Goblin.Symbol.symbol_datum as datum ->
-     Goblin.Symbol.symbol_datum_to_string
-       ~use_kind:use_kind
-       ~use_lib:use_lib
-       ~use_printable:false datum
-  | `Reexport `As (name,lib) ->
-     Printf.sprintf "REEX as %s from %s" name lib
-  | `Reexport `From lib ->
-     Printf.sprintf "REEX from %s" lib
-  | `Stub (i1,i2) ->
-     Printf.sprintf "STUB 0x%x 0x%x" i1 i2
-  | `Flags flags ->
-     if (use_flags) then
-       Printf.sprintf "FLAGS 0x%x" flags
-     else ""
-
-let mach_export_datum_ordinal =
-  function
-  | #Goblin.Symbol.symbol_datum as datum ->
-     Goblin.Symbol.symbol_datum_ordinal datum
-  | `Reexport `As (_,_)         (* fall through *)
-  | `Flags _
-  | `Reexport `From _
-  | `Stub _ -> Goblin.Symbol.kORDINAL_RIGHT
-
-let sort_mach_export_data (data) =
-  List.sort (fun a b ->
-      let e1 = mach_export_datum_ordinal a in
-      let e2 = mach_export_datum_ordinal b in
-      Pervasives.compare e1 e2
-    ) data
-
-let mach_export_data_to_string
-      (* should probably be true to show REEX ? *)
-      ?use_kind:(use_kind=false)
-      ?use_flags:(use_flags=false)
-      ?use_lib:(use_lib=true)
-      (data:mach_export_data)
-  =
-  let data = sort_mach_export_data data in
-  let b = Buffer.create ((List.length data) * 15) in
-  List.iter
-    (fun elem ->
-     Buffer.add_string b
-     @@ mach_export_datum_to_string
-	  ~use_kind:use_kind
-	  ~use_flags:use_flags
-	  ~use_lib:use_lib
-	  elem;
-     Buffer.add_string b " "
-    ) data;
-  Buffer.contents b
-
-(* lessening of the data set, ignores mach specific extensions *)
-let mach_export_data_to_symbol_data list =
-  List.filter
-    (
-      function
-      (* this is sweet *)
-      | #Goblin.Symbol.symbol_datum as datum ->
-	 ignore datum; true
-      (* ignore the warning, can't use _ 
-         :( we just need to see if it's a subset of goblin symbols,
-         is all *)
-      | _ -> false
-    ) list
-
-let export_info_to_string ei = 
+let export_to_string ei = 
   match ei with
   | Regular info ->
     Printf.sprintf "0x%x REGU" info.address 
@@ -254,7 +86,7 @@ let export_info_to_string ei =
   | Stub info ->
      Printf.sprintf "(0x%x 0x%x) STUB"
 		    info.stub_offset info.resolver_offset
-
+(* 
 let export_map_to_string map = 
   let b = Buffer.create ((ExportMap.cardinal map) * 15) in
   ExportMap.iter
@@ -267,7 +99,8 @@ let export_map_to_string map =
 	  ~basic_export:true symbol;
     ) map;
   Buffer.contents b
-
+ *)
+(* 
 let export_map_to_mach_export_data_list map =
   ExportMap.fold (fun key export acc -> export::acc) map []
 
@@ -278,55 +111,23 @@ let mach_export_data_list_to_export_map list =
        (Goblin.Symbol.find_symbol_name export)
        export acc
     ) ExportMap.empty list
+ *)
+let print_export export =
+  Printf.printf "%s\n" @@ export_to_string export
 
-let print_exports exports = 
+let print_exports exports =
   Printf.printf "Exports (%d):\n" @@ List.length exports;
-  List.iter 
-    (fun symbol ->
-     mach_export_data_to_string
-       ~use_kind:false ~use_lib:false symbol
-     |> Printf.printf "%s\n"
-    ) exports
-
-let print_mach_export_data
-      ?simple:(simple=false)
-      ?goblin:(goblin=false)
-      export
-  = 
-  if (not goblin) then
-    mach_export_data_to_string
-      ~use_lib:(not simple) export
-    |> Printf.printf "%s\n"
-  else
-    Goblin.Symbol.symbol_data_to_string
-      ~basic_export:true export
-    |> Printf.printf "%s\n"
-
-let find_map export map = 
-  ExportMap.find export map
-
-let find symbol = 
-  List.find
-    (fun export ->
-     (Goblin.Symbol.find_symbol_name export) = symbol)
+  List.iter print_export exports
 
 let length exports = List.length exports
 
-let length_map = ExportMap.cardinal
-
-let empty_map = ExportMap.empty
-
 let empty = []
-
-let fold = List.fold_left
-
-let fold_map f (map:export_map) = ExportMap.fold f map
 
 (* ======================= *)
 (*  BINARY work *)
 (* ======================= *)
 
-let get_symbol_type bytes libs flags offset =
+let get_export bytes libs flags offset =
   match flags land kEXPORT_SYMBOL_FLAGS_KIND_MASK |> get_symbol_kind
   with
   | REGULAR -> 
@@ -359,7 +160,6 @@ let get_symbol_type bytes libs flags offset =
     let address, _ = Leb128.get_uleb128 bytes offset in
     Regular {address; flags}
 
-
 let interp = false
 let debug = interp
 (* current_symbol accumulates the symbol name until we hit a terminal, which we then add to the list as a key to the flags and location *)
@@ -386,8 +186,8 @@ let rec get_exports_it bytes base size libs current_symbol pos acc =
         let num_children,children_start = Leb128.get_uleb128 bytes (pos + terminal_size) in (* skip past the symbol info to get the number of children *)
         let flags,pos = Leb128.get_uleb128 bytes pos in
         if (debug) then Printf.printf "\tTERM %d flags: 0x%x\n" num_children flags;
-        let export = (get_symbol_type bytes libs flags pos |> (export_info_to_mach_export_data current_symbol libs.(0))) in
-        if (debug) then begin Printf.printf "\t"; print_mach_export_data export end;
+        let export = get_export bytes libs flags pos in
+        if (debug) then begin Printf.printf "\t"; print_export export end;
         let acc = export::acc in
         if (num_children = 0) then
           acc
@@ -420,14 +220,11 @@ and get_branches bytes base count current_symbol curr pos branches =
 
 (* TODO: see todos above *)
 (* entry point for doing the work *)
-let get_exports binary dyld_info libs  = 
+let get_exports binary dyld_info libs :t =
   let boundary = (dyld_info.MachLoadCommand.export_size + dyld_info.MachLoadCommand.export_off) in
   let base = dyld_info.MachLoadCommand.export_off in
   if (debug) then Printf.printf "export init: 0x%x 0x%x\n" base boundary;
   get_exports_it binary base boundary libs "" base []
-  |> Goblin.Symbol.sort_symbols
-  |> Goblin.Symbol.compute_size 0x0 (* FIX THIS WITH EXTRA NLIST DATA *)
-  |> List.rev (* for some reason compute size wasn't reversing... ? *)
 
 (* ======================== *)
 

@@ -80,7 +80,7 @@ let analyze config binary =
        try
          ReadMach.find_export_symbol
 	   config.search_term binary
-	 |> Mach.Exports.print_mach_export_data ~simple:true
+	 |> Goblin.Mach.Exports.print_mach_export_data ~simple:true
        (* TODO: add find import symbol *)
        with Not_found ->
          Printf.printf "";

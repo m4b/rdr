@@ -19,19 +19,6 @@ Library "utils"
     ByteCoverage,
     Generics
 
-Library "goblin"
-  Path: lib/goblin
-  BuildTools: ocamlbuild
-  FindLibParent: rdr
-  FindLibName: goblin
-  Modules:
-    Goblin,
-    GoblinSymbol,
-    GoblinExport,
-    GoblinImport
-  BuildDepends:
-    rdr.utils
-
 Library "mach"
   Path: lib/mach
   BuildTools: ocamlbuild
@@ -52,8 +39,7 @@ Library "mach"
     MachRebaseOpcodes,
     MachVersion
   BuildDepends:
-    rdr.utils,
-    rdr.goblin
+    rdr.utils
 
 Library "elf"
   Path: lib/elf
@@ -72,6 +58,21 @@ Library "elf"
    ElfCoverage
   BuildDepends:
    rdr.utils
+
+Library "goblin"
+  Path: lib/goblin
+  BuildTools: ocamlbuild
+  FindLibParent: rdr
+  FindLibName: goblin
+  Modules:
+    Goblin,
+    GoblinSymbol,
+    GoblinExport,
+    GoblinImport,
+    GoblinMach
+  BuildDepends:
+    rdr.utils,
+    rdr.mach
 
 Library "rdr"
   Path: lib

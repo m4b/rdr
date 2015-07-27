@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 9a77234dd57e6a02c354cd4b37af0c80) *)
+(* DO NOT EDIT (digest: 96ed3822b41f0228553e2588f9ce6c7e) *)
 module OASISGettext = struct
 (* # 22 "src/oasis/OASISGettext.ml" *)
 
@@ -610,9 +610,9 @@ let package_default =
      MyOCamlbuildBase.lib_ocaml =
        [
           ("utils", ["lib/utils"], []);
-          ("goblin", ["lib/goblin"], []);
           ("mach", ["lib/mach"], []);
           ("elf", ["lib/elf"], []);
+          ("goblin", ["lib/goblin"], []);
           ("rdr", ["lib"], []);
           ("rdrutils", ["src"], [])
        ];
@@ -621,8 +621,8 @@ let package_default =
      includes =
        [
           ("src", ["lib/elf"; "lib/goblin"; "lib/mach"; "lib/utils"]);
-          ("lib/mach", ["lib/goblin"; "lib/utils"]);
-          ("lib/goblin", ["lib/utils"]);
+          ("lib/mach", ["lib/utils"]);
+          ("lib/goblin", ["lib/mach"; "lib/utils"]);
           ("lib/elf", ["lib/utils"]);
           ("lib", ["lib/elf"; "lib/goblin"; "lib/mach"; "lib/utils"])
        ]
