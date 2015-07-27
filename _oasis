@@ -67,7 +67,8 @@ Library "elf"
    ElfConstants,
    ElfDynamic,
    ElfReloc,
-   ElfSymbolTable
+   ElfSymbolTable,
+   ElfCoverage
   BuildDepends:
    rdr.utils
 

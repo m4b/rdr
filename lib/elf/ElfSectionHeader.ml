@@ -213,7 +213,7 @@ let find_section_by_type section_type shs =
   done;
   section
 
-let find_sections_by_type section_type shs =
+let get_sections section_type shs =
   Array.fold_left (fun acc elem ->
 		   if (elem.sh_type = section_type) then
 		     (elem::acc)

@@ -7,8 +7,7 @@ module Reloc = ElfReloc
 module Constants = ElfConstants
 module Dynamic = ElfDynamic                        
 module SymbolTable = ElfSymbolTable
-
-open ByteCoverage
+module Coverage = ElfCoverage
 
 type t = {
   header: Header.t;
@@ -23,56 +22,9 @@ type t = {
   interpreter: string;
   libraries: string list;
   size: int;
+  byte_coverage: ByteCoverage.t;
   raw_code: bytes;              (* list *)
 }
-
-let compute_byte_coverage h phs shs = 
-  let leading_meta_size = 
-    h.Header.e_ehsize + 
-    (h.Header.e_phentsize * h.Header.e_phnum) 
-  in
-  let interp = if (not @@ ProgramHeader.is_empty phs) then
-      match ProgramHeader.get_interpreter_header phs with
-      | Some ph ->
-        (
-          fun m -> 
-            let size = ph.ProgramHeader.p_filesz in
-            let range_start = ph.ProgramHeader.p_offset in
-            let range_end = size + range_start in
-            ByteCoverage.Map.add range_start
-              {size; kind = String; 
-               range_start; range_end; 
-               extra = "interp"} m
-        )
-      | None ->
-        (fun m -> m)
-    else
-      (fun m -> m)
-  in
-  let section_headers = 
-    if (not @@ SectionHeader.is_empty shs) then
-      (
-        fun m -> 
-          let size = h.Header.e_shentsize * h.Header.e_shnum in
-          let range_start = h.Header.e_shoff in
-          let range_end = size + range_start in
-          ByteCoverage.Map.add range_start
-            {size; 
-             kind = Meta; 
-             range_start; range_end; 
-             extra = "section headers"} m
-      )
-    else
-      (fun m -> m)
-  in
-  let m =
-    ByteCoverage.Map.add 0 
-      {size = leading_meta_size; 
-       kind = Meta; range_start = 0; 
-       range_end = leading_meta_size; 
-       extra = "header + program headers"} 
-      ByteCoverage.Map.empty
-  |>  interp |> section_headers in m
 
 let get ?meta_only:(meta_only=false) binary =
   let header = Header.get_elf_header64 binary in
@@ -123,8 +75,7 @@ let get ?meta_only:(meta_only=false) binary =
     Dynamic.get_reloc_data _dynamic slide_sectors
     |> Reloc.get_relocs64 binary
   in
-  let byte_coverage = compute_byte_coverage header program_headers section_headers in 
-  Printf.printf "Coverage: %d / %d = %f\n" (ByteCoverage.total_coverage byte_coverage) size @@ ByteCoverage.percent byte_coverage size;
+  let byte_coverage = ElfCoverage.compute_byte_coverage header program_headers section_headers in 
   (* TODO: fix *)
   let raw_code = if (meta_only) then
       Bytes.create 0 
@@ -144,6 +95,7 @@ let get ?meta_only:(meta_only=false) binary =
     interpreter;
     libraries;
     raw_code;
+    byte_coverage;
   }
 
 let print elf = 
@@ -153,4 +105,5 @@ let print elf =
   Dynamic.print_dynamic elf._dynamic;
   SymbolTable.print_symbol_table elf.dynamic_symbols;
   SymbolTable.print_symbol_table elf.symbol_table;
-  Reloc.print_relocs64 elf.relocations
+  Reloc.print_relocs64 elf.relocations;
+  Printf.printf "Coverage: %d / %d = %f\n" (ByteCoverage.total_coverage elf.byte_coverage) elf.size @@ ByteCoverage.percent elf.byte_coverage elf.size;

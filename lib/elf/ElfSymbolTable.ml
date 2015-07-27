@@ -209,7 +209,7 @@ let print_symbol_table entries =
   List.iteri (fun i elem -> Printf.printf "(%d) %s\n" i @@ symbol_to_string elem) entries
 
 let get_symbol_table binary section_headers =
-  match find_sections_by_type ElfSectionHeader.kSHT_SYMTAB section_headers with
+  match get_sections ElfSectionHeader.kSHT_SYMTAB section_headers with
   | [] -> []
   | sh::shs ->
      let offset = sh.sh_offset in
