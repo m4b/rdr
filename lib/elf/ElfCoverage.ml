@@ -3,11 +3,18 @@ open ByteCoverage
 let debug = false
 
 let compute_section_coverage kind map section =
-  if (debug) then Printf.printf "called: %s\n" (ElfSectionHeader.shtype_to_string section.ElfSectionHeader.sh_type);
+  if (debug) then
+    Printf.printf "called: %s\n"
+      (ElfSectionHeader.shtype_to_string
+         section.ElfSectionHeader.sh_type);
   let size = section.ElfSectionHeader.sh_size in
   let range_start = section.ElfSectionHeader.sh_offset in
   let range_end = size + range_start in
-  let extra = ElfSectionHeader.shtype_to_string section.ElfSectionHeader.sh_type in
+  let extra =
+    section.ElfSectionHeader.name ^ " // " ^
+    ElfSectionHeader.shtype_to_string
+      section.ElfSectionHeader.sh_type
+  in
   ByteCoverage.Map.add range_start
     {size; understood = true; kind;
      range_start; range_end; extra} map

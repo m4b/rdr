@@ -1,4 +1,7 @@
 open Config
+open RdrUtils
+
+(* TODO: add coverage printer *)
 
 let debug = false
 

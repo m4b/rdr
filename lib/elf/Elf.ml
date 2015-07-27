@@ -106,4 +106,5 @@ let print elf =
   SymbolTable.print_symbol_table elf.dynamic_symbols;
   SymbolTable.print_symbol_table elf.symbol_table;
   Reloc.print_relocs64 elf.relocations;
-  Printf.printf "Coverage: %d / %d = %f\n" (ByteCoverage.total_coverage elf.byte_coverage) elf.size @@ ByteCoverage.percent elf.byte_coverage elf.size;
+  ByteCoverage.stats elf.byte_coverage elf.size;
+  ByteCoverage.print elf.byte_coverage

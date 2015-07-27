@@ -16,6 +16,7 @@ Library "utils"
     Binary,
     Input,
     Leb128,
+    ByteCoverage,
     Generics
 
 Library "goblin"
