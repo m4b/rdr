@@ -31,8 +31,7 @@ type t = {
   raw_code: bytes;
 }
 
-
-let binary_to_string binary = 
+let binary_to_string binary =
   let libstr = if (binary.is_lib) then " (LIB)" else "" in
   Printf.sprintf "%s%s:\nImports (%d):\n%sExports (%d):\n%s"
     binary.name libstr
