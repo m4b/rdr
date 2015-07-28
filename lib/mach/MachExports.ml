@@ -238,7 +238,7 @@ let get_exports binary dyld_info libs :t =
   let boundary = (dyld_info.MachLoadCommand.export_size + dyld_info.MachLoadCommand.export_off) in
   let base = dyld_info.MachLoadCommand.export_off in
   if (debug) then Printf.printf "export init: 0x%x 0x%x\n" base boundary;
-  get_exports_it binary base boundary libs "" base []
+  get_exports_it binary base boundary libs "" base [] |> sort
 
 (* ======================== *)
 

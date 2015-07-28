@@ -93,14 +93,12 @@ let get binary =
       (* TODO: add load segment boundaries, and nlists locals as a parameters *)
       let exports = 
         Exports.get_exports binary dyld_info libraries
-        |> Exports.sort
       in
       (* TODO: yea, need to fix imports like machExports; send in the libraries,
          do all that preprocessing there, and not in create binary *)
       let imports =
         Imports.get_imports
           binary dyld_info libraries segments
-        |> Imports.sort
       in
       exports,imports
     | None ->

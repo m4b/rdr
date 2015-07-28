@@ -1,7 +1,3 @@
-(* TODO:
-  (0): sort symbols by address, like exports
- *)
-
 open Binary
 open MachBindOpcodes
 open MachLoadCommand
@@ -238,7 +234,6 @@ let get_imports binary dyld_info libs segments =
   let lazy_bi = bind_interpreter lazy_bytes 0 lazy_bind_size true in
   let nli = List.map (bind_information_to_import libs segments ~is_lazy:false) non_lazy_bi in
   let li = List.map (bind_information_to_import libs segments ~is_lazy:true) lazy_bi in
-  nli@li
+  nli@li |> sort
 
 (* non-lazy: extern [const] <var_type> <var_name> or specially requested prebound symbols ? *)
-
