@@ -26,6 +26,7 @@ let analyze config binary =
       if (config.verbose || config.print_imports) then Mach.Imports.print mach.Mach.imports;
       *)
       if (config.print_nlist) then Mach.Nlist.print mach.Mach.nlist;
+      if (config.print_coverage) then (); (* TODO: implement coverage *)
     end;
   goblin
 

@@ -159,6 +159,11 @@ let analyze config binary =
 	begin
 	  Printf.printf "Imports (%d)\n" (List.length goblin_imports);
 	  List.iter (Goblin.Symbol.print_symbol_data ~with_lib:true) goblin_imports
+        end;
+      if (config.verbose || config.print_coverage) then
+	begin
+          ByteCoverage.print elf.Elf.byte_coverage;
+          ByteCoverage.stats elf.Elf.byte_coverage elf.Elf.size;
 	end
     end;
   (* ============== *)

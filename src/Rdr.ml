@@ -24,6 +24,7 @@ let print_headers = ref false
 let print_libraries = ref false
 let print_exports = ref false
 let print_imports = ref false
+let print_coverage = ref false
 let use_goblin = ref false
 let recursive = ref false
 let write_symbols = ref false
@@ -63,7 +64,8 @@ let get_config () =
     print_headers = !print_headers;      
     print_libraries = !print_libraries;
     print_exports = !print_exports;
-    print_imports = !print_imports;      
+    print_imports = !print_imports;
+    print_coverage = !print_coverage;
     disassemble = !disassemble;
     use_map = !use_map;
     recursive = !recursive;
@@ -111,6 +113,7 @@ let main =
      ("-l", Arg.Set print_libraries, "Print the dynamic libraries");     
      ("-e", Arg.Set print_exports, "Print the exported symbols");
      ("-i", Arg.Set print_imports, "Print the imported symbols");
+     ("-c", Arg.Set print_coverage, "Print the byte coverage");
      ("-s", Arg.Set print_nlist, "Print the symbol table, if present");
      ("-f", Arg.Set_string search_term_string, "Find symbol in binary");
      ("-b", Arg.Set marshal_symbols, "Build a symbol map and write to $(HOME)/.rdr/tol; default directory is /usr/lib, change with -d");
