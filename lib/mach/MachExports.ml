@@ -4,23 +4,6 @@
    (3) /usr/lib/libstdc++.6.0.9.dylib has flag 0xc at many offsets... they're weak 
 *)
 
-(*
-for testing
-#directory "/Users/matthewbarney/git/rdr/_build/src/utils/";;
-#directory "/Users/matthewbarney/git/rdr/_build/src/mach/";;
-#directory "/Users/matthewbarney/git/rdr/_build/src/goblin/";;
-#load "Binary.cmo";;
-#load "InputUtils.cmo";;
-#load "Version.cmo";;
-#load "Nlist.cmo";;
-#load "MachLoadCommand.cmo";;
-#load "BindOpcodes.cmo";;
-#load "Goblin.Symbol.cmo";;
-#load "Leb128.cmo";;
-#load "Imports.cmo";;
-#load "Exports.cmo";;
-#load "Macho.cmo";;
-*)
 open Binary
 open MachLoadCommand
 

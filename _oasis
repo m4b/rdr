@@ -34,7 +34,7 @@ Library "mach"
     MachExports,
     MachHeader,
     MachImports,
-    MachSegment64,
+    MachSection,
     MachNlist,
     MachRebaseOpcodes,
     MachVersion
