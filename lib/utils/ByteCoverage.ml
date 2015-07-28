@@ -1,4 +1,5 @@
 (* TODO: create a normalize map function *)
+(* TODO: fix bug with ELF NO_BITS where size > binary size, and actually refers to a VM size *)
 (* Add a coverage struct with the map of understood data, and a map of unknown, which is the understood data ranges modulo the size *)
 
 
@@ -12,6 +13,7 @@ type kind = | Meta
             | PlatformSpecific
             | Data
             | Invalid
+            | Semantic
 
 let kind_to_string =
   function
@@ -25,6 +27,7 @@ let kind_to_string =
   | PlatformSpecific -> "PlatformSpecific"
   | Data -> "Data"
   | Invalid -> "Invalid"
+  | Semantic -> "Semantic"
 
 type data =
   {

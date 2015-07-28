@@ -3,16 +3,6 @@ TODO:
    (1) Verify the new load commands: Figure out lazy load of libraries and load weak dylibs
 *)
 
-(*
-for testing
-
-#directory "/Users/matthewbarney/projects/binreader/_build/src/utils/";;
-#directory "/Users/matthewbarney/projects/binreader/_build/src/mach/";;
-#load "Binary.cmo";;
-#load "InputUtils.cmo";;
-#load "Version.cmo";;
-*)
-
 exception Bad_load_command of int
 
 type lc = | UUID
@@ -207,6 +197,7 @@ type section = {
 
 let sizeof_section = 68	(* bytes *)
 
+(* verified matches c struct naming *)
 type section_64 = {
     sectname: string;		(* 16 bytes *)
     segname: string;		(* 16 bytes *)
