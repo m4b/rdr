@@ -65,8 +65,6 @@ type export =
   | Reexport of reexport_symbol_info
   | Stub of stub_symbol_info
 
-module ExportMap = Map.Make(String)
-
 type t = export list
 
 exception Unimplemented_symbol_flag of int * string
@@ -84,8 +82,8 @@ let export_to_string ei =
         Printf.sprintf "from %s -> %s REEX" info.lib original_symbol
     end
   | Stub info ->
-     Printf.sprintf "(0x%x 0x%x) STUB"
-		    info.stub_offset info.resolver_offset
+    Printf.sprintf "(0x%x 0x%x) STUB"
+      info.stub_offset info.resolver_offset
 (* 
 let export_map_to_string map = 
   let b = Buffer.create ((ExportMap.cardinal map) * 15) in
@@ -115,7 +113,7 @@ let mach_export_data_list_to_export_map list =
 let print_export export =
   Printf.printf "%s\n" @@ export_to_string export
 
-let print_exports exports =
+let print exports =
   Printf.printf "Exports (%d):\n" @@ List.length exports;
   List.iter print_export exports
 
@@ -218,7 +216,6 @@ and get_branches bytes base count current_symbol curr pos branches =
     if (debug) then Printf.printf "\t(%d) string: %s next_node: 0x%x\n" curr key (base + next_node);
     get_branches bytes base count current_symbol (curr+1) pos ((key, (base + next_node))::branches)
 
-(* TODO: see todos above *)
 (* entry point for doing the work *)
 let get_exports binary dyld_info libs :t =
   let boundary = (dyld_info.MachLoadCommand.export_size + dyld_info.MachLoadCommand.export_off) in

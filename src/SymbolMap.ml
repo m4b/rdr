@@ -209,10 +209,11 @@ let build_polymorphic_map config =
       (* could do a |> ReadMach.to_goblin here ? --- better yet, to goblin, then map building code after to avoid DRY violations *)
       | Object.Mach binary ->
          let binary = ReadMach.analyze config binary in
-	 let imports = binary.ReadMach.imports in
+	 let imports = binary.Goblin.imports in
 	 Array.iter
 	   (fun import ->
-	    let symbol = Goblin.Mach.Imports.import_name import in
+       (* 	    let symbol = Goblin.Mach.Imports.import_name import in *)
+	    let symbol = import.Goblin.Import.name in
 	    if (Hashtbl.mem tbl symbol) then
 	      let count = Hashtbl.find tbl symbol in
 	      Hashtbl.replace tbl symbol (count + 1)
@@ -220,11 +221,13 @@ let build_polymorphic_map config =
 	      Hashtbl.add tbl symbol 1
 	   ) imports;
          (* let symbols = Mach.Exports.export_map_to_mach_export_data_list binary.ReadMach.exports in *)
-         let symbols = binary.ReadMach.exports in
+         let symbols = binary.Goblin.exports in
          (* now we fold over the export -> polymorphic variant list of [mach_export_data] mappings returned from above *)
          let map' =
 	   Array.fold_left
-	     (fun acc data -> 
+	     (fun acc data ->
+	      let data = Goblin.Symbol.from_goblin_export
+			   data ~libname:binary.Goblin.name ~libinstall_name:binary.Goblin.install_name in
 	      (* this is bad, not checking for weird state of no export symbol name, but since i construct the data it isn't possible... right? *)
 	      let symbol = Goblin.Symbol.find_symbol_name data in
 	      try 
@@ -239,7 +242,7 @@ let build_polymorphic_map config =
 		 ToL.add symbol [data] acc
 	     ) map symbols
 	 in
-         loop map' ((binary.ReadMach.name, binary.ReadMach.libs)::lib_deps)
+         loop map' ((binary.Goblin.name, binary.Goblin.libs)::lib_deps)
       | Object.Elf binary ->
          (* hurr durr iman elf *)
          let binary = ReadElf.analyze config binary in

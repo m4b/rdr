@@ -11,6 +11,7 @@ open MachLoadCommand
    symbol flags are undocumented 
 *)
 
+(* TODO: move the special fields (if any) and match them with what's on disk/in c structs? *)
 type bind_information = {
   seg_index: int;
   seg_offset: int;

@@ -212,7 +212,7 @@ end
 module Imports = struct
   open MachImports
 
-  type mach_import_data = 
+  type import = 
     [ 
       | GoblinSymbol.symbol_datum 
       (* we extend with mach specific details: *)
@@ -222,6 +222,18 @@ module Imports = struct
 
   open MachLoadCommand
 
+  let import_to_goblin (import:MachImports.import) :import =
+    [
+      `Name import.bi.symbol_name;
+      `Offset import.offset;
+      `Kind GoblinSymbol.Import;
+      `Size import.size;
+      `Lib (import.dylib, import.dylib);
+      `Flags import.bi.symbol_flags;
+      `IsLazy import.is_lazy
+    ]
+
+  (* 
   let mach_import_to_goblin libraries segments ~is_lazy:is_lazy (import:bind_information) =
     let offset = (List.nth segments import.seg_index).fileoff + import.seg_offset in
     let size = if (import.bind_type == MachBindOpcodes.kBIND_TYPE_POINTER) then 8 else 0 in
@@ -235,6 +247,7 @@ module Imports = struct
       `Flags import.symbol_flags;
       `IsLazy is_lazy
     ]
+
 
   let get_imports binary dyld_info libs segments =
     let bind_off = dyld_info.MachLoadCommand.bind_off in
@@ -252,8 +265,8 @@ module Imports = struct
 	(mach_import_to_goblin libs segments ~is_lazy:true)
 	lazy_imports |> GoblinSymbol.sort_symbols in
     nl,la
-
-  let mach_import_data_to_string (data:mach_import_data) =
+ *)
+  let mach_import_data_to_string (data:import) =
     GoblinSymbol.symbol_data_to_string data
 
   let rec is_lazy = 

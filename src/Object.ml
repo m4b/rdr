@@ -69,23 +69,27 @@ let get_bytes ?verbose:(verbose=false) filename =
 	Unknown
       end
 
-(* if I return goblin binaries and destroy all the beautiful structure of each kind of binary, i can have one return type without matches...
-so... I should do it, right?
- *)
 let analyze config binary =
   match binary with
   | Mach bytes ->
      let binary = ReadMach.analyze config bytes in     
      if (config.search) then
        try
-         ReadMach.find_export_symbol
+         ReadMach.find_export
 	   config.search_term binary
-	 |> Goblin.Mach.Exports.print_mach_export_data ~simple:true
+	 |> Goblin.Export.print
+       (* 	 |> Goblin.Mach.Exports.print_mach_export_data ~simple:true *)
        (* TODO: add find import symbol *)
        with Not_found ->
          Printf.printf "";
      else 
        if (config.graph) then
+         Graph.graph_goblin 
+	   ~draw_imports:true
+	   ~draw_libs:true binary
+	 @@ Filename.basename config.filename;
+
+       (* 
          if (config.use_goblin) then
            begin
              let goblin = ReadMach.to_goblin binary in
@@ -95,11 +99,14 @@ let analyze config binary =
 	     @@ Filename.basename config.filename;
            end
          else
-           Graph.graph_mach_binary 
+         *)
+         (* 
+Graph.graph_mach_binary 
              ~draw_imports:true 
              ~draw_libs:true 
              binary 
              (Filename.basename config.filename);
+ *)
   (* ===================== *)
   (* ELF *)
   (* ===================== *)

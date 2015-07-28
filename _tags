@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 0b2d332d6dd60d5ae8986927e353fe1a)
+# DO NOT EDIT (digest: 28b9a39932677973ac2e4a14f90407c6)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -24,6 +24,7 @@ true: annot, bin_annot
 <lib/elf/*.ml{,i,y}>: use_utils
 # Library goblin
 "lib/goblin/goblin.cmxs": use_goblin
+<lib/goblin/*.ml{,i,y}>: use_elf
 <lib/goblin/*.ml{,i,y}>: use_mach
 <lib/goblin/*.ml{,i,y}>: use_utils
 # Library rdr

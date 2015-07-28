@@ -69,10 +69,12 @@ Library "goblin"
     GoblinSymbol,
     GoblinExport,
     GoblinImport,
-    GoblinMach
+    GoblinMach,
+    GoblinElf
   BuildDepends:
     rdr.utils,
-    rdr.mach
+    rdr.mach,
+    rdr.elf
 
 Library "rdr"
   Path: lib

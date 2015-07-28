@@ -51,7 +51,7 @@ let print_nlists nlists =
   (* i.e., need to learn format module *)
   printf "\n"
 
-let print_symlist symlist =
+let print symlist =
   List.iteri (fun i (nlist,symname) ->
       printf "%-10x %s sect: %x type: %002x desc: 0x%x\n" nlist.n_value symname  nlist.n_sect nlist.n_type nlist.n_desc
     ) symlist;

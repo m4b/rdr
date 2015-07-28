@@ -3,6 +3,8 @@
        which would essentially build a map of the entire system, or something like that
 *)
 
+let version = "1.3"
+
 open Config (* because only has a record type *)
 
 type os = Darwin | Linux | Other
@@ -33,6 +35,8 @@ let anonarg = ref ""
 
 let disassemble = ref false
 let search_term_string = ref ""
+
+let print_version = ref false
 
 let get_config () =
   let analyze = not (!use_map || !marshal_symbols) in
@@ -102,6 +106,7 @@ let main =
      ("-F", Arg.String (set_framework_directories), "(OSX Only) String of space or colon separated base framework directories to additionally search when building the symbol map");
      ("-r", Arg.Set recursive, "Recursively search directories for binaries; use with -b");
      ("-v", Arg.Set verbose, "Print all the things");
+     ("--version", Arg.Set print_version, "Print the version and exit");
      ("-h", Arg.Set print_headers, "Print the header"); 
      ("-l", Arg.Set print_libraries, "Print the dynamic libraries");     
      ("-e", Arg.Set print_exports, "Print the exported symbols");
@@ -117,15 +122,28 @@ let main =
     ] in
   let usage_msg = "usage: rdr [-r] [-b] [-m] [-d] [-g] [-G --goblin] [-v | -l | -e | -i] [<path_to_binary> | <symbol_name>]\noptions:" in
   Arg.parse speclist set_anon_argument usage_msg;
+  if (!print_version) then
+    begin
+      Printf.printf "v%s\n" version;
+      exit 0
+    end
+  else
   (* BEGIN program init *)  
   Storage.create_dot_directory (); (* make our .rdr/ if we haven't already *)
   let config = get_config () in
   if (config.analyze && config.filename = "") then
-    begin
-      Printf.eprintf "Error: no path to binary given\n";
-      Arg.usage speclist usage_msg;
-      exit 1;
-    end;
+    if (config.verbose) then
+      begin
+        (* hack to print version *)
+        Printf.printf "v%s\n" version;
+        exit 0
+      end
+    else      
+      begin
+        Printf.eprintf "Error: no path to binary given\n";
+        Arg.usage speclist usage_msg;
+        exit 1;
+      end;
   if (config.use_map) then
     (* -m *)
     SymbolMap.use_symbol_map config
