@@ -60,17 +60,24 @@ type reexport_symbol_info =
   {lib: string; lib_symbol_name: string option; flags: int}
 type regular_symbol_info = {address: int; flags: int}
 
-type export = 
+type export_info = 
   | Regular of regular_symbol_info
   | Reexport of reexport_symbol_info
   | Stub of stub_symbol_info
+
+type export =
+  {
+    info: export_info;
+    name: string;
+    size: int;
+  }
 
 type t = export list
 
 exception Unimplemented_symbol_flag of int * string
 
-let export_to_string ei = 
-  match ei with
+let export_info_to_string =
+  function
   | Regular info ->
     Printf.sprintf "0x%x REGU" info.address 
   | Reexport info ->
@@ -84,32 +91,13 @@ let export_to_string ei =
   | Stub info ->
     Printf.sprintf "(0x%x 0x%x) STUB"
       info.stub_offset info.resolver_offset
-(* 
-let export_map_to_string map = 
-  let b = Buffer.create ((ExportMap.cardinal map) * 15) in
-  ExportMap.iter
-    (fun key symbol ->
-      (* TODO: change this to a different printer,
-         this will be used disassembling single binaries,
-         so more mach info, the better *)
-     Buffer.add_string b
-     @@ Goblin.Symbol.symbol_data_to_string
-	  ~basic_export:true symbol;
-    ) map;
-  Buffer.contents b
- *)
-(* 
-let export_map_to_mach_export_data_list map =
-  ExportMap.fold (fun key export acc -> export::acc) map []
 
-let mach_export_data_list_to_export_map list =
-  List.fold_left
-    (fun acc export ->
-     ExportMap.add
-       (Goblin.Symbol.find_symbol_name export)
-       export acc
-    ) ExportMap.empty list
- *)
+let export_to_string export =
+  Printf.sprintf "%s (0x%x) { %s }\n" 
+    export.name
+    export.size
+    (export_info_to_string export.info)
+
 let print_export export =
   Printf.printf "%s\n" @@ export_to_string export
 
@@ -120,6 +108,34 @@ let print exports =
 let length exports = List.length exports
 
 let empty = []
+
+let sort = List.sort (fun e1 e2 ->
+    match e1.info with
+    | Regular symbol1 ->
+      begin
+        match e2.info with
+        | Regular symbol2 ->
+          compare symbol1.address symbol2.address
+        | _ ->
+          1
+      end
+    | Reexport symbol1 ->
+      begin
+        match e2.info with
+        | Reexport symbol2 ->
+          compare symbol1.lib symbol2.lib
+        | _ ->
+          -1
+      end
+    | Stub symbol1 ->
+      begin
+        match e2.info with
+        | Stub symbol2 ->
+          compare symbol1.stub_offset symbol2.stub_offset
+        | _ ->
+          -1
+      end
+  )
 
 (* ======================= *)
 (*  BINARY work *)
@@ -163,7 +179,7 @@ let debug = interp
 (* current_symbol accumulates the symbol name until we hit a terminal, which we then add to the list as a key to the flags and location *)
 (* this is the meat of the binary work, 
    reads out the trie encoded and builds the export list *)
-let rec get_exports_it bytes base size libs current_symbol pos acc = 
+let rec get_exports_it bytes base size libs current_symbol pos acc =
   if (pos >= size) then
     (* shouldn't happen because we terminate based on the trie structure itself, not pos *)
     acc
@@ -184,7 +200,8 @@ let rec get_exports_it bytes base size libs current_symbol pos acc =
         let num_children,children_start = Leb128.get_uleb128 bytes (pos + terminal_size) in (* skip past the symbol info to get the number of children *)
         let flags,pos = Leb128.get_uleb128 bytes pos in
         if (debug) then Printf.printf "\tTERM %d flags: 0x%x\n" num_children flags;
-        let export = get_export bytes libs flags pos in
+        let info = get_export bytes libs flags pos in
+        let export = {info; name = current_symbol; size = 0} in
         if (debug) then begin Printf.printf "\t"; print_export export end;
         let acc = export::acc in
         if (num_children = 0) then

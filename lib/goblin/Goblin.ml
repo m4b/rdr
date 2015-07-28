@@ -102,24 +102,33 @@ let to_string goblin = Printf.sprintf "%s (%s):\nLibs (%d):\n%s\nExports (%d):\n
 
 let print goblin = Printf.printf "%s\n" @@ to_string goblin
 
-module Mach = struct 
+module Mach = struct
   include GoblinMach
   open MachImports
+  open MachExports
+
+  (* @invariant sorted, sizecomputed *)
   let to_goblin mach install_name =
     let name = mach.Mach.name in
     let install_name = install_name in
     let libs = mach.Mach.libraries in
     let nlibs = mach.Mach.nlibraries in
-    (* fixup names, make smaller, better, etc. *)
-    let to_goblin_symbol = Exports.export_info_to_mach_export_data name install_name in
-    let goblin_exports = List.map 
-        (fun export -> to_goblin_symbol export 
-                       |> GoblinSymbol.to_goblin_export) 
-        mach.Mach.exports 
+    let exports = List.map
+        (fun export ->
+           let name = export.name in
+           let size = export.size in
+           let offset =
+             match export.info with
+             | Regular symbol ->
+               symbol.address
+             | _ -> 0x0
+           in
+           {Export.name; size; offset}
+        ) mach.Mach.exports
     in
-    let exports = Array.of_list goblin_exports in
+    let exports = Array.of_list exports in
     let nexports = mach.Mach.nexports in
-    let imports = 
+    let imports =
       List.mapi
         (
           fun i import ->
@@ -128,14 +137,15 @@ module Mach = struct
             let is_lazy = import.is_lazy in
             let offset = import.offset in
             let size = import.size in
-            {Import.name = name; lib; is_lazy; idx = i; offset; size}
+            {Import.name = name; lib; is_lazy;
+             idx = i; offset; size}
         ) mach.Mach.imports
       |> Array.of_list
     in
     let nimports = mach.Mach.nimports in
     let islib = mach.Mach.is_lib in
     let code = mach.Mach.raw_code in
-    {name; install_name; islib; libs; nlibs; 
+    {name; install_name; islib; libs; nlibs;
      exports; nexports; imports; nimports; code}
 end
 

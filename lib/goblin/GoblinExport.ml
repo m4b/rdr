@@ -6,7 +6,7 @@ type t =
   }
 
 let to_string export =
-  Printf.sprintf "0x%-16x %s (%d)" export.offset export.name export.size
+  Printf.sprintf "%16x %s (%d)" export.offset export.name export.size
 
 let print export =
     Printf.printf "%s\n" @@ to_string export

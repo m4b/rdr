@@ -10,7 +10,7 @@ type t =
 
 let to_string import =
   let squiggle = if (import.is_lazy) then "~>" else "->" in
-  Printf.sprintf "0x%-16x %s (%d) %s %s" import.offset import.name import.size squiggle import.lib
+  Printf.sprintf "%16x %s (%d) %s %s" import.offset import.name import.size squiggle import.lib
 
 let print import =
     Printf.printf "%s\n" @@ to_string import
