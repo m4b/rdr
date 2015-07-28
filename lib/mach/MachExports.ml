@@ -98,6 +98,11 @@ let export_to_string export =
     export.size
     (export_info_to_string export.info)
 
+let exports_to_string exports = 
+  List.fold_left (fun acc import -> 
+      (Printf.sprintf "%s" @@ export_to_string import) ^ acc
+    ) "" exports
+
 let print_export export =
   Printf.printf "%s\n" @@ export_to_string export
 

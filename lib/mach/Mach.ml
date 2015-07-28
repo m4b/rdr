@@ -31,35 +31,17 @@ type t = {
   raw_code: bytes;
 }
 
-    (* 
-TODO: REPLACE WITH Printers
-let imports_to_string imports = 
-  let b = Buffer.create (Array.length imports) in
-  Array.fold_left (fun acc import ->
-      Buffer.add_string acc
-      @@ Printf.sprintf "%s"
-      @@ Imports.mach_import_data_to_string import;
-      acc
-    ) b imports |> Buffer.contents
-
-let exports_to_string exports =
-  let b = Buffer.create (Array.length exports) in
-  Array.fold_left (fun acc export ->
-      Buffer.add_string acc
-      @@ Printf.sprintf "%s"
-      @@ Exports.mach_export_data_to_string export;
-      acc
-    ) b exports |> Buffer.contents
 
 let binary_to_string binary = 
   let libstr = if (binary.is_lib) then " (LIB)" else "" in
-  Printf.sprintf "%s%s:\nImports (%d):\n%sExports (%d):\n%s\n"
+  Printf.sprintf "%s%s:\nImports (%d):\n%sExports (%d):\n%s"
     binary.name libstr
     (binary.nimports)
-    (imports_to_string binary.imports)
+    (Imports.imports_to_string binary.imports)
     (binary.nexports)
-    (exports_to_string binary.exports)
- *)
+    (Exports.exports_to_string binary.exports)
+
+let print binary = Printf.printf "%s" @@ binary_to_string binary
 
 let get binary =
   let size = Bytes.length binary in
