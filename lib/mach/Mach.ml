@@ -97,7 +97,11 @@ let get binary =
       in
       (* TODO: yea, need to fix imports like machExports; send in the libraries,
          do all that preprocessing there, and not in create binary *)
-      let imports = Imports.get_imports binary dyld_info libraries segments in
+      let imports =
+        Imports.get_imports
+          binary dyld_info libraries segments
+        |> Imports.sort
+      in
       exports,imports
     | None ->
       [],[]

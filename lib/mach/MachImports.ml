@@ -72,6 +72,21 @@ let bind_information_to_string bi =
 let print_bind_information bis =
   List.iteri (fun i bi -> Printf.printf "%s\n" (bind_information_to_string bi)) bis
 
+let sort =
+  List.sort (fun i1 i2 ->
+      if (i1.is_lazy) then
+        if (i2.is_lazy) then
+          compare i1.offset i2.offset
+        else
+          -1
+      else
+      if (i2.is_lazy) then
+        1
+      else
+        compare i1.offset i2.offset
+    )
+
+
 (* interpreter for BIND opcodes:
     runs on prebound (non lazy) symbols (usually dylib extern consts and extern variables),
     and lazy symbols (usually dylib functions)
