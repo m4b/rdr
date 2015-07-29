@@ -1,4 +1,3 @@
-(* TODO: rename this to MachSymbolTable *)
 (* TODO: replace functions with Binary string functions *)
 
 open Printf
