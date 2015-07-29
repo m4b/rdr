@@ -75,10 +75,8 @@ let get ?meta_only:(meta_only=false) binary =
     Dynamic.get_reloc_data _dynamic slide_sectors
     |> Reloc.get_relocs64 binary
   in
-  let byte_coverage = 
-    ByteCoverage.create
-      (ElfCoverage.compute_byte_coverage header program_headers section_headers)
-      size
+  let byte_coverage =
+      ElfCoverage.compute_byte_coverage header program_headers section_headers size
   in
   (* TODO: fix *)
   let raw_code = if (meta_only) then
@@ -110,5 +108,4 @@ let print elf =
   SymbolTable.print_symbol_table elf.dynamic_symbols;
   SymbolTable.print_symbol_table elf.symbol_table;
   Reloc.print_relocs64 elf.relocations;
-  ByteCoverage.stats elf.byte_coverage elf.size;
   ByteCoverage.print elf.byte_coverage

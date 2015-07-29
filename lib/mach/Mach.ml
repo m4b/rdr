@@ -1,3 +1,5 @@
+(* TODO: add bytecoverage computer *)
+
 module BindOpcodes = MachBindOpcodes
 module CpuTypes = MachCpuTypes
 module Fat = MachFat
@@ -29,6 +31,7 @@ type t = {
   nlibraries: int;
   size: int;
   raw_code: bytes;
+  byte_coverage: ByteCoverage.t;
 }
 
 let binary_to_string binary =
@@ -40,7 +43,9 @@ let binary_to_string binary =
     (binary.nexports)
     (Exports.exports_to_string binary.exports)
 
-let print binary = Printf.printf "%s" @@ binary_to_string binary
+let print binary = 
+  Printf.printf "%s" @@ binary_to_string binary;
+  ByteCoverage.print binary.byte_coverage
 
 let get binary =
   let size = Bytes.length binary in
@@ -90,8 +95,10 @@ let get binary =
   let nexports = List.length exports in
   let nlibraries = Array.length libraries in
   let raw_code = Bytes.empty in
+  (* TODO: add bytecoverage computer *)
   {
     header; load_commands; name; nlist; nnlist;
     imports; nimports; exports; nexports;
-    is_lib; libraries; nlibraries; raw_code; size
+    is_lib; libraries; nlibraries; raw_code; size;
+    byte_coverage = ByteCoverage.create ByteCoverage.empty size;
   }

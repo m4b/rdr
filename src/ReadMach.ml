@@ -1,7 +1,8 @@
-(* TODO: 
-   (0) add load segment boundaries, and nlists locals as a parameters to the compute size
-   (1) compute final sizes after imports, locals, 
-       and exports are glommed into a goblin symbol soup, using all the information available
+(* 
+  #TODO
+  * Implement byte coverage
+  * add load segment boundaries, and nlists locals as a parameters to the compute size
+  * compute final sizes after imports, locals, and exports are glommed into a goblin symbol soup, using all the information available
  *)
 
 open Printf
@@ -26,7 +27,8 @@ let analyze config binary =
       if (config.verbose || config.print_imports) then Mach.Imports.print mach.Mach.imports;
       *)
       if (config.print_nlist) then Mach.Nlist.print mach.Mach.nlist;
-      if (config.print_coverage) then (); (* TODO: implement coverage *)
+      if (config.print_coverage) then 
+        ByteCoverage.print mach.Mach.byte_coverage
     end;
   goblin
 

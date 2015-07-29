@@ -1,21 +1,20 @@
-(* TODO: create a normalize map function *)
-(* TODO: fix bug with ELF NO_BITS where size > binary size, and actually refers to a VM size *)
-(* Add a coverage struct with the map of understood data, and a map of unknown, which is the understood data ranges modulo the size *)
+(* TODO: create a normalize coverage function *)
 
+let debug = false
 
-type kind = | Meta
-            | Code
-            | Unknown
-            | Symbol
-            | String
-            | StringTable
-            | Rela
-            | PlatformSpecific
-            | Data
-            | Invalid
-            | Semantic
+type tag = | Meta
+           | Code
+           | Unknown
+           | Symbol
+           | String
+           | StringTable
+           | Rela
+           | PlatformSpecific
+           | Data
+           | Invalid
+           | Semantic
 
-let kind_to_string =
+let tag_to_string =
   function
   | Meta -> "Meta"
   | Code -> "Code"
@@ -32,70 +31,119 @@ let kind_to_string =
 type data =
   {
     size: int;
-    kind: kind;
+    tag: tag;
     range_start: int;
     range_end: int;
     extra: string;
     understood: bool;
   }
 
-module Map = Map.Make(
+let sort a b =
+  if (a.range_start = b.range_start) then
+    if (a.range_end = b.range_end) then
+      Pervasives.compare a.tag b.tag
+    else
+      Pervasives.compare a.range_end b.range_end
+  else
+  if (a.range_start < b.range_start) then
+    -1
+  else
+    1
+
+let same_range d1 d2 = (d1.range_start = d2.range_start) && (d1.range_end = d2.range_end)
+
+(* DataSet specific functions *)
+module DataSet = Set.Make(
   struct 
-    type t=int
-    let compare= (fun a b -> Pervasives.compare a b)
+    type t=data
+    let compare = sort
   end)
 
-let debug = false
+let mem = DataSet.mem
+let add e l = DataSet.add e l             (* DataSet.add *)
+let empty = DataSet.empty                  (* DataSet.empty *)
+(* let fold f coverage seed = DataSet.fold_left f seed coverage *)
+let fold = DataSet.fold
+let iter = DataSet.iter
+let remove = DataSet.remove
+let to_list s = DataSet.elements s
+(* checks whether the range is redundant (covered) in our set already *)
+let is_covered range coverage =
+  DataSet.exists (fun data ->
+      data <> range
+      && data.range_start = range.range_start
+      && data.range_end = range.range_end
+    ) coverage
 
-type t = data Map.t
+type t = {
+  data: DataSet.t;
+  size: int;
+  total_coverage: int;
+  total_understood: int;
+  percent_coverage: float;
+  percent_understood: float;
+}
 
-let create_data kind range_start range_end extra understood =
-  let size = range_end - range_start in
-  {size; kind; range_start; range_end; extra; understood}
-
-let total_coverage m =
-  Map.fold (fun key range acc ->
-        range.size + acc
-    ) m 0
-
-let understood_coverage m =
-  Map.fold (fun key range acc ->
-      if (range.understood) then
-        range.size + acc
-      else
-        acc
-    ) m 0
-
-let percent_coverage m size = (float_of_int @@ total_coverage m) /.  (float_of_int size)
-let percent_understood m size = (float_of_int @@ understood_coverage m) /.  (float_of_int size)
-
-let data_to_string data =
-  Printf.sprintf "size: %d kind: %s\n  range_start: 0x%x range_end 0x%x understood: %b extra: %s"
+let data_to_string (data:data) =
+  Printf.sprintf "size: %d tag: %s\n  range_start: 0x%x range_end 0x%x understood: %b extra: %s"
     data.size
-    (kind_to_string data.kind)
+    (tag_to_string data.tag)
     data.range_start
     data.range_end
     data.understood
     data.extra
 
-let print =
-  Map.iter
-    (fun key data -> Printf.printf "%s\n" (data_to_string data))
+let print_data data =
+  iter (fun data -> Printf.printf "%s\n" (data_to_string data)) data
 
-let stats map size =
+let print coverage =
+  print_data coverage.data;
   Printf.printf "Total Coverage: %d / %d = %f\n"
-    (total_coverage map)
-    size @@ percent_coverage map size;
+    coverage.total_coverage
+    coverage.size
+    coverage.percent_coverage;
   Printf.printf "Understood Coverage: %d / %d = %f\n"
-    (understood_coverage map)
-    size @@ percent_understood map size
+    coverage.total_understood
+    coverage.size
+    coverage.percent_understood
+
+let create_data tag range_start range_end extra understood =
+  let size = range_end - range_start in
+  {size; tag; range_start; range_end; extra; understood}
+
+let count data condition =
+  fold (fun range acc ->
+      if (condition range) then
+        range.size + acc
+      else
+        acc
+    ) data 0
+
+let get_unique data =
+  let redundant = fold 
+      (fun elt acc -> 
+         if (is_covered elt data) then
+           if (is_covered elt acc) then
+             acc
+           else
+             add elt acc 
+         else acc) data empty 
+  in
+  DataSet.diff data redundant
+
+let count_coverage data =
+  let unique = get_unique data in
+  let total = count unique (fun range -> range.tag <> Semantic) in
+  let understood = count unique (fun range -> range.understood && range.tag <> Semantic) in
+  total, understood
 
 (* TODO: normalize *)
 
 (* @invariant sorted, normalized *)
-let compute_unknown m size =
+let compute_unknown dataset size =
   let extra = "Unknown // Computed" in
-  let bindings = Map.bindings m in
+  let bindings = to_list dataset in
+  (*   if (debug) then print dataset; *)
   let unknown =
     if (bindings = []) then
       [create_data Unknown 0 size extra false]
@@ -103,34 +151,42 @@ let compute_unknown m size =
       let rec loop acc =
         function
         | [] -> acc
-        | (_,d)::[] ->
+        | d::[] ->
           if (d.range_end = size) then
             acc
           else
             let data = create_data Unknown d.range_end size extra false in
             if (debug) then Printf.printf "END %s\n" (data_to_string data);
             data::acc
-        | (_,d1)::(_,d2 as next)::rest ->
-          if (d1.range_end = d2.range_start) then
-            loop acc (next::rest)
+        | d1::(d2::rest as tail)->
+          if (d1.range_end = d2.range_start || same_range d1 d2) then
+            loop acc tail
           else
-          if (d1.range_end > d2.range_start) then
-            loop
-              ({d1 with
-                size = d2.range_start - d1.range_start;
-                kind = Invalid;
-                range_end = d2.range_start;
-                extra = (Printf.sprintf "%s // Computed INVALID range_end: 0x%x" d1.extra d1.range_end)}::acc)
-              (next::rest)
+            (* if it's semantic, and the first's range end is greater than the second's start
+               (it contains it, which is guaranteed by our sorting), we ignore it *)
+          if (d1.tag = Semantic && d1.range_end >= d2.range_start) then
+            loop acc tail
           else
             let data = create_data Unknown d1.range_end d2.range_start extra false in
             if (debug) then Printf.printf "NEW %s\n" (data_to_string data);
-            loop (data::acc) (next::rest)
+            loop (data::acc) tail
       in loop [] bindings
   in
-  (* add the unknown data back into the map *)
-  List.fold_left (fun acc data -> Map.add data.range_start data acc) m unknown
+  (* add the unknown data back into the dataset *)
+  List.fold_left (fun dataset data -> add data dataset) dataset unknown
 
-let create m size =
-  (* add normalize step here; pack everything into a struct? *)
-  compute_unknown m size
+(* the preliminary data comes from an oracle which knows about the binary format, e.g., elf or mach specific counters *)
+let create data size =
+  let data = compute_unknown data size in
+  let total_coverage,total_understood = count_coverage data in
+  let percent_coverage = (float_of_int total_coverage) /.  (float_of_int size) in
+  let percent_understood = (float_of_int total_understood) /.  (float_of_int size) in
+  {
+    data;
+    size;
+    total_coverage;
+    total_understood;
+    percent_coverage;
+    percent_understood;
+  }
+
