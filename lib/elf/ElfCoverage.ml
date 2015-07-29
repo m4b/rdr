@@ -92,14 +92,13 @@ let compute_byte_coverage h phs shs elf_size : ByteCoverage.t =
     h.ElfHeader.e_ehsize + 
     (h.ElfHeader.e_phentsize * h.ElfHeader.e_phnum) 
   in
-  let coverage =
-    ByteCoverage.add
-      {size;
-       understood = true;
-       tag = Meta; range_start = 0;
-       range_end = size;
-       extra = "header + program headers meta data"}
-      ByteCoverage.empty
+  ByteCoverage.add
+    {size;
+     understood = true;
+     tag = Meta; range_start = 0;
+     range_end = size;
+     extra = "header + program headers meta data"}
+    ByteCoverage.empty
   |> compute_program_header_coverage phs
   |> compute_section_header_coverage h shs
-  in ByteCoverage.create coverage elf_size
+  |> ByteCoverage.create elf_size

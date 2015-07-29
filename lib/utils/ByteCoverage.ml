@@ -176,7 +176,7 @@ let compute_unknown dataset size =
   List.fold_left (fun dataset data -> add data dataset) dataset unknown
 
 (* the preliminary data comes from an oracle which knows about the binary format, e.g., elf or mach specific counters *)
-let create data size =
+let create size data =
   let data = compute_unknown data size in
   let total_coverage,total_understood = count_coverage data in
   let percent_coverage = (float_of_int total_coverage) /.  (float_of_int size) in

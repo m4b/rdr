@@ -13,6 +13,7 @@ module Section = MachSection
 module Nlist = MachNlist
 module RebaseOpcodes = MachRebaseOpcodes
 module Version = MachVersion
+module Coverage = MachCoverage
 
 let debug = false
 
@@ -100,5 +101,5 @@ let get binary =
     header; load_commands; name; nlist; nnlist;
     imports; nimports; exports; nexports;
     is_lib; libraries; nlibraries; raw_code; size;
-    byte_coverage = ByteCoverage.create ByteCoverage.empty size;
+    byte_coverage = Coverage.compute header load_commands size;
   }

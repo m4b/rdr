@@ -37,7 +37,8 @@ Library "mach"
     MachSection,
     MachNlist,
     MachRebaseOpcodes,
-    MachVersion
+    MachVersion,
+    MachCoverage
   BuildDepends:
     rdr.utils
 
