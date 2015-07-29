@@ -704,7 +704,7 @@ let get_load_commands binary offset ncmds sizeofcmds =
 exception Missing_load_command of string
 
 (* lc, cmdsize, and lc_t *)
-let rec find_load_command lc lcs =
+let rec find_load_command lc lcs : (lc * int * lc_t)=
   match lcs with
   | [] -> raise @@ Missing_load_command (lc_to_string lc)
   | ((cmd, _, _) as lc')::lcs ->

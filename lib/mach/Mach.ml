@@ -10,7 +10,7 @@ module Exports = MachExports
 module Header = MachHeader
 module Imports = MachImports
 module Section = MachSection
-module Nlist = MachNlist
+module SymbolTable = MachSymbolTable
 module RebaseOpcodes = MachRebaseOpcodes
 module Version = MachVersion
 module Coverage = MachCoverage
@@ -24,7 +24,7 @@ type t = {
   nimports: int;
   exports: Exports.t;
   nexports: int;
-  nlist: Nlist.t;
+  nlist: SymbolTable.t;
   nnlist: int;
   name: string;
   is_lib: bool;
@@ -69,7 +69,7 @@ let get binary =
   let nlist =
     try
       let symtab = LoadCommand.find_load_command LoadCommand.SYMTAB load_commands in
-      Nlist.get_symbols binary symtab
+      SymbolTable.get_symbols binary symtab
     with Not_found ->
       []
   in

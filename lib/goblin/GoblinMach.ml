@@ -319,9 +319,9 @@ module Imports = struct
 end
 
 (* MACH NLIST -> GOBLIN *)
-module Nlist = struct
+module SymbolTable = struct
 
-  open MachNlist
+  open MachSymbolTable
 
   let nlist_flag_to_symbol_kind =
     function
@@ -331,9 +331,9 @@ module Nlist = struct
     | _ -> GoblinSymbol.Other
 
   let nlist_to_symbol_data (nlist, symbol) =
-    let kind = `Kind (nlist_flag_to_symbol_kind @@ (nlist.MachNlist.n_type)) in
+    let kind = `Kind (nlist_flag_to_symbol_kind @@ (nlist.MachSymbolTable.n_type)) in
     let name = `Name (symbol) in
-    let offset = `Offset (nlist.MachNlist.n_value) in
+    let offset = `Offset (nlist.MachSymbolTable.n_value) in
     [name; offset; kind]
 
   let filter_by_kind kind = List.filter (fun symbol -> try GoblinSymbol.find_symbol_kind symbol = kind with Not_found -> false)

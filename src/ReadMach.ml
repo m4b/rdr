@@ -22,11 +22,7 @@ let analyze config binary =
       if (config.verbose || config.print_libraries) then Mach.LoadCommand.print_libraries mach.Mach.libraries;
       if (config.verbose || config.print_exports) then Goblin.print_exports goblin.Goblin.exports;
       if (config.verbose || config.print_imports) then Goblin.print_imports goblin.Goblin.imports;
-      (*       
-      if (config.verbose || config.print_exports) then Mach.Exports.print mach.Mach.exports;
-      if (config.verbose || config.print_imports) then Mach.Imports.print mach.Mach.imports;
-      *)
-      if (config.print_nlist) then Mach.Nlist.print mach.Mach.nlist;
+      if (config.print_nlist) then Mach.SymbolTable.print mach.Mach.nlist;
       if (config.print_coverage) then 
         ByteCoverage.print mach.Mach.byte_coverage
     end;

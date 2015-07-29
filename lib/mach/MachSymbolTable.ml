@@ -1,3 +1,6 @@
+(* TODO: rename this to MachSymbolTable *)
+(* TODO: replace functions with Binary string functions *)
+
 open Printf
 
 open Binary
@@ -75,6 +78,7 @@ let rec get_symlist_it binary strsize nlists acc =
   match nlists with
     [] -> List.rev acc
   | nlist::nlists ->
+    (* TODO: replace this with Binary string functions *)
     let index = Bytes.index_from binary nlist.n_strx '\000' in
     let symname = Bytes.sub_string binary nlist.n_strx (index - nlist.n_strx) in
     get_symlist_it binary strsize nlists ((nlist,symname)::acc)
