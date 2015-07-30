@@ -30,6 +30,7 @@ Library "mach"
     MachCpuTypes,
     MachFat,
     MachLoadCommand,
+    MachLoadCommandTypes,
     MachConstants,
     MachExports,
     MachHeader,
