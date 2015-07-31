@@ -1,5 +1,3 @@
-(* TODO: create a normalize coverage function *)
-
 let debug = false
 
 type tag = | Meta
@@ -47,6 +45,7 @@ let contains d2 d1 = is_contained d1 d2
 let same_range d1 d2 = (d1.range_start = d2.range_start) && (d1.range_end = d2.range_end)
 (* end range specific *)
 
+(* this is imperfect w.r.t list output sorting *)
 let sort a b =
   if (a.range_start = b.range_start) then
     if (a.range_end = b.range_end) then
@@ -55,9 +54,6 @@ let sort a b =
       -1
     else
       1
-      (*     else
-      -(Pervasives.compare a.range_end b.range_end)
-      *)
   else
   if (contains a b) then
     -1
@@ -83,7 +79,6 @@ type t = {
 let mem = DataSet.mem
 let add data set = DataSet.add data set             (* DataSet.add *)
 let empty = DataSet.empty                  (* DataSet.empty *)
-(* let fold f coverage seed = DataSet.fold_left f seed coverage *)
 let fold = DataSet.fold
 let iter = DataSet.iter
 let remove = DataSet.remove
@@ -95,24 +90,30 @@ let is_covered x dataset =
       && (is_contained x y)
     ) dataset
 
+(* there exists an equal range in the dataset *)
 let is_same_range x dataset =
   DataSet.exists (fun y -> same_range x y && x <> y) dataset
 
+(* is a range which is contained by another range *)
 let is_sub_range x dataset =
   DataSet.exists (fun y -> is_contained x y && x <> y) dataset
 
 let contains_something x dataset =
   DataSet.exists (fun y -> contains x y) dataset
 
+(* is a "byte island";
+   there does not exist a range is contained by it *)
 let is_unique x dataset =
   not (contains_something x dataset)
   && not (is_sub_range x dataset)
 
+(* checks whether is a top-level container *)
 let is_container x dataset =
   (contains_something x dataset
   && not (is_sub_range x dataset))
   || is_unique x dataset
 
+(* unused *)
 let pick_with f dataset =
   fold (fun data acc ->
       if (f data) then
@@ -169,6 +170,7 @@ let print coverage =
     coverage.size
     coverage.percent_understood
 
+(* creates data; defaults container to false and auto-computes size *)
 let create_data
     ~tag:tag 
     ~r1:range_start 
@@ -178,6 +180,7 @@ let create_data
   let size = range_end - range_start in
   {size; tag; range_start; range_end; extra; understood; container = false}
 
+(* count the byte ranges via a condition *)
 let count data condition =
   fold (fun range acc ->
       if (condition range) then
@@ -186,6 +189,7 @@ let count data condition =
         acc
     ) data 0
 
+(*  counts the coverage, primarily relying on range.container *)
 let count_coverage dataset =
   let total = count dataset (fun range ->
       range.container
@@ -221,7 +225,9 @@ let compute_unknown dataset size =
           if (d1.range_end = d2.range_start || same_range d1 d2) then
             loop acc tail
           else
-            (* if it's semantic, and the first's range end is greater than the second's start (it contains it, which is guaranteed by our sorting), we ignore it *)
+            (* if it's semantic, and the first's range end is 
+               greater than the second's start
+               (it contains it, which is guaranteed by our sorting), we ignore it *)
           if (d1.tag = Semantic && d1.range_end >= d2.range_start) then
             loop acc tail
           else
