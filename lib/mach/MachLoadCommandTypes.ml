@@ -786,13 +786,17 @@ type data_in_code_entry = {
   kind: int;    (* 2 a DICE_KIND_* value  *)
 }
 
+(* ==================================== *)
+(* END Load Commands                    *)
+(* ==================================== *)
 
 (* undefined, or internal commands not in loader.h *)
-
-type undefined_command = {
+(* 
+type unimplemented_command = {
   cmd: int;                     (* 4 *)
   cmdsize: int;                 (* 4 we'll just read past the cmdsize and hope that it actually has a cmdsize value...*) 
 }
+ *)
 
 let kLC_REQ_DYLD = 0x80000000
 let kLC_LOAD_WEAK_DYLIB = 0x18 lor kLC_REQ_DYLD
@@ -802,54 +806,56 @@ let kLC_DYLD_INFO_ONLY = 0x22 lor kLC_REQ_DYLD
 let kLC_LOAD_UPWARD_DYLIB = 0x23 lor kLC_REQ_DYLD
 let kLC_MAIN = 0x28 lor kLC_REQ_DYLD
 
+exception Bad_load_command of int * string
+
 type cmd =
-| LC_SEGMENT
-| LC_SYMTAB
-| LC_SYMSEG
-| LC_THREAD
-| LC_UNIXTHREAD
-| LC_LOADFVMLIB
-| LC_IDFVMLIB
-| LC_IDENT
-| LC_FVMFILE
-| LC_PREPAGE
-| LC_DYSYMTAB
-| LC_LOAD_DYLIB
-| LC_ID_DYLIB
-| LC_LOAD_DYLINKER
-| LC_ID_DYLINKER
-| LC_PREBOUND_DYLIB
-| LC_ROUTINES
-| LC_SUB_FRAMEWORK
-| LC_SUB_UMBRELLA
-| LC_SUB_CLIENT
-| LC_SUB_LIBRARY
-| LC_TWOLEVEL_HINTS
-| LC_PREBIND_CKSUM
-| LC_LOAD_WEAK_DYLIB
-| LC_SEGMENT_64
-| LC_ROUTINES_64
-| LC_UUID
-| LC_RPATH
-| LC_CODE_SIGNATURE
-| LC_SEGMENT_SPLIT_INFO
-| LC_REEXPORT_DYLIB
-| LC_LAZY_LOAD_DYLIB
-| LC_ENCRYPTION_INFO
-| LC_DYLD_INFO
-| LC_DYLD_INFO_ONLY
-| LC_LOAD_UPWARD_DYLIB
-| LC_VERSION_MIN_MACOSX
-| LC_VERSION_MIN_IPHONEOS
-| LC_FUNCTION_STARTS
-| LC_DYLD_ENVIRONMENT
-| LC_MAIN
-| LC_DATA_IN_CODE
-| LC_SOURCE_VERSION
-| LC_DYLIB_CODE_SIGN_DRS
-| LC_ENCRYPTION_INFO_64
-| LC_LINKER_OPTION
-| LC_LINKER_OPTIMIZATION_HINT
+  | LC_SEGMENT
+  | LC_SYMTAB
+  | LC_SYMSEG
+  | LC_THREAD
+  | LC_UNIXTHREAD
+  | LC_LOADFVMLIB
+  | LC_IDFVMLIB
+  | LC_IDENT
+  | LC_FVMFILE
+  | LC_PREPAGE
+  | LC_DYSYMTAB
+  | LC_LOAD_DYLIB
+  | LC_ID_DYLIB
+  | LC_LOAD_DYLINKER
+  | LC_ID_DYLINKER
+  | LC_PREBOUND_DYLIB
+  | LC_ROUTINES
+  | LC_SUB_FRAMEWORK
+  | LC_SUB_UMBRELLA
+  | LC_SUB_CLIENT
+  | LC_SUB_LIBRARY
+  | LC_TWOLEVEL_HINTS
+  | LC_PREBIND_CKSUM
+  | LC_LOAD_WEAK_DYLIB
+  | LC_SEGMENT_64
+  | LC_ROUTINES_64
+  | LC_UUID
+  | LC_RPATH
+  | LC_CODE_SIGNATURE
+  | LC_SEGMENT_SPLIT_INFO
+  | LC_REEXPORT_DYLIB
+  | LC_LAZY_LOAD_DYLIB
+  | LC_ENCRYPTION_INFO
+  | LC_DYLD_INFO
+  | LC_DYLD_INFO_ONLY
+  | LC_LOAD_UPWARD_DYLIB
+  | LC_VERSION_MIN_MACOSX
+  | LC_VERSION_MIN_IPHONEOS
+  | LC_FUNCTION_STARTS
+  | LC_DYLD_ENVIRONMENT
+  | LC_MAIN
+  | LC_DATA_IN_CODE
+  | LC_SOURCE_VERSION
+  | LC_DYLIB_CODE_SIGN_DRS
+  | LC_ENCRYPTION_INFO_64
+  | LC_LINKER_OPTION
+  | LC_LINKER_OPTIMIZATION_HINT
 
 let cmd_int_to_string =
   function
@@ -901,6 +907,57 @@ let cmd_int_to_string =
   | 0x2D -> "LC_LINKER_OPTION"
   | 0x2E -> "LC_LINKER_OPTIMIZATION_HINT"
   | cmd -> Printf.sprintf "UKNOWN LOAD COMMAND 0x%x" cmd
+
+let to_cmd =
+  function
+  | 0x1 -> LC_SEGMENT
+  | 0x2 -> LC_SYMTAB
+  | 0x3 -> LC_SYMSEG
+  | 0x4 -> LC_THREAD
+  | 0x5 -> LC_UNIXTHREAD
+  | 0x6 -> LC_LOADFVMLIB
+  | 0x7 -> LC_IDFVMLIB
+  | 0x8 -> LC_IDENT
+  | 0x9 -> LC_FVMFILE
+  | 0xa -> LC_PREPAGE
+  | 0xb -> LC_DYSYMTAB
+  | 0xc -> LC_LOAD_DYLIB
+  | 0xd -> LC_ID_DYLIB
+  | 0xe -> LC_LOAD_DYLINKER
+  | 0xf -> LC_ID_DYLINKER
+  | 0x10 -> LC_PREBOUND_DYLIB
+  | 0x11 -> LC_ROUTINES
+  | 0x12 -> LC_SUB_FRAMEWORK
+  | 0x13 -> LC_SUB_UMBRELLA
+  | 0x14 -> LC_SUB_CLIENT
+  | 0x15 -> LC_SUB_LIBRARY
+  | 0x16 -> LC_TWOLEVEL_HINTS
+  | 0x17 -> LC_PREBIND_CKSUM
+  | cmd when cmd = kLC_LOAD_WEAK_DYLIB -> LC_LOAD_WEAK_DYLIB
+  | 0x19 -> LC_SEGMENT_64
+  | 0x1a -> LC_ROUTINES_64
+  | 0x1b -> LC_UUID
+  | cmd when cmd = kLC_RPATH -> LC_RPATH
+  | 0x1d -> LC_CODE_SIGNATURE
+  | 0x1e -> LC_SEGMENT_SPLIT_INFO
+  | cmd when cmd = kLC_REEXPORT_DYLIB -> LC_REEXPORT_DYLIB
+  | 0x20 -> LC_LAZY_LOAD_DYLIB
+  | 0x21 -> LC_ENCRYPTION_INFO
+  | 0x22 -> LC_DYLD_INFO
+  | cmd when cmd = kLC_DYLD_INFO_ONLY -> LC_DYLD_INFO_ONLY
+  | cmd when cmd = kLC_LOAD_UPWARD_DYLIB -> LC_LOAD_UPWARD_DYLIB
+  | 0x24 -> LC_VERSION_MIN_MACOSX
+  | 0x25 -> LC_VERSION_MIN_IPHONEOS
+  | 0x26 -> LC_FUNCTION_STARTS
+  | 0x27 -> LC_DYLD_ENVIRONMENT
+  | cmd when cmd = kLC_MAIN -> LC_MAIN
+  | 0x29 -> LC_DATA_IN_CODE
+  | 0x2A -> LC_SOURCE_VERSION
+  | 0x2B -> LC_DYLIB_CODE_SIGN_DRS
+  | 0x2C -> LC_ENCRYPTION_INFO_64
+  | 0x2D -> LC_LINKER_OPTION
+  | 0x2E -> LC_LINKER_OPTIMIZATION_HINT
+  | cmd -> raise @@ Bad_load_command (cmd,(Printf.sprintf "0x%x" cmd))
 
 let cmd_to_int =
   function
@@ -954,57 +1011,56 @@ let cmd_to_int =
 
 let cmd_to_string cmd = cmd_to_int cmd |> cmd_int_to_string
 
-exception Bad_load_command of int
-
-type lc =
-(* Constants for the cmd field of all load commands, the type *)
-| LC_SEGMENT of segment_command
-| LC_SYMTAB of symtab_command
-| LC_SYMSEG of symseg_command
-| LC_THREAD of thread_command
-| LC_UNIXTHREAD of thread_command
-| LC_LOADFVMLIB of fvmlib_command
-| LC_IDFVMLIB of fvmlib_command
-| LC_IDENT of ident_command
-| LC_FVMFILE of fvmfile_command
-| LC_PREPAGE of undefined_command
-| LC_DYSYMTAB of dysymtab_command
-| LC_LOAD_DYLIB of dylib_command
-| LC_ID_DYLIB of dylib_command
-| LC_LOAD_DYLINKER of dylinker_command
-| LC_ID_DYLINKER of dylinker_command
-| LC_PREBOUND_DYLIB of prebound_dylib_command
-| LC_ROUTINES of routines_command
-| LC_SUB_FRAMEWORK of sub_framework_command
-| LC_SUB_UMBRELLA of sub_umbrella_command
-| LC_SUB_CLIENT of sub_client_command
-| LC_SUB_LIBRARY of sub_library_command
-| LC_TWOLEVEL_HINTS of twolevel_hints_command
-| LC_PREBIND_CKSUM of prebind_cksum_command
-| LC_LOAD_WEAK_DYLIB of dylib_command
-| LC_SEGMENT_64	of segment_command_64
-| LC_ROUTINES_64 of routines_command_64
-| LC_UUID of uuid_command
-| LC_RPATH of rpath_command
-| LC_CODE_SIGNATURE of linkedit_data_command
-| LC_SEGMENT_SPLIT_INFO of linkedit_data_command
-| LC_REEXPORT_DYLIB of dylib_command
-| LC_LAZY_LOAD_DYLIB of dylib_command (* not in header file *)
-| LC_ENCRYPTION_INFO of encryption_info_command
-| LC_DYLD_INFO of dyld_info_command
-| LC_DYLD_INFO_ONLY of dyld_info_command
-| LC_LOAD_UPWARD_DYLIB of dylib_command (* not in header file *)
-| LC_VERSION_MIN_MACOSX of version_min_command
-| LC_VERSION_MIN_IPHONEOS of version_min_command
-| LC_FUNCTION_STARTS of linkedit_data_command
-| LC_DYLD_ENVIRONMENT of dylinker_command
-| LC_MAIN of entry_point_command
-| LC_DATA_IN_CODE of linkedit_data_command
-| LC_SOURCE_VERSION of source_version_command
-| LC_DYLIB_CODE_SIGN_DRS of linkedit_data_command
-| LC_ENCRYPTION_INFO_64 of encryption_info_command_64
-| LC_LINKER_OPTION of linkedit_data_command
-| LC_LINKER_OPTIMIZATION_HINT of linkedit_data_command
+type lc_t =
+  (* Constants for the cmd field of all load commands, the type *)
+  | LC_SEGMENT of segment_command
+  | LC_SYMTAB of symtab_command
+  | LC_SYMSEG of symseg_command
+  | LC_THREAD of thread_command
+  | LC_UNIXTHREAD of thread_command
+  | LC_LOADFVMLIB of fvmlib_command
+  | LC_IDFVMLIB of fvmlib_command
+  | LC_IDENT of ident_command
+  | LC_FVMFILE of fvmfile_command
+  | LC_PREPAGE of load_command
+  | LC_DYSYMTAB of dysymtab_command
+  | LC_LOAD_DYLIB of dylib_command
+  | LC_ID_DYLIB of dylib_command
+  | LC_LOAD_DYLINKER of dylinker_command
+  | LC_ID_DYLINKER of dylinker_command
+  | LC_PREBOUND_DYLIB of prebound_dylib_command
+  | LC_ROUTINES of routines_command
+  | LC_SUB_FRAMEWORK of sub_framework_command
+  | LC_SUB_UMBRELLA of sub_umbrella_command
+  | LC_SUB_CLIENT of sub_client_command
+  | LC_SUB_LIBRARY of sub_library_command
+  | LC_TWOLEVEL_HINTS of twolevel_hints_command
+  | LC_PREBIND_CKSUM of prebind_cksum_command
+  | LC_LOAD_WEAK_DYLIB of dylib_command
+  | LC_SEGMENT_64	of segment_command_64
+  | LC_ROUTINES_64 of routines_command_64
+  | LC_UUID of uuid_command
+  | LC_RPATH of rpath_command
+  | LC_CODE_SIGNATURE of linkedit_data_command
+  | LC_SEGMENT_SPLIT_INFO of linkedit_data_command
+  | LC_REEXPORT_DYLIB of dylib_command
+  | LC_LAZY_LOAD_DYLIB of dylib_command (* not in header file *)
+  | LC_ENCRYPTION_INFO of encryption_info_command
+  | LC_DYLD_INFO of dyld_info_command
+  | LC_DYLD_INFO_ONLY of dyld_info_command
+  | LC_LOAD_UPWARD_DYLIB of dylib_command (* not in header file *)
+  | LC_VERSION_MIN_MACOSX of version_min_command
+  | LC_VERSION_MIN_IPHONEOS of version_min_command
+  | LC_FUNCTION_STARTS of linkedit_data_command
+  | LC_DYLD_ENVIRONMENT of dylinker_command
+  | LC_MAIN of entry_point_command
+  | LC_DATA_IN_CODE of linkedit_data_command
+  | LC_SOURCE_VERSION of source_version_command
+  | LC_DYLIB_CODE_SIGN_DRS of linkedit_data_command
+  | LC_ENCRYPTION_INFO_64 of encryption_info_command_64
+  | LC_LINKER_OPTION of linkedit_data_command
+  | LC_LINKER_OPTIMIZATION_HINT of linkedit_data_command
+  | LC_UNIMPLEMENTED of load_command
 
 (* 
 let get cmd f =
@@ -1025,7 +1081,7 @@ let get cmd f =
 | 0xe -> LC_LOAD_DYLINKER (* load a dynamic linker *)
 | 0xf -> LC_ID_DYLINKER	(* dynamic linker identification *)
 | 0x10 -> LC_PREBOUND_DYLIB (* modules prebound for a dynamically *)
-				(*  linked shared library *)
+(*  linked shared library *)
 | 0x11 -> LC_ROUTINES	 (* image routines *)
 | 0x12 ->LC_SUB_FRAMEWORK (* sub framework *)
 | 0x13 -> LC_SUB_UMBRELLA (* sub umbrella *)
@@ -1064,3 +1120,9 @@ let get cmd f =
 | 0x2E -> LC_LINKER_OPTIMIZATION_HINT(* optimization hints in MH_OBJECT files *)
 | cmd -> raise @@ Bad_load_command cmd
  *)
+
+type lc = {
+  cmd: cmd;                        (* 4 bytes *)
+  cmdsize: int;                   (* 4 *)
+  t: lc_t;
+}

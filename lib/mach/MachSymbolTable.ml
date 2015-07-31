@@ -1,9 +1,10 @@
 (* TODO: replace functions with Binary string functions *)
+(* TODO: remove bytes sub in binary calls *)
 
 open Printf
 
 open Binary
-open MachLoadCommand
+open MachLoadCommand.Types
 
 (*
 struct nlist_64 {
@@ -65,14 +66,15 @@ let rec get_nlist_it binary offset nsyms acc =
   if (nsyms <= 0) then
     List.rev acc
   else
-    let n_strx = u32 binary offset in
-    let n_type = u8 binary (offset + 4) in
-    let n_sect = u8 binary (offset + 5) in
-    let n_desc = u16 binary (offset + 6) in
-    let n_value = u64 binary (offset + 8) in
+    let n_strx,o = u32o binary offset in
+    let n_type,o = u8o binary o in
+    let n_sect,o = u8o binary o in
+    let n_desc,o = u16o binary o in
+    let n_value,o = u64o binary o in
     let nlist = {n_strx; n_type; n_sect; n_desc; n_value;} in
-    get_nlist_it binary (offset + sizeof_nlist) (nsyms - 1) (nlist::acc)
+    get_nlist_it binary o (nsyms - 1) (nlist::acc)
 
+(* TODO: remove all these bytes.sub calls so can change binary into stream if necessary *)
 let rec get_symlist_it binary strsize nlists acc = 
   match nlists with
     [] -> List.rev acc
@@ -82,18 +84,12 @@ let rec get_symlist_it binary strsize nlists acc =
     let symname = Bytes.sub_string binary nlist.n_strx (index - nlist.n_strx) in
     get_symlist_it binary strsize nlists ((nlist,symname)::acc)
 
-let get_symlist binary (cmd, cmdsize, symtab_command) nlists = 
-  match symtab_command with
-    SYMTAB symtab ->
-    let str_bytes = Bytes.sub binary symtab.stroff symtab.strsize in
-    get_symlist_it str_bytes symtab.strsize nlists []
-  | _ -> []
+let get_symlist binary symtab nlists = 
+  let str_bytes = Bytes.sub binary symtab.stroff symtab.strsize in
+  get_symlist_it str_bytes symtab.strsize nlists []
 
-let get_symbols binary ((_,_, symtab_command) as cmd) =
-  match symtab_command with
-  | SYMTAB symtab ->
+let get_symbols binary symtab =
     let nlist_bytes = Bytes.sub binary symtab.symoff (sizeof_nlist * symtab.nsyms) in
     let nlists = get_nlist_it nlist_bytes 0 symtab.nsyms [] in
-    let symbols = get_symlist binary cmd nlists in
+    let symbols = get_symlist binary symtab nlists in
     symbols
-  | _ -> []

@@ -218,16 +218,16 @@ let bind_interpreter bytes pos size is_lazy =
   in loop pos [] bind_info
 
 let bind_information_to_import libraries segments ~is_lazy:is_lazy bi =
-  let offset = (List.nth segments bi.seg_index).MachLoadCommand.fileoff + bi.seg_offset in
+  let offset = (List.nth segments bi.seg_index).MachLoadCommand.Types.fileoff + bi.seg_offset in
   let size = if (bi.bind_type == MachBindOpcodes.kBIND_TYPE_POINTER) then 8 else 0 in
   let dylib = libraries.(bi.symbol_library_ordinal) in
   {bi; dylib; is_lazy; offset; size}
 
 let get_imports binary dyld_info libs segments =
-  let bind_off = dyld_info.MachLoadCommand.bind_off in
-  let bind_size = dyld_info.MachLoadCommand.bind_size in
-  let lazy_bind_off = dyld_info.MachLoadCommand.lazy_bind_off in
-  let lazy_bind_size = dyld_info.MachLoadCommand.lazy_bind_size in
+  let bind_off = dyld_info.MachLoadCommand.Types.bind_off in
+  let bind_size = dyld_info.MachLoadCommand.Types.bind_size in
+  let lazy_bind_off = dyld_info.MachLoadCommand.Types.lazy_bind_off in
+  let lazy_bind_size = dyld_info.MachLoadCommand.Types.lazy_bind_size in
   let non_lazy_bytes = Bytes.sub binary bind_off bind_size in
   let lazy_bytes = Bytes.sub binary lazy_bind_off lazy_bind_size in
   let non_lazy_bi = bind_interpreter non_lazy_bytes 0 bind_size false in

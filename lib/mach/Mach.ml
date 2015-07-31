@@ -15,6 +15,8 @@ module RebaseOpcodes = MachRebaseOpcodes
 module Version = MachVersion
 module Coverage = MachCoverage
 
+open LoadCommand.Types
+
 let debug = false
 
 type t = {
@@ -56,22 +58,17 @@ let get binary =
       header.Header.ncmds
       header.Header.sizeofcmds
   in
-  let name =
-    match LoadCommand.get_lib_name load_commands with
-    | Some dylib ->
-      dylib.LoadCommand.lc_str
-    | _ -> "" (* we're not a dylib *)
+  let name = LoadCommand.get_lib_name load_commands (* if "" we're not a dylib *)
   in
   let segments = LoadCommand.get_segments load_commands in
   let libraries = LoadCommand.get_libraries load_commands name in (* TODO: watch this, with the libs.(0) *)
   (* move this inside of dyld, need the nlist info to compute locals... *)
   let is_lib = header.Header.filetype = Header.kMH_DYLIB in
   let nlist =
-    try
-      let symtab = LoadCommand.find_load_command LoadCommand.SYMTAB load_commands in
+    match LoadCommand.get_load_command LC_SYMTAB load_commands with
+    | Some (LC_SYMTAB symtab) ->
       SymbolTable.get_symbols binary symtab
-    with Not_found ->
-      []
+    | _ -> []
   in
   let dyld_info = LoadCommand.get_dyld_info load_commands in
   let exports, imports =

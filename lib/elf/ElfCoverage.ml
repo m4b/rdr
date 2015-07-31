@@ -20,8 +20,13 @@ let compute_program_header_coverage kind data ph =
     let range_end = size + range_start in
     let extra = ElfProgramHeader.ptype_to_string ph.ElfProgramHeader.p_type in
     ByteCoverage.add
-      {size; understood = true; tag = String;
-       range_start; range_end; extra;} data
+    (create_data
+    ~tag:String
+    ~r1:range_start
+    ~r2:range_end
+    ~extra:extra
+    ~understood:true
+    ) data
   | None -> data
 
 let compute_program_header_coverage phs data =
@@ -33,23 +38,6 @@ let compute_program_header_coverage phs data =
         compute_program_header_coverage tag data header
       ) in
     (fun data -> List.fold_left f data known_program_headers) data
-   
-let compute_section_coverage tag data section =
-  if (debug) then
-    Printf.printf "called: %s\n"
-      (ElfSectionHeader.shtype_to_string
-         section.ElfSectionHeader.sh_type);
-  let size = section.ElfSectionHeader.sh_size in
-  let range_start = section.ElfSectionHeader.sh_offset in
-  let range_end = size + range_start in
-  let extra =
-    section.ElfSectionHeader.name ^ " // " ^
-    ElfSectionHeader.shtype_to_string
-      section.ElfSectionHeader.sh_type
-  in
-  ByteCoverage.add
-    {size; understood = true; tag;
-     range_start; range_end; extra} data
 
 let known_sections =
   [(ElfSectionHeader.kSHT_SYMTAB, Symbol);
@@ -62,6 +50,33 @@ let known_sections =
    (ElfSectionHeader.kSHT_HASH, Symbol);
    (ElfSectionHeader.kSHT_RELA, Rela);
   ]
+   
+let compute_section_coverage stype tag data section =
+  if (debug) then
+    Printf.printf "called: %s\n"
+      (ElfSectionHeader.shtype_to_string
+         section.ElfSectionHeader.sh_type);
+  let size = section.ElfSectionHeader.sh_size in
+  let range_start = section.ElfSectionHeader.sh_offset in
+  let range_end = 
+    if (stype = ElfSectionHeader.kSHT_NOBITS) then
+      range_start
+    else
+      size + range_start
+  in
+  let extra =
+    section.ElfSectionHeader.name ^ " // " ^
+    ElfSectionHeader.shtype_to_string
+      section.ElfSectionHeader.sh_type
+  in
+  ByteCoverage.add
+    (create_data
+    ~tag:tag
+    ~r1:range_start
+    ~r2:range_end
+    ~extra:extra
+    ~understood:true
+    ) data
 
 (* add a platform specific post process, for e.g. NOBITS *)
 let compute_section_header_coverage h shs data =
@@ -73,32 +88,45 @@ let compute_section_header_coverage h shs data =
       let range_start = h.ElfHeader.e_shoff in
       let range_end = size + range_start in
       ByteCoverage.add
-        {size; understood = true;
-         tag = Meta;
-         range_start; range_end;
-         extra = "section headers meta data"} data
+        (create_data
+           ~tag:Meta
+           ~r1:range_start
+           ~r2:range_end
+           ~extra:"Section Headers"
+           ~understood:true
+        ) data
     end
     |>
     begin
        let f = (fun data (section_type, tag) ->
           let sections = ElfSectionHeader.get_sections section_type shs in
-          List.fold_left (compute_section_coverage tag) data sections
+          List.fold_left (compute_section_coverage section_type tag) data sections
         ) in
       (fun data -> List.fold_left f data known_sections)
     end
 
-let compute_byte_coverage h phs shs elf_size : ByteCoverage.t = 
-  let size = 
-    h.ElfHeader.e_ehsize + 
-    (h.ElfHeader.e_phentsize * h.ElfHeader.e_phnum) 
+let compute_byte_coverage h phs shs elf_size : ByteCoverage.t =
+  let ehsize = h.ElfHeader.e_ehsize in
+  let phsize = 
+    (h.ElfHeader.e_phentsize * h.ElfHeader.e_phnum)
   in
   ByteCoverage.add
-    {size;
-     understood = true;
-     tag = Meta; range_start = 0;
-     range_end = size;
-     extra = "header + program headers meta data"}
+    (create_data
+       ~tag:Meta
+       ~r1:0
+       ~r2:h.ElfHeader.e_ehsize
+       ~extra:"ELF Header"
+       ~understood:true
+    )
     ByteCoverage.empty
+  |> ByteCoverage.add
+    (create_data
+       ~tag:Meta
+       ~r1:ehsize
+       ~r2:(phsize+ehsize)
+       ~extra:"Program Headers"
+       ~understood:true
+    )
   |> compute_program_header_coverage phs
   |> compute_section_header_coverage h shs
   |> ByteCoverage.create elf_size

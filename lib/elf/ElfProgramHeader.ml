@@ -150,7 +150,7 @@ let get_dynamic_program_header phs = get_header kPT_DYNAMIC phs
 let get_interpreter binary phs =
   match get_interpreter_header phs with
   | Some ph ->
-    Binary.string binary ~maxlen:(ph.p_filesz + ph.p_offset) ph.p_offset
+    Binary.string binary ~max:ph.p_filesz ph.p_offset
   | None -> ""
 
 type slide_sector = {start_sector: int; end_sector: int; slide: int;}

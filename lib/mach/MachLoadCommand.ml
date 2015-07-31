@@ -1,12 +1,13 @@
 (* 
 # TODO: 
-   * Rename lc without LC prefix to use prefix to be more in line with mach
-   * Verify the new load commands: Figure out lazy load of libraries and load weak dylibs
+   * Figure out lazy load of libraries and load weak dylibs, currently sending them to dylib_command
 *)
 
 module Types = MachLoadCommandTypes
 
 open MachLoadCommandTypes
+
+type t = lc list
 
 let sections64_to_string sections =
   let b = Buffer.create ((List.length sections) * 32) in
@@ -21,10 +22,10 @@ let sections64_to_string sections =
   Buffer.contents b
 
 (* add implemented printing mechanisms here *)
-let load_command_to_string = 
-  function
+let load_command_to_string lc = 
+  Printf.sprintf "%s (0x%x) %d %s" (cmd_to_string lc.cmd) (cmd_to_int lc.cmd) lc.cmdsize @@
+  match lc.t with
   | LC_SEGMENT_64 lc ->
-    Printf.sprintf "%s (0x%x) %d %s" (cmd_int_to_string lc.cmd) lc.cmd lc.cmdsize @@
     Printf.sprintf "\n\t%s vmaddr: 0x%x vmsize: 0x%x\n\tfileoff: 0x%x filesize: 0x%x\n\tmaxprot: %d initprot: %d nsects: %d flags: 0x%x\n%s"
       lc.segname lc.vmaddr lc.vmsize
       lc.fileoff lc.filesize lc.maxprot
@@ -32,7 +33,6 @@ let load_command_to_string =
       (sections64_to_string lc.sections)
 
   | LC_SYMTAB lc ->
-    Printf.sprintf "%s (0x%x) %d %s" (cmd_int_to_string lc.cmd) lc.cmd lc.cmdsize @@
     Printf.sprintf "\n\tsymoff: 0x%x nsyms: %u stroff: 0x%x strsize: %u"
       lc.symoff 
       lc.nsyms
@@ -40,7 +40,6 @@ let load_command_to_string =
       lc.strsize
 
   | LC_DYSYMTAB lc -> 
-    Printf.sprintf "%s (0x%x) %d %s" (cmd_int_to_string lc.cmd) lc.cmd lc.cmdsize @@
     Printf.sprintf "\n\tilocalsym: 0x%x nlocalsym: %d iextdefsym: 0x%x nextdefsym: %d\n\tiundefsym: 0x%x nundefsym: %d tocoff: 0x%x ntoc: %d\n\tmodtaboff: 0x%x nmodtab: %d extrefsymoff: 0x%x nextrefsyms: %d\n\tindirectsymoff: 0x%x nindirectsyms: %d extreloff: 0x%x nextrel: %d\n\tlocreloff: 0x%x nlocrel: %d"
       lc.ilocalsym
       lc.nlocalsym
@@ -63,7 +62,6 @@ let load_command_to_string =
 
   | LC_DYLD_INFO_ONLY lc
   | LC_DYLD_INFO lc ->
-    Printf.sprintf "%s (0x%x) %d %s" (cmd_int_to_string lc.cmd) lc.cmd lc.cmdsize @@
     Printf.sprintf "\n\trebase_off: 0x%x rebase_size: %u \n\tbind_off: 0x%x bind_size: %u \n\tweak_bind_off: 0x%x weak_bind_size: %u \n\tlazy_bind_off: 0x%x lazy_bind_size: %u \n\texport_off: 0x%x export_size: %u"
       lc.rebase_off
       lc.rebase_size
@@ -78,7 +76,6 @@ let load_command_to_string =
 
   | LC_LOAD_DYLINKER lc
   | LC_ID_DYLINKER lc ->
-    Printf.sprintf "%s (0x%x) %d %s" (cmd_int_to_string lc.cmd) lc.cmd lc.cmdsize @@
     Printf.sprintf "\n\t%s"
       lc.name.str
 
@@ -92,8 +89,7 @@ let load_command_to_string =
        Printf.sprintf "\n\t%s"
        lc.dylib.name.str
     *)
-    Printf.sprintf "%s (0x%x) %d %s" (cmd_int_to_string lc.cmd) lc.cmd lc.cmdsize @@
-    Printf.sprintf "\n\tlc_str: %s timestamp: %u current_version: %u compatibility_version: %u"
+    Printf.sprintf "\n\tname: %s timestamp: %u current_version: %u compatibility_version: %u"
       lc.dylib.name.str
       lc.dylib.timestamp
       lc.dylib.current_version
@@ -101,19 +97,13 @@ let load_command_to_string =
 
   | LC_VERSION_MIN_IPHONEOS lc
   | LC_VERSION_MIN_MACOSX lc ->
-    Printf.sprintf "%s (0x%x) %d %s" (cmd_int_to_string lc.cmd) lc.cmd lc.cmdsize @@
     Printf.sprintf "\n\tversion: %s sdk: %s" (MachVersion.version_to_string lc.version) (MachVersion.version_to_string lc.sdk)
 
   | LC_MAIN lc ->
-    Printf.sprintf "%s (0x%x) %d %s" (cmd_int_to_string lc.cmd) lc.cmd lc.cmdsize @@
     Printf.sprintf "\n\toffset: 0x%x stacksize: 0x%x" lc.entryoff lc.stacksize
 
-  | _ ->
-    Printf.sprintf "UNIMPLEMENTED"
-
-(* DRY violations, oh yea
-    Printf.sprintf "%s (0x%x) %d %s" (cmd_int_to_string lc.cmd) lc.cmd lc.cmdsize @@
- *)
+  | lc ->
+    ""
 
 let print_load_command lc = 
   Printf.printf "%s\n" (load_command_to_string lc)
@@ -125,45 +115,49 @@ let print_load_commands lcs =
 let get_load_command_header binary offset =
   let cmd,o = Binary.u32o binary offset in
   let cmdsize,o = Binary.u32o binary o in
-  cmd,cmdsize
+  cmd,cmdsize,o
 
-let get_data binary offset size = 
+let get_load_command_raw binary offset size = 
   Bytes.sub binary offset size
+
+let get_segment_by_name segname segments =
+  try Some (List.find (fun segment -> segment.segname = segname) segments)
+  with Not_found -> None
 
 (* specific load command constructors *)
 let get_symtable binary offset =
-  let cmd,cmdsize = get_load_command_header binary offset in
-  let symoff = Binary.u32 binary 0 in
-  let nsyms = Binary.u32 binary 4 in
-  let stroff =  Binary.u32 binary 8 in
-  let strsize =  Binary.u32 binary 12 in
-  LC_SYMTAB {cmd; cmdsize; symoff; nsyms; stroff; strsize;}
+  let cmd,cmdsize,o = get_load_command_header binary offset in
+  let symoff,o = Binary.u32o binary o in
+  let nsyms,o = Binary.u32o binary o in
+  let stroff,o =  Binary.u32o binary o in
+  let strsize =  Binary.u32 binary o in
+  {cmd; cmdsize; symoff; nsyms; stroff; strsize;}
 
 let get_dysymtable binary offset =
-  let cmd,cmdsize = get_load_command_header binary offset in
-  let ilocalsym = Binary.u32 binary 0 in
-  let nlocalsym = Binary.u32 binary 4 in
+  let cmd,cmdsize,o = get_load_command_header binary offset in
+  let ilocalsym,o = Binary.u32o binary o in
+  let nlocalsym,o = Binary.u32o binary o in
 
-  let iextdefsym =  Binary.u32 binary 8 in
-  let nextdefsym =  Binary.u32 binary 12 in
+  let iextdefsym,o =  Binary.u32o binary o in
+  let nextdefsym,o =  Binary.u32o binary o in
 
-  let iundefsym = Binary.u32 binary 16 in
-  let nundefsym = Binary.u32 binary 20 in
+  let iundefsym,o = Binary.u32o binary o in
+  let nundefsym,o = Binary.u32o binary o in
 
-  let tocoff =  Binary.u32 binary 24 in
-  let ntoc =  Binary.u32 binary 28 in
-  let modtaboff = Binary.u32 binary 32 in
-  let nmodtab = Binary.u32 binary 36 in
+  let tocoff,o =  Binary.u32o binary o in
+  let ntoc,o =  Binary.u32o binary o in
+  let modtaboff,o = Binary.u32o binary o in
+  let nmodtab,o = Binary.u32o binary o in
 
-  let extrefsymoff =  Binary.u32 binary 40 in
-  let nextrefsyms =  Binary.u32 binary 44 in
+  let extrefsymoff,o =  Binary.u32o binary o in
+  let nextrefsyms,o =  Binary.u32o binary o in
 
-  let indirectsymoff =  Binary.u32 binary 48 in
-  let nindirectsyms =  Binary.u32 binary 52 in
-  let extreloff =  Binary.u32 binary 56 in
-  let nextrel =  Binary.u32 binary 60 in
-  let locreloff =  Binary.u32 binary 64 in
-  let nlocrel =  Binary.u32 binary 68 in
+  let indirectsymoff,o =  Binary.u32o binary o in
+  let nindirectsyms,o =  Binary.u32o binary o in
+  let extreloff,o =  Binary.u32o binary o in
+  let nextrel,o =  Binary.u32o binary o in
+  let locreloff,o =  Binary.u32o binary o in
+  let nlocrel =  Binary.u32 binary o in
   {
     cmd; cmdsize;
     ilocalsym; nlocalsym; iextdefsym; nextdefsym;
@@ -174,63 +168,62 @@ let get_dysymtable binary offset =
   }
 
 let get_dyld_info binary offset =
-  let cmd,cmdsize = get_load_command_header binary offset in
-  let rebase_off = Binary.u32 binary 0 in
-  let rebase_size = Binary.u32 binary 4 in
-  let bind_off =  Binary.u32 binary 8 in
-  let bind_size =  Binary.u32 binary 12 in
-  let weak_bind_off =  Binary.u32 binary 16 in
-  let weak_bind_size =  Binary.u32 binary 20 in
-  let lazy_bind_off =  Binary.u32 binary 24 in
-  let lazy_bind_size =  Binary.u32 binary 28 in
-  let export_off =  Binary.u32 binary 32 in
-  let export_size =  Binary.u32 binary 36 in
+  let cmd,cmdsize,o = get_load_command_header binary offset in
+  let rebase_off,o = Binary.u32o binary o in
+  let rebase_size,o = Binary.u32o binary o in
+  let bind_off,o =  Binary.u32o binary o in
+  let bind_size,o =  Binary.u32o binary o in
+  let weak_bind_off,o =  Binary.u32o binary o in
+  let weak_bind_size,o =  Binary.u32o binary o in
+  let lazy_bind_off,o =  Binary.u32o binary o in
+  let lazy_bind_size,o =  Binary.u32o binary o in
+  let export_off,o =  Binary.u32o binary o in
+  let export_size =  Binary.u32 binary o in
   {cmd; cmdsize;
    rebase_off; rebase_size; bind_off; bind_size;
    weak_bind_off; weak_bind_size; lazy_bind_off;
    lazy_bind_size; export_off; export_size;}
 
-let get_dylib binary =
-  let offset = Binary.u32 binary 0 in
-  let timestamp = Binary.u32 binary 4 in
-  let current_version =  Binary.u32 binary 8 in
-  let compatibility_version =  Binary.u32 binary 12 in
-  let str = Binary.string binary offset in (* technically should use the lc_str_offset but need (lc_str_offset - sizeof_load_command) because offset from start of the load_command and we chopped off the first 8 bytes of the lc*)
-  let name = {offset; str} in
-  {name; timestamp; current_version; compatibility_version;}
-
 (* consider glomming all libs into single binary with 0...N load commands and library indexed at 1... *)
 let get_dylib_command binary offset =
-  let cmd,cmdsize = get_load_command_header binary offset in
-  {cmd; cmdsize; dylib = get_dylib binary}
+  let cmd,cmdsize,o = get_load_command_header binary offset in
+  let stroffset,o = Binary.u32o binary o in
+  let timestamp,o = Binary.u32o binary o in
+  let current_version,o =  Binary.u32o binary o in
+  let compatibility_version =  Binary.u32 binary o in
+  let str = Binary.string binary (stroffset+offset) in (* technically should use the lc_str_offset but need (lc_str_offset - sizeof_load_command) because offset from start of the load_command and we chopped off the first 8 bytes of the lc*)
+  Printf.printf "offset: 0x%x dylib name: %s\n" stroffset str;
+  let name = {offset; str} in
+  let dylib = {name; timestamp; current_version; compatibility_version;} in
+  {cmd; cmdsize; dylib}
 
 (* version for osx and ios *)
 let get_version binary offset =
-  let cmd,cmdsize = get_load_command_header binary offset in
-  let version = Binary.u32 binary 0 in
-  let sdk = Binary.u32 binary 4 in
+  let cmd,cmdsize,o = get_load_command_header binary offset in
+  let version,o = Binary.u32o binary o in
+  let sdk = Binary.u32 binary o in
   {cmd; cmdsize; version; sdk;}
 
 let get_main binary offset =
-  let cmd,cmdsize = get_load_command_header binary offset in
-  let entryoff = Binary.u64 binary 0 in
-  let stacksize = Binary.u64 binary 8 in
+  let cmd,cmdsize,o = get_load_command_header binary offset in
+  let entryoff,o = Binary.u64o binary o in
+  let stacksize = Binary.u64 binary o in
   {cmd; cmdsize; entryoff; stacksize;}
 
 let get_dylinker binary offset =
-  let cmd,cmdsize = get_load_command_header binary offset in
-  let offset = Binary.u32 binary 0 in
-  let str = Binary.string binary offset in
+  let cmd,cmdsize,o = get_load_command_header binary offset in
+  let stroffset,o = Binary.u32o binary o in
+  let str = Binary.string binary (offset+stroffset) in
   let name = {offset; str} in
   {cmd; cmdsize; name;}
 
 let get_section64 binary offset =
   (*   Printf.printf "initial o: %d\n" o; *)
-  let sectname = Binary.string binary offset ~maxlen:(15+offset) in
+  let sectname,o = Binary.stringo binary offset ~num_bytes:16 in
   (*   Printf.printf "sectname: %s o: %d\n" sectname o; *)
-  let segname = Binary.string binary (16+offset) ~maxlen:(15+16+offset) in
+  let segname,o = Binary.stringo binary o ~num_bytes:16 in
   (*   Printf.printf "segname: %s o: %d\n" segname o; *)
-  let addr,o = Binary.u64o binary (offset+32) in
+  let addr,o = Binary.u64o binary o in
   let size,o = Binary.u64o binary o in
   let offset,o = Binary.u32o binary o in
   let align,o = Binary.u32o binary o in
@@ -239,7 +232,7 @@ let get_section64 binary offset =
   let flags,o = Binary.u32o binary o in
   let reserved1,o = Binary.u32o binary o in
   let reserved2,o = Binary.u32o binary o in
-  let reserved3,o = Binary.u32o binary o in
+  let reserved3 = Binary.u32 binary o in
   {sectname; segname; addr; size; 
    offset; align; reloff; nreloc; flags; 
    reserved1; reserved2; reserved3;}
@@ -250,129 +243,124 @@ let get_sections64 binary nsects offset =
       List.rev acc
     else
       let section = get_section64 binary ((sizeof_section_64*count)+offset) in
+      (*       Printf.printf "sec %d\n" count; *)
       loop (count+1) (section::acc)
   in loop 0 []
 
 let get_segment64 binary offset =
-  let cmd,cmdsize = get_load_command_header binary offset in
-  let segname = Binary.string binary 0 ~maxlen:15 in
-  let vmaddr = Binary.u64 binary 16 in
-  let vmsize =  Binary.u64 binary 24 in
-  let fileoff = Binary.u64 binary 32 in
-  let filesize =  Binary.u64 binary 40 in
-  let maxprot = Binary.u32 binary 48 in
-  let initprot = Binary.u32 binary 52 in
-  let nsects = Binary.u32 binary 56 in
-  let flags = Binary.u32 binary 60 in
-  let sections = get_sections64 binary nsects 64 in
+  let cmd,cmdsize,o = get_load_command_header binary offset in
+  let segname,o = Binary.stringo ~num_bytes:16 binary o in
+  let vmaddr,o = Binary.u64o binary o in
+  let vmsize,o =  Binary.u64o binary o in
+  let fileoff,o = Binary.u64o binary o in
+  let filesize,o =  Binary.u64o binary o in
+  let maxprot,o = Binary.u32o binary o in
+  let initprot,o = Binary.u32o binary o in
+  let nsects,o = Binary.u32o binary o in
+  let flags,o = Binary.u32o binary o in
+  (*   Printf.printf "vmaddr: 0x%x vmsize 0x%x fileoff 0x%x filesize 0x%x maxprot %d initprot %d nsects %d %d flags\n" vmaddr vmsize fileoff filesize maxprot initprot nsects flags; *)
+  let sections = get_sections64 binary nsects o in
   {cmd; cmdsize; segname; vmaddr; vmsize;
    fileoff; filesize; maxprot; initprot;
    nsects; flags; sections;}
 
-type t = lc list
-
-let rec get_load_commands_it binary offset ncmds acc = 
+let rec get_load_commands_it binary offset ncmds acc =
   if (ncmds <= 0) then
     List.rev acc
   else
+    let cmdi,cmdsize,_ = get_load_command_header binary offset in
+    let cmd = cmdi |> to_cmd in
     (*     let bytes = Bytes.sub binary offset cmdsize - sizeof_load_command) in *)
     let bytes = binary in
-    let lc_t = 
+    let t = 
       match cmd with
-      | SEGMENT_64 ->
-	 SEGMENT_64 (get_segment64 bytes)
-      | LOAD_DYLINKER ->
-	 DYLINKER (get_dylinker bytes)
-      | SYMTAB -> 
-        SYMTAB (get_symtable bytes)
-      | DYSYMTAB ->
-        DYSYMTAB (get_dysymtable bytes)
-      | DYLD_INFO_ONLY | LC_DYLD_INFO -> 
-        DYLD_INFO (get_dyld_info bytes)
-      | LOAD_DYLIB | REEXPORT_DYLIB | ID_DYLIB | LOAD_UPWARD_DYLIB | LAZY_LOAD_DYLIB | LC_LOAD_WEAK_DYLIB -> 
-        DYLIB (get_dylib bytes)
-      | VERSION_MIN_MACOSX | VERSION_MIN_IPHONEOS ->
-        VERSION (get_version bytes)
-      | MAIN ->
-        ENTRY_POINT (get_main bytes)
+      | LC_SEGMENT_64 ->
+	 LC_SEGMENT_64 (get_segment64 bytes offset)
+      | LC_LOAD_DYLINKER ->
+	 LC_LOAD_DYLINKER (get_dylinker bytes offset)
+      | LC_SYMTAB -> 
+        LC_SYMTAB (get_symtable bytes offset)
+      | LC_DYSYMTAB ->
+        LC_DYSYMTAB (get_dysymtable bytes offset)
+      | LC_DYLD_INFO -> 
+        LC_DYLD_INFO (get_dyld_info bytes offset)
+      | LC_DYLD_INFO_ONLY ->
+        LC_DYLD_INFO (get_dyld_info bytes offset)
+      | LC_ID_DYLIB ->
+        LC_ID_DYLIB (get_dylib_command bytes offset)
+      | LC_LOAD_DYLIB | LC_REEXPORT_DYLIB | LC_LOAD_UPWARD_DYLIB | LC_LAZY_LOAD_DYLIB | LC_LOAD_WEAK_DYLIB -> 
+        LC_LOAD_DYLIB (get_dylib_command bytes offset)
+      | LC_VERSION_MIN_IPHONEOS ->
+        LC_VERSION_MIN_IPHONEOS (get_version bytes offset)
+      | LC_VERSION_MIN_MACOSX ->
+        LC_VERSION_MIN_MACOSX (get_version bytes offset)
+      | LC_MAIN ->
+        LC_MAIN (get_main bytes offset)
       | _ ->
-        Unimplemented (get_data binary (offset + sizeof_load_command) (cmdsize - sizeof_load_command)) in
-    let load_command = (cmd, cmdsize, lc_t) in
+        LC_UNIMPLEMENTED {cmd=cmdi; cmdsize}
+    in
+    let load_command = {cmd; cmdsize; t} in
+    (*     let load_command = (cmd, cmdsize, lc_t) in *)
     get_load_commands_it binary (offset + cmdsize) (ncmds - 1) (load_command::acc)
 
-let get_load_commands binary offset ncmds sizeofcmds =
-  let load_command_bytes = Bytes.sub binary offset sizeofcmds in
-  get_load_commands_it load_command_bytes 0 ncmds []
+let get_load_commands binary offset ncmds sizeofcmds : t =
+  get_load_commands_it binary offset ncmds []
 
-exception Missing_load_command of string
-
-let rec get_load_command cmd lcs =
+let rec get_load_command cmd (lcs:Types.lc list) :Types.lc_t option =
   match lcs with
   | [] -> None
   | lc::lcs ->
-    (* doomed, right here *)
-    if (lc == cmd) then lc'
+    if (lc.cmd = cmd) then
+      Some lc.t
     else
-      find_load_command lc lcs
+      get_load_command cmd lcs
 
 let get_segments lcs =
-  let rec loop lcs acc =
-  match lcs with
-  | [] -> List.rev acc
-  | (cmd, _, (SEGMENT_64 segment))::lcs ->
-     loop lcs (segment::acc)
-  | lc::lcs -> loop lcs acc
-  in loop lcs []
+  List.fold_left (fun acc lc ->
+      match lc.t with
+      | LC_SEGMENT_64 segment ->
+        segment::acc
+      | _ ->
+        acc
+    ) [] lcs |> List.rev
 
 let rec get_dyld_info lcs =
   match lcs with
   | [] -> None
-  | (cmd,cmdsize, DYLD_INFO dyldinfo)::lcs ->
-    if (cmd = DYLD_INFO_ONLY || cmd = LC_DYLD_INFO) then Some dyldinfo
-    else
+  | lc::lcs ->
+    match lc.t with
+    | LC_DYLD_INFO lc
+    | LC_DYLD_INFO_ONLY lc ->
+      Some lc
+    | _ ->
       get_dyld_info lcs
-  | lc::lcs -> get_dyld_info lcs
 
 let rec get_lib_name lcs =
   match lcs with
-  | [] -> None
-  | (ID_DYLIB, _, DYLIB id)::lcs ->
-    Some id
-  | lc::lcs -> get_lib_name lcs
-
-let get_libraries lcs =
-  let rec loop lcs acc =
-    match lcs with
-    | [] -> 
-      Array.of_list @@ List.rev acc
-    | ((cmd, _, _) as lc)::lcs ->
-      if (cmd = LOAD_DYLIB) then loop lcs (lc::acc)
-      else
-        loop lcs acc
-  in loop lcs []
+  | [] -> ""
+  | lc::lcs ->
+    match lc.t with
+    | LC_ID_DYLIB lc ->
+      lc.dylib.name.str
+    | _ -> get_lib_name lcs
 
 let print_libraries libs =
   if ((Array.length libs) <> 0) then
     begin
       Printf.printf "Libraries (%d)\n" @@ (Array.length libs - 1);
       Array.iteri (fun i lib ->
-		  if (i <> 0) then
-		    Printf.printf "%s\n" lib) libs
+	  if (i <> 0) then
+	    Printf.printf "%s\n" lib) libs
     end
 
-let get_libraries lcs self = 
-  let rec loop lcs acc =
-    match lcs with
-    | [] -> 
-      Array.of_list @@ List.rev acc
-    | (cmd, _, DYLIB dylib)::lcs ->
-      begin
-        match cmd with
-        | LOAD_DYLIB | REEXPORT_DYLIB | LOAD_UPWARD_DYLIB | LAZY_LOAD_DYLIB | LC_LOAD_WEAK_DYLIB ->
-          loop lcs (dylib.lc_str::acc)
-        | _ ->
-          loop lcs acc
-      end
-    | _::lcs ->
-      loop lcs acc
-  in loop lcs [self]
+let get_libraries lcs self =
+  List.fold_left (fun acc lc ->
+      match lc.t with
+      | LC_LOAD_DYLIB lc
+      | LC_REEXPORT_DYLIB lc
+      | LC_LOAD_UPWARD_DYLIB lc
+      | LC_LAZY_LOAD_DYLIB lc
+      | LC_LOAD_WEAK_DYLIB lc ->
+        lc.dylib.name.str::acc
+      | _ -> acc
+    ) [self] lcs |> List.rev |> Array.of_list
