@@ -1,6 +1,6 @@
 (* TODO: create a normalize coverage function *)
 
-let debug = true
+let debug = false
 
 type tag = | Meta
            | Code
@@ -44,8 +44,8 @@ let is_contained d1 d2 =
   (d1.range_start > d2.range_start) && (d1.range_end <= d2.range_end)
   || (d1.range_start >= d2.range_start) && (d1.range_end < d2.range_end)
 let contains d2 d1 = is_contained d1 d2
-
 let same_range d1 d2 = (d1.range_start = d2.range_start) && (d1.range_end = d2.range_end)
+(* end range specific *)
 
 let sort a b =
   if (a.range_start = b.range_start) then
@@ -57,25 +57,12 @@ let sort a b =
       1
       (*     else
       -(Pervasives.compare a.range_end b.range_end)
- *)
+      *)
   else
   if (contains a b) then
     -1
-  else
+  else (* we don't consider overlapping instances for now *)
     Pervasives.compare a.range_start b.range_start
-
-(* 
-  if (a.range_start < b.range_start) then
-    if (contains a b) then
-      1
-    else
-      -1
-  else (* a.start >= b.start *)
-  if (a.range_end > b.range_end) then
-    1
-  else
-    -1 (* we don't consider overlapping instances for now *)
- *)
 
 (* DataSet specific functions *)
 module DataSet = Set.Make(
@@ -83,53 +70,6 @@ module DataSet = Set.Make(
     type t = data
     let compare = sort
   end)
-
-let mem = DataSet.mem
-let add e l = DataSet.add e l             (* DataSet.add *)
-let empty = DataSet.empty                  (* DataSet.empty *)
-(* let fold f coverage seed = DataSet.fold_left f seed coverage *)
-let fold = DataSet.fold
-let iter = DataSet.iter
-let remove = DataSet.remove
-let to_list s = DataSet.elements s
-(* checks whether the range is redundant (covered) in our set already *)
-let is_covered range coverage =
-  DataSet.exists (fun data ->
-      data <> range
-      && (is_contained range data)
-    ) coverage
-
-(*   DataSet.exists (fun data ->
-      data <> range
-      && data.range_start = range.range_start
-      && data.range_end = range.range_end
-     ) coverage
-*)
-
-let is_unique x dataset =
-  DataSet.for_all (fun y -> not (contains x y) && x <> y) dataset
-
-let is_container x dataset =
-  DataSet.exists (fun y -> (contains x y && x <> y)) dataset
-  || is_unique x dataset
-
-let is_sub_range x dataset =
-  DataSet.exists (fun y -> is_contained x y && x <> y) dataset
-
-(* partitions data into largest covering ranges, and redundant data *)
-let normalize dataset =
-  let s1,s2 =
-    DataSet.partition (fun data -> 
-        is_unique data dataset || is_sub_range data dataset) dataset
-  in s2,s1 (* swap *)
-
-(* finalizes the dataset by setting containerhood *)
-let finalize dataset =
-  to_list dataset |> List.map (fun el ->
-      if (is_container el dataset) then
-        {el with container = true}
-      else
-        el) |> DataSet.of_list
 
 type t = {
   data: DataSet.t;
@@ -139,6 +79,71 @@ type t = {
   percent_coverage: float;
   percent_understood: float;
 }
+
+let mem = DataSet.mem
+let add data set = DataSet.add data set             (* DataSet.add *)
+let empty = DataSet.empty                  (* DataSet.empty *)
+(* let fold f coverage seed = DataSet.fold_left f seed coverage *)
+let fold = DataSet.fold
+let iter = DataSet.iter
+let remove = DataSet.remove
+let to_list s = DataSet.elements s
+(* checks whether the range is redundant (covered) in our set already *)
+let is_covered x dataset =
+  DataSet.exists (fun y ->
+      y <> x
+      && (is_contained x y)
+    ) dataset
+
+let is_same_range x dataset =
+  DataSet.exists (fun y -> same_range x y && x <> y) dataset
+
+let is_sub_range x dataset =
+  DataSet.exists (fun y -> is_contained x y && x <> y) dataset
+
+let contains_something x dataset =
+  DataSet.exists (fun y -> contains x y) dataset
+
+let is_unique x dataset =
+  not (contains_something x dataset)
+  && not (is_sub_range x dataset)
+
+let is_container x dataset =
+  (contains_something x dataset
+  && not (is_sub_range x dataset))
+  || is_unique x dataset
+
+let pick_with f dataset =
+  fold (fun data acc ->
+      if (f data) then
+        data
+      else
+        acc)
+
+(* partitions data into largest covering ranges, and redundant data *)
+let normalize dataset =
+  let norm,rest =
+    DataSet.partition (fun data ->
+        is_container data dataset) dataset
+  in
+  fold (fun el (acc,rest) ->
+      if (is_same_range el acc) then
+        acc,(add el rest)
+      else
+        (add el acc),rest
+    ) norm (empty,rest)
+
+(* finalizes the dataset by setting containerhood:
+   a container is the first byte range found which is a container
+   and which hasn't been added to the accumulator yet
+*)
+let finalize dataset =
+  fold (fun el acc ->
+      if (is_container el dataset
+          && not (is_same_range el acc)) then
+        add {el with container = true} acc
+      else
+        add el acc) dataset empty
 
 let data_to_string (data:data) =
   Printf.sprintf "size: %d tag: %s\n  range_start: 0x%x range_end 0x%x understood: %b container: %b extra: %s"
@@ -181,22 +186,17 @@ let count data condition =
         acc
     ) data 0
 
-let get_unique data =
-  let redundant = fold
-      (fun elt acc ->
-         if (is_covered elt data) then
-           if (is_covered elt acc) then
-             acc
-           else
-             add elt acc
-         else acc) data empty
+let count_coverage dataset =
+  let total = count dataset (fun range ->
+      range.container
+      && range.tag <> Semantic)
   in
-  DataSet.diff data redundant
-
-let count_coverage unique =
-  let total = count unique (fun range -> range.tag <> Semantic) in
-  let understood = count unique (fun range -> range.understood && range.tag <> Semantic) in
-  total, understood
+  let understood = count dataset
+      (fun range -> range.container
+                    && range.understood
+                    && range.tag <> Semantic)
+  in
+  total,understood
 
 (* @invariant sorted, normalized *)
 let compute_unknown dataset size =
@@ -239,7 +239,6 @@ let create size data =
   let normalized_data,rest = normalize data in
   if (debug) then
     begin
-
       print_string "\nSIGIL Normalized ranges\n\n----------------------\n\n";
       print_data normalized_data;
       print_string "\nSIGIL Remainder\n\n---------------------------\n\n";
@@ -248,7 +247,7 @@ let create size data =
     end;
   let data = compute_unknown normalized_data size
              |> DataSet.union rest |> finalize in
-  let total_coverage,total_understood = count_coverage normalized_data in
+  let total_coverage,total_understood = count_coverage data in
   let percent_coverage = (float_of_int total_coverage) /.  (float_of_int size) in
   let percent_understood = (float_of_int total_understood) /.  (float_of_int size) in
   {
@@ -262,7 +261,7 @@ let create size data =
 
 (* UNIT *)
 (* unusual sequences, like one range starting in one range and ending in another need to be dealt with *)
-
+(*
 let d1 = create_data ~r1:0 ~r2:0x100 ~understood:true ~tag:Meta ~extra:"Container1"
 let d2 = create_data ~r1:0 ~r2:0x50 ~understood:true ~tag:Data ~extra:"is_contained11"
 let d3 = create_data ~r1:0x50 ~r2:0x75 ~understood:true ~tag:Code ~extra:"is_contained12"
@@ -273,22 +272,25 @@ let d7 = create_data ~r1:0x250 ~r2:0x275 ~understood:true ~tag:Meta ~extra:"is_c
 let d8 = create_data ~r1:0x250 ~r2:0x250 ~understood:true ~tag:Meta ~extra:"null_is_contained31"
 let d9 = create_data ~r1:0x250 ~r2:0x251 ~understood:true ~tag:Meta ~extra:"small_is_contained32"
 let d10 = create_data ~r1:0x251 ~r2:0x252 ~understood:true ~tag:Meta ~extra:"small_is_contained33"
+let d11 = create_data ~r1:0 ~r2:0x100 ~understood:true ~tag:Code ~extra:"SameContainer51"
+let d12 = create_data ~r1:0x350 ~r2:0x400 ~understood:true ~tag:Meta ~extra:"IslandContainer4"
+
 
 let d0 = create_data ~r1:0x200 ~r2:0x250 ~understood:true ~tag:Meta ~extra:"is_contained31"
-
 
 let set1 =
   add d1 empty
   |> add d2 |> add d3
   |> add d4 |> add d5
   |> add d6 |> add d7 |> add d8
-  |> add d9 |> add d10
+  |> add d9 |> add d10 |> add d11 |> add d12
 
-let size = 0x250
+let size = 0x400
 
 let one,two = normalize set1
 let un1 = compute_unknown one size
 let u1 = DataSet.union un1 two
+let f1 = finalize u1
 
 let t1 = create size set1
 
@@ -297,3 +299,4 @@ let p = print
 
 let m1 = add d0 one
 let l1 = m1 |> to_list
+*)
