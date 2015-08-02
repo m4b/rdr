@@ -4,6 +4,7 @@ type tag = | Meta
            | Code
            | Unknown
            | Symbol
+           | SymbolTable
            | String
            | StringTable
            | Rela
@@ -11,6 +12,7 @@ type tag = | Meta
            | Data
            | Invalid
            | Semantic
+           | Zero
 
 let tag_to_string =
   function
@@ -18,6 +20,7 @@ let tag_to_string =
   | Code -> "Code"
   | Unknown -> "Unknown"
   | Symbol -> "Symbol"
+  | SymbolTable -> "SymbolTable"
   | String -> "String"
   | StringTable -> "StringTable"
   | Rela -> "Rela"
@@ -25,6 +28,7 @@ let tag_to_string =
   | Data -> "Data"
   | Invalid -> "Invalid"
   | Semantic -> "Semantic"
+  | Zero -> "Zero"
 
 type data =
   {
@@ -90,13 +94,19 @@ let is_covered x dataset =
       && (is_contained x y)
     ) dataset
 
+let is_semantic x = x.tag = Semantic
+
+
 (* there exists an equal range in the dataset *)
 let is_same_range x dataset =
   DataSet.exists (fun y -> same_range x y && x <> y) dataset
 
 (* is a range which is contained by another range *)
 let is_sub_range x dataset =
-  DataSet.exists (fun y -> is_contained x y && x <> y) dataset
+  DataSet.exists (fun y ->
+      not (is_semantic y)
+      && is_contained x y 
+      && x <> y) dataset
 
 let contains_something x dataset =
   DataSet.exists (fun y -> contains x y) dataset
@@ -109,9 +119,11 @@ let is_unique x dataset =
 
 (* checks whether is a top-level container *)
 let is_container x dataset =
-  (contains_something x dataset
+  not (is_semantic x)
+  &&
+  ((contains_something x dataset
   && not (is_sub_range x dataset))
-  || is_unique x dataset
+  || is_unique x dataset)
 
 (* unused *)
 let pick_with f dataset =

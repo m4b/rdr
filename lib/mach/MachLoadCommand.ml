@@ -192,7 +192,6 @@ let get_dylib_command binary offset =
   let current_version,o =  Binary.u32o binary o in
   let compatibility_version =  Binary.u32 binary o in
   let str = Binary.string binary (stroffset+offset) in (* technically should use the lc_str_offset but need (lc_str_offset - sizeof_load_command) because offset from start of the load_command and we chopped off the first 8 bytes of the lc*)
-  Printf.printf "offset: 0x%x dylib name: %s\n" stroffset str;
   let name = {offset; str} in
   let dylib = {name; timestamp; current_version; compatibility_version;} in
   {cmd; cmdsize; dylib}
