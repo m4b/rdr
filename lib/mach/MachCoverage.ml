@@ -1,3 +1,7 @@
+(* 
+# TODO:
+  * compute nlist size
+*)
 open ByteCoverage
 open MachLoadCommand
 open MachLoadCommand.Types
@@ -32,30 +36,18 @@ let compute_header_coverage header dataset =
 
 (* granular dyldinfo/LINKEDIT coverage here *)
 let compute_dyldinfo_coverage load_commands dataset =
-  (*
-      dyld_info.rebase_off
-      dyld_info.rebase_size
-      dyld_info.bind_off
-      dyld_info.bind_size
-      dyld_info.weak_bind_off
-      dyld_info.weak_bind_size
-      dyld_info.lazy_bind_off
-      dyld_info.lazy_bind_size
-      dyld_info.export_off
-      dyld_info.export_size
- *)
   match MachLoadCommand.get_dyld_info load_commands with
   | Some dyld_info ->
     let r1 = dyld_info.rebase_off in
     let r2 = r1 + dyld_info.rebase_size in
     let dyldextra = cmd_int_to_string dyld_info.cmd in
-    let extra = "rebase // " ^ dyldextra in
+    let extra = "dyldinfo" in
     add
       (create_data
          ~tag:Rela
          ~r1:r1
          ~r2:r2
-         ~extra:extra
+         ~extra:("rebase // " ^ dyldextra)
          ~understood:true) dataset
     |> add
       (create_data

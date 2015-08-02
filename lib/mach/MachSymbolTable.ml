@@ -1,6 +1,3 @@
-(* TODO: replace functions with Binary string functions *)
-(* TODO: remove bytes sub in binary calls *)
-
 open Printf
 
 open Binary
@@ -74,22 +71,17 @@ let rec get_nlist_it binary offset nsyms acc =
     let nlist = {n_strx; n_type; n_sect; n_desc; n_value;} in
     get_nlist_it binary o (nsyms - 1) (nlist::acc)
 
-(* TODO: remove all these bytes.sub calls so can change binary into stream if necessary *)
-let rec get_symlist_it binary strsize nlists acc = 
+let rec get_symlist_it binary offset nlists acc = 
   match nlists with
     [] -> List.rev acc
   | nlist::nlists ->
-    (* TODO: replace this with Binary string functions *)
-    let index = Bytes.index_from binary nlist.n_strx '\000' in
-    let symname = Bytes.sub_string binary nlist.n_strx (index - nlist.n_strx) in
-    get_symlist_it binary strsize nlists ((nlist,symname)::acc)
+    let symname = Binary.string binary (offset + nlist.n_strx) in
+    get_symlist_it binary offset nlists ((nlist,symname)::acc)
 
 let get_symlist binary symtab nlists = 
-  let str_bytes = Bytes.sub binary symtab.stroff symtab.strsize in
-  get_symlist_it str_bytes symtab.strsize nlists []
+  get_symlist_it binary symtab.stroff nlists []
 
 let get_symbols binary symtab =
-    let nlist_bytes = Bytes.sub binary symtab.symoff (sizeof_nlist * symtab.nsyms) in
-    let nlists = get_nlist_it nlist_bytes 0 symtab.nsyms [] in
+    let nlists = get_nlist_it binary symtab.symoff symtab.nsyms [] in
     let symbols = get_symlist binary symtab nlists in
     symbols
