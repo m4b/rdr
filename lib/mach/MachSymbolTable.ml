@@ -71,14 +71,14 @@ let rec get_nlist_it binary offset nsyms acc =
     let nlist = {n_strx; n_type; n_sect; n_desc; n_value;} in
     get_nlist_it binary o (nsyms - 1) (nlist::acc)
 
-let rec get_symlist_it binary offset nlists acc = 
+let rec get_symlist_it binary offset nlists acc =
   match nlists with
     [] -> List.rev acc
   | nlist::nlists ->
     let symname = Binary.string binary (offset + nlist.n_strx) in
     get_symlist_it binary offset nlists ((nlist,symname)::acc)
 
-let get_symlist binary symtab nlists = 
+let get_symlist binary symtab nlists =
   get_symlist_it binary symtab.stroff nlists []
 
 let get_symbols binary symtab =
