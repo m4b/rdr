@@ -53,6 +53,7 @@ let get ?meta_only:(meta_only=false) binary =
   let symtab_offset, strtab_offset, strtab_size =
     Dynamic.get_dynamic_symbol_offset_data _dynamic slide_sectors
   in
+  (* broken right here for /usr/lib/go/pkg/tool/linux_amd64/cgo *)
   let dynamic_strtab =
     Dynamic.get_dynamic_strtab binary strtab_offset strtab_size
   in
