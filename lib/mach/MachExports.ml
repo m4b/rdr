@@ -53,6 +53,7 @@ type export =
     info: export_info;
     name: string;
     size: int;
+    offset: int;
   }
 
 type t = export list
@@ -94,6 +95,23 @@ let print exports =
   List.iter print_export exports
 
 let length exports = List.length exports
+
+let compute_size exports:t =
+  let rec loop acc exports =
+    match exports with
+    | [] -> acc
+    | e1::[] ->
+      (e1::acc) |> List.rev
+    | e1::(e2::_ as rest) ->
+      let size =
+        if (e1.offset = 0x0 || e2.offset = 0x0) then
+          0x0
+        else
+          e2.offset - e1.offset
+      in
+      loop ({e1 with size}::acc) rest
+  in
+  loop [] exports
 
 let empty = []
 
@@ -189,7 +207,8 @@ let rec get_exports_it bytes base size libs current_symbol pos acc =
         let flags,pos = Leb128.get_uleb128 bytes pos in
         if (debug) then Printf.printf "\tTERM %d flags: 0x%x\n" num_children flags;
         let info = get_export bytes libs flags pos in
-        let export = {info; name = current_symbol; size = 0} in
+        let offset = match info with | Regular symbol -> symbol.address | _ -> 0x0 in
+        let export = {info; name = current_symbol; offset; size = 0} in
         if (debug) then begin Printf.printf "\t"; print_export export end;
         let acc = export::acc in
         if (num_children = 0) then
@@ -226,7 +245,7 @@ let get_exports binary dyld_info libs :t =
   let boundary = (dyld_info.MachLoadCommand.Types.export_size + dyld_info.MachLoadCommand.Types.export_off) in
   let base = dyld_info.MachLoadCommand.Types.export_off in
   if (debug) then Printf.printf "export init: 0x%x 0x%x\n" base boundary;
-  get_exports_it binary base boundary libs "" base [] |> sort
+  get_exports_it binary base boundary libs "" base [] |> sort |> compute_size
 
 (* ======================== *)
 

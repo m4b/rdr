@@ -117,12 +117,7 @@ module Mach = struct
         (fun export ->
            let name = export.name in
            let size = export.size in
-           let offset =
-             match export.info with
-             | Regular symbol ->
-               symbol.address
-             | _ -> 0x0
-           in
+           let offset = export.offset in
            {Export.name; size; offset}
         ) mach.Mach.exports
     in
