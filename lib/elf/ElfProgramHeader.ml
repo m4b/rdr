@@ -1,6 +1,3 @@
-(* TODO:
-(1) Memory adjust function TOTALLY BROKEN; see this culprit for reason: /usr/lib/libqgsttools_p.so.1.0.0 *)
-
 open Printf
 
 (*
@@ -159,38 +156,64 @@ let is_in_sector offset sector =
   (* should this be offset <= sector.end_sector ? *)
   offset >= sector.start_sector && offset < sector.end_sector
 
+let is_contained_in s1 s2 =
+  s1.start_sector >= s2.start_sector
+  && s1.end_sector <= s2.end_sector
+
+let join s1 s2 =
+  let start_sector = min s1.start_sector s2.start_sector in
+  let end_sector = max s1.end_sector s2.end_sector in
+  assert (s1.slide = s2.slide);
+  let slide = s1.slide in
+  {start_sector; end_sector; slide}
+
 let print_slide_sector sector =
   Printf.printf "0x%x: 0x%x - 0x%x\n"
 		sector.slide sector.start_sector sector.end_sector
-		    
+
+let print_slide_sectors sectors =
+  List.iter (fun el -> print_slide_sector el) sectors
+                
 (* checks to see if the slides are equal; will this hold uniformly? *)
 module SlideSet =
   Set.Make(
       struct type t = slide_sector
 	     let compare =
-	       (fun a b -> Pervasives.compare a.slide b.slide) end)
+	       (fun a b -> Pervasives.compare a.slide b.slide)
+      end)
+
+module Map = 
+  Map.Make(struct
+              type t = int
+              let compare = compare
+            end)
 
 (* finds the vaddr masks *)
 let get_slide_sectors phs =
-  List.fold_left (fun acc ph ->
-		  if (ph.p_type = kPT_LOAD) then
-		    let slide = ph.p_vaddr - ph.p_offset in
-		    if (slide <> 0) then
-		      let start_sector = ph.p_vaddr in
-		      let end_sector = start_sector + ph.p_filesz in
-		      SlideSet.add {start_sector; end_sector; slide} acc
-		    else
-		      acc
-		  else
-		    acc
-		 ) SlideSet.empty phs |> SlideSet.elements
+  let map =
+  List.fold_left 
+    (fun acc ph ->
+     let slide = ph.p_vaddr - ph.p_offset in
+     if (slide <> 0) then
+       let start_sector = ph.p_vaddr in
+       let end_sector = start_sector + ph.p_filesz in (* this might need to be ph.p_memsz *)
+       let s1 = {start_sector; end_sector; slide} in
+       if (Map.mem slide acc) then
+         let s2 = Map.find slide acc in
+         if (is_contained_in s1 s2) then
+           acc
+         else
+           Map.add slide (join s1 s2) acc
+       else
+         Map.add slide s1 acc
+     else
+       acc
+    ) Map.empty phs 
+  in
+  Map.fold (fun k v acc -> v::acc) map []
 
-(* This also assumed the leading digit was always the vm addr offset; 
-but /usr/lib/libqgsttools_p.so.1.0.0 has demonstrated otherwise:
-binary offset: 30000 vm: 31000
-will have to approach this in sections; if the offset in question is contained in a vm "covered" area, then subtract the difference, otherwise don't... 
- *)
-
+(* checks if the offset is in the slide sector, 
+ and adjusts using the sectors slide if so *)
 let adjust sectors offset =
   List.fold_left (fun acc sector ->
 		  if (is_in_sector offset sector) then
