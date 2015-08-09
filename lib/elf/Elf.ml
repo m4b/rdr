@@ -18,6 +18,7 @@ type t = {
   symbol_table: SymbolTable.t;
   relocations: Reloc.t;
   is_lib: bool;
+  is_64: bool;
   soname: string;
   interpreter: string;
   libraries: string list;
@@ -28,6 +29,7 @@ type t = {
 
 let get ?meta_only:(meta_only=false) binary =
   let header = Header.get_elf_header64 binary in
+  let is_64 = Header.is_64bit header.Header.e_ident in
   if (debug) then Header.print_elf_header64 header;
   let program_headers =
     ProgramHeader.get_program_headers
@@ -112,6 +114,7 @@ let get ?meta_only:(meta_only=false) binary =
     symbol_table;
     relocations;
     is_lib;
+    is_64;
     soname;
     interpreter;
     libraries;

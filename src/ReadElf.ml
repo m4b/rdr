@@ -136,11 +136,18 @@ let analyze config binary =
             ~verbose:(config.verbose || config.print_headers)
             elf.Elf.header;
 	  Elf.ProgramHeader.print_program_headers elf.Elf.program_headers;
-	  Elf.SectionHeader.print_section_headers elf.Elf.section_headers
+	  Elf.SectionHeader.print_section_headers elf.Elf.section_headers;
+          Elf.Dynamic.print_dynamic elf.Elf._dynamic;
+          if (elf.Elf.interpreter <> "") then 
+            Printf.printf "Interpreter: %s\n" elf.Elf.interpreter
 	end;
-      if (config.print_headers) then Elf.Dynamic.print_dynamic elf.Elf._dynamic;
-      if (config.print_nlist) then
-	symbols_to_goblin ~use_tol:config.use_tol ~libs:elf.Elf.libraries (soname,config.install_name) elf.Elf.symbol_table elf.Elf.relocations
+      if (config.verbose || config.print_nlist) then
+	symbols_to_goblin
+          ~use_tol:config.use_tol
+          ~libs:elf.Elf.libraries
+          (soname,config.install_name)
+          elf.Elf.symbol_table
+          elf.Elf.relocations
 	|> Goblin.Symbol.sort_symbols
 	|> List.iter
 	  (Goblin.Symbol.print_symbol_data ~like_nlist:true);

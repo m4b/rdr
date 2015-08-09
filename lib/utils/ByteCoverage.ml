@@ -30,6 +30,16 @@ let tag_to_string =
   | Semantic -> "Semantic"
   | Zero -> "Zero"
 
+(* MUST ADD THESE IF ADDING NEW TAG, probably a way to ensure compile time we're safe... *)
+let tags = [
+  "Meta";"Code";
+  "Unknown";"Symbol";
+  "SymbolTable";"String";
+  "StringTable";"Rela";
+  "PlatformSpecific";"Data";
+  "Invalid";"Semantic";
+  "Zero";]
+
 type data =
   {
     size: int;
@@ -78,6 +88,7 @@ type t = {
   total_understood: int;
   percent_coverage: float;
   percent_understood: float;
+  tags: string list;
 }
 
 let mem = DataSet.mem
@@ -275,6 +286,7 @@ let create size data =
     total_understood;
     percent_coverage;
     percent_understood;
+    tags;
   }
 
 (* UNIT *)

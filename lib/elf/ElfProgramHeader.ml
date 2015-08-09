@@ -43,6 +43,7 @@ let kPT_LOOS =		0x60000000	(* Start of OS-specific *)
 let kPT_GNU_EH_FRAME =	0x6474e550	(* GCC .eh_frame_hdr segment *)
 let kPT_GNU_STACK    =  0x6474e551	(* Indicates stack executability *)
 let kPT_GNU_RELRO    =	0x6474e552	(* Read-only after relocation *)
+let kPT_PAX_FLAGS    =	0x65041580	(* pax security header, _not_ in ELF header *)
 let kPT_LOSUNW	= 0x6ffffffa
 let kPT_SUNWBSS	 = 0x6ffffffa	(* Sun Specific segment *)
 let kPT_SUNWSTACK = 0x6ffffffb	(* Stack segment *)
@@ -50,6 +51,38 @@ let kPT_HISUNW	= 0x6fffffff
 let kPT_HIOS	= 0x6fffffff	(* End of OS-specific *)
 let kPT_LOPROC	= 0x70000000	(* Start of processor-specific *)
 let kPT_HIPROC	= 0x7fffffff	(* End of processor-specific *)
+
+let kPT_MIPS_REGINFO = 0x70000000	(* Register usage information *)
+let kPT_MIPS_RTPROC =  0x70000001	(* Runtime procedure table. *)
+let kPT_MIPS_OPTIONS = 0x70000002
+let kPT_HP_TLS = (kPT_LOOS + 0x0)
+let kPT_HP_CORE_NONE =	(kPT_LOOS + 0x1)
+let kPT_HP_CORE_VERSION = (kPT_LOOS + 0x2)
+let kPT_HP_CORE_KERNEL = (kPT_LOOS + 0x3)
+let kPT_HP_CORE_COMM = 	(kPT_LOOS + 0x4)
+let kPT_HP_CORE_PROC = 	(kPT_LOOS + 0x5)
+let kPT_HP_CORE_LOADABLE = (kPT_LOOS + 0x6)
+let kPT_HP_CORE_STACK = (kPT_LOOS + 0x7)
+let kPT_HP_CORE_SHM = (kPT_LOOS + 0x8)
+let kPT_HP_CORE_MMF = (kPT_LOOS + 0x9)
+let kPT_HP_PARALLEL = (kPT_LOOS + 0x10)
+let kPT_HP_FASTBIND = (kPT_LOOS + 0x11)
+let kPT_HP_OPT_ANNOT = (kPT_LOOS + 0x12)
+let kPT_HP_HSL_ANNOT = (kPT_LOOS + 0x13)
+let kPT_HP_STACK = (kPT_LOOS + 0x14)
+(* we don't care about this, and it aliases anyway
+let kPT_PARISC_ARCHEXT = 0x70000000
+let kPT_PARISC_UNWIND =	0x70000001
+*)
+let kPPC64_OPT_TLS = 1
+let kPPC64_OPT_MULTI_TOC = 2
+
+let kPT_ARM_EXIDX = (kPT_LOPROC + 1)	(* ARM unwind segment.  *)
+let kPT_IA_64_ARCHEXT = (kPT_LOPROC + 0)	(* arch extension bits *)
+let kPT_IA_64_UNWIND = (kPT_LOPROC + 1)	(* ia64 unwind bits *)
+let kPT_IA_64_HP_OPT_ANOT = (kPT_LOOS + 0x12)
+let kPT_IA_64_HP_HSL_ANOT = (kPT_LOOS + 0x13)
+let kPT_IA_64_HP_STACK = (kPT_LOOS + 0x14)
 
 let sizeof_program_header = 56 	(* bytes *)
 			      
@@ -75,27 +108,53 @@ let get_program_header binary offset =
 
 let ptype_to_string ptype =
   match ptype with
-  | 0 -> "NULL"
-  | 1 -> "LOAD"
-  | 2 -> "DYNAMIC"
-  | 3 -> "INTERP"
-  | 4 -> "NOTE"
-  | 5 -> "SHLIB"
-  | 6 -> "PHDR"
-  | 7 -> "TLS"
-  | 8 -> "NUM"
-  | 0x60000000 -> "LOOS"
-  | 0x6474e550 -> "GNU_EH_FRAME"
-  | 0x6474e551 -> "GNU_STACK"
-  | 0x6474e552 -> "GNU_RELRO"
-  (*   | 0x6ffffffa -> "LOSUNW" *)
-  | 0x6ffffffa -> "SUNWBSS"
-  | 0x6ffffffb -> "SUNWSTACK"
-  | 0x6fffffff -> "HISUNW"
-  (*   | 0x6fffffff -> "HIOS" *)
-  | 0x70000000 -> "LOPROC"
-  | 0x7fffffff -> "HIPROC"
-  | _ -> "UNKNOWN"
+  | 0 -> "PT_NULL"
+  | 1 -> "PT_LOAD"
+  | 2 -> "PT_DYNAMIC"
+  | 3 -> "PT_INTERP"
+  | 4 -> "PT_NOTE"
+  | 5 -> "PT_SHLIB"
+  | 6 -> "PT_PHDR"
+  | 7 -> "PT_TLS"
+  | 8 -> "PT_NUM"
+  (*   | 0x60000000 -> "PT_LOOS" *)
+  | 0x6474e550 -> "PT_GNU_EH_FRAME"
+  | 0x6474e551 -> "PT_GNU_STACK"
+  | 0x6474e552 -> "PT_GNU_RELRO"
+  | 0x65041580 -> "PT_PAX_FLAGS"
+  (*   | 0x6ffffffa -> "PT_LOSUNW" *)
+  | 0x6ffffffa -> "PT_SUNWBSS"
+  | 0x6ffffffb -> "PT_SUNWSTACK"
+  (*   | 0x6fffffff -> "PT_HIOS" *)
+  | pt when pt = kPT_MIPS_REGINFO -> "PT_MIPS_REGINFO"
+  | pt when pt = kPT_MIPS_RTPROC -> "PT_MIPS_RTPROC"
+  | pt when pt = kPT_MIPS_OPTIONS -> "PT_MIPS_OPTIONS"
+  | pt when pt = kPT_HP_TLS -> "PT_HP_TLS"
+  | pt when pt = kPT_HP_CORE_NONE -> "PT_HP_CORE_NONE"
+  | pt when pt = kPT_HP_CORE_VERSION -> "PT_HP_CORE_VERSION"
+  | pt when pt = kPT_HP_CORE_KERNEL -> "PT_HP_CORE_KERNEL"
+  | pt when pt = kPT_HP_CORE_COMM -> "PT_HP_CORE_COMM"
+  | pt when pt = kPT_HP_CORE_PROC -> "PT_HP_CORE_PROC"
+  | pt when pt = kPT_HP_CORE_LOADABLE -> "PT_HP_CORE_LOADABLE"
+  | pt when pt = kPT_HP_CORE_STACK -> "PT_HP_CORE_STACK"
+  | pt when pt = kPT_HP_CORE_SHM -> "PT_HP_CORE_SHM"
+  | pt when pt = kPT_HP_CORE_MMF -> "PT_HP_CORE_MMF"
+  | pt when pt = kPT_HP_PARALLEL -> "PT_HP_PARALLEL"
+  | pt when pt = kPT_HP_FASTBIND -> "PT_HP_FASTBIND"
+  (* PT_LOOS + 0x12 *)
+  | pt when pt = kPT_IA_64_HP_OPT_ANOT -> "PT_IA_64_HP_OPT_ANOT"
+  | pt when pt = kPT_IA_64_HP_HSL_ANOT -> "PT_IA_64_HP_HSL_ANOT"
+  | pt when pt = kPT_IA_64_HP_STACK -> "PT_IA_64_HP_STACK"
+  (* PT_LOOS + 0x14 *)
+  | pt when pt = kPT_HP_OPT_ANNOT -> "PT_HP_OPT_ANNOT"
+  | pt when pt = kPT_HP_HSL_ANNOT -> "PT_HP_HSL_ANNOT"
+  | pt when pt = kPT_HP_STACK -> "PT_HP_STACK"
+  (* | 0x70000000 -> "PT_LOPROC" *)
+  | pt when pt = kPT_ARM_EXIDX -> "PT_ARM_EXIDX"
+  | pt when pt = kPT_IA_64_ARCHEXT -> "PT_IA_64_ARCHEXT"
+  | pt when pt = kPT_IA_64_UNWIND -> "PT_IA_64_UNWIND"
+  (* | 0x7fffffff -> "PT_HIPROC" *)
+  | pt -> Printf.sprintf "PT_UNKNOWN 0x%x" pt
 
 let flags_to_string flags =
   match flags with
@@ -106,7 +165,7 @@ let flags_to_string flags =
   | 5 -> "R+X"
   | 6 -> "RW"
   | 7 -> "RW+X"
-  | _ -> "UNKNOWN FLAG"
+  | f -> Printf.sprintf "FLAG 0x%x" f
 
 let is_empty phs = phs = []
 	   
@@ -260,7 +319,7 @@ let get_p_type p_type =
   | 6 -> PT_PHDR		
   | 7 -> PT_TLS		
   | 8 -> PT_NUM		
-  | 0x60000000 -> PT_LOOS		
+  | 0x60000000 -> kPT_LOOS
   | 0x6474e550 -> PT_GNU_EH_FRAME	
   | 0x6474e551 -> PT_GNU_STACK	
   | 0x6474e552 -> PT_GNU_RELRO	

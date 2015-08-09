@@ -74,7 +74,7 @@ let get_config () =
     base_symbol_map_directories = !base_symbol_map_directories;
     framework_directories = !framework_directories;
     graph = !graph;
-    filename = !anonarg; 	(* TODO: this should be Filname.basename, but unchanged for now *)
+    filename = !anonarg; 	(* TODO: this should be Filename.basename, but unchanged for now *)
     search_term = !search_term_string;
     use_goblin = !use_goblin;
   } 
@@ -123,7 +123,7 @@ let main =
      ("-D", Arg.Set disassemble, "Disassemble all found symbols");
      ("--dis", Arg.Set disassemble, "Disassemble all found symbols");
     ] in
-  let usage_msg = "usage: rdr [-r] [-b] [-m] [-d] [-g] [-G --goblin] [-v | -l | -e | -i] [<path_to_binary> | <symbol_name>]\noptions:" in
+  let usage_msg = "usage: rdr [-r] [-b] [-m] [-d] [-g] [-G --goblin] [-v | -l | -e | -i] [<path_to_binary>]\noptions:" in
   Arg.parse speclist set_anon_argument usage_msg;
   if (!print_version) then
     begin

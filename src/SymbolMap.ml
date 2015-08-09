@@ -201,7 +201,7 @@ let build_polymorphic_map config =
       end
     else
       let lib = Stack.pop libstack in
-      let bytes = Object.get_bytes ~verbose:verbose lib in
+      let bytes = try Object.get_bytes ~verbose:verbose lib with _ -> Object.Unknown lib in
       let name = Filename.basename lib in
       let install_name = lib in
       let config = {config with silent=true; verbose=false; name; install_name; filename=lib} in
