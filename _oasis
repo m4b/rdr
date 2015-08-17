@@ -1,7 +1,7 @@
 OASISFormat: 0.4
 Plugins: META (0.4), DevFiles (0.4)
 Name:        rdr
-Version:     1.2
+Version:     2.0
 Synopsis:    Lightweight, cross platform binary parsing and analysis library with no dependencies
 Authors:     m4b
 License:     BSD-3-clause
