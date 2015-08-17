@@ -3,7 +3,7 @@
        which would essentially build a map of the entire system, or something like that
 *)
 
-let version = "1.3"
+let version = "2.0"
 
 open Config (* because only has a record type *)
 

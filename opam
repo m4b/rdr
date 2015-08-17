@@ -1,6 +1,6 @@
 opam-version: "1.2"
 name: "rdr"
-version: "1.1"
+version: "2.0"
 license: "BSD"
 maintainer: "m4b <m4b.github.io@gmail.com>"
 authors: "m4b <m4b.github.io@gmail.com>"
@@ -8,7 +8,13 @@ bug-reports: "m4b.github.io@gmail.com"
 dev-repo: "git://github.com/m4b/rdr"
 homepage: "http://www.m4b.io"
 build: [
-  [make "build"]
+  ["./configure" "--prefix=%{prefix}%"]
+  [make]
 ]
+install: [make "install"]
+remove: [
+       ["ocamlfind" "remove" "rdr"]
+       ["rm" "-f" "%{bin}%/rdr"]       
+       ]
 depends: "ocamlfind" {build}
 available: [ocaml-version >= "4.02"]
