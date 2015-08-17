@@ -1,6 +1,11 @@
-# Welcome
+# Rdr 2.0 - Welcome
 
 [![Floobits Status](https://floobits.com/m4b/rdr.svg)](https://floobits.com/m4b/rdr/redirect)
+
+**UPDATE**:
+
+> `rdr` is now version 2.0, which adds a new "byte coverage" algorithm for returning understood sections/segments with respect to a binary.  Check it out with `rdr -c <path to binary>`.
+> Moreover, `rdr` is now a binary _and_ a library, which you all can link against and use in your own projects, if you so desire.  [elf2json](http://github.com/m4b/elf2json) is a new program demonstrating this.
 
 Welcome to the `rdr` project.
 
