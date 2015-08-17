@@ -40,6 +40,7 @@ Library "utils"
   BuildTools: ocamlbuild
   FindLibParent: rdr  
   FindLibName: utils
+  CompiledObject: best
   Modules:
     RdrUtils,
     Binary,
@@ -53,6 +54,7 @@ Library "mach"
   BuildTools: ocamlbuild
   FindLibParent: rdr
   FindLibName: mach
+  CompiledObject: best
   Modules:
     Mach,
     MachBindOpcodes,
@@ -77,6 +79,7 @@ Library "elf"
   FindLibParent: rdr  
   FindLibName: elf
   BuildTools: ocamlbuild
+  CompiledObject: best
   Modules:
    Elf,
    ElfHeader,
@@ -95,6 +98,7 @@ Library "goblin"
   BuildTools: ocamlbuild
   FindLibParent: rdr
   FindLibName: goblin
+  CompiledObject: best
   Modules:
     Goblin,
     GoblinSymbol,
@@ -111,6 +115,7 @@ Library "rdr"
   Path: lib
   FindLibName: rdr
   BuildTools: ocamlbuild
+  CompiledObject: best
   Modules:
     LibRdr
   BuildDepends:
@@ -123,6 +128,7 @@ Library "rdrutils"
   Path: src
   BuildTools: ocamlbuild
   Install: false
+  CompiledObject: best  
   Modules:
     Config,
     Command,
