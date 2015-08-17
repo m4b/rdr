@@ -10,3 +10,15 @@ bin/*
 old/*
 graph/*
 darwin/*
+
+#oasis stuff
+*.native
+*.byte
+*.docdir
+
+setup.data
+setup.log
+
+META
+*.mldylib
+*.mllib

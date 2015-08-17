@@ -1,16 +1,39 @@
-.PHONY: build install machgraph elfgraph map
+# OASIS_START
+# DO NOT EDIT (digest: a3c674b4239234cbbe53afe090018954)
 
-build:
-	ocamlbuild.native -lib unix -lib str src/Rdr.native && mv _build/src/Rdr.native rdr && rm Rdr.native
+SETUP = ocaml setup.ml
 
-install:
-	cp rdr ${HOME}/bin/
+build: setup.data
+	$(SETUP) -build $(BUILDFLAGS)
 
-map: build
-	 ./rdr -b && ./rdr -m -w
+doc: setup.data build
+	$(SETUP) -doc $(DOCFLAGS)
 
-machgraph: build
-	./rdr -g /usr/lib/libz.dylib
+test: setup.data build
+	$(SETUP) -test $(TESTFLAGS)
 
-elfgraph: build
-	./rdr -g /usr/lib/libz.so.1
+all:
+	$(SETUP) -all $(ALLFLAGS)
+
+install: setup.data
+	$(SETUP) -install $(INSTALLFLAGS)
+
+uninstall: setup.data
+	$(SETUP) -uninstall $(UNINSTALLFLAGS)
+
+reinstall: setup.data
+	$(SETUP) -reinstall $(REINSTALLFLAGS)
+
+clean:
+	$(SETUP) -clean $(CLEANFLAGS)
+
+distclean:
+	$(SETUP) -distclean $(DISTCLEANFLAGS)
+
+setup.data:
+	$(SETUP) -configure $(CONFIGUREFLAGS)
+
+configure:
+	$(SETUP) -configure $(CONFIGUREFLAGS)
+
+.PHONY: build doc test all install uninstall reinstall clean distclean configure

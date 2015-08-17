@@ -1,0 +1,122 @@
+OASISFormat: 0.4
+Plugins: META (0.4), DevFiles (0.4)
+Name:        rdr
+Version:     1.2
+Synopsis:    Lightweight, cross platform binary parsing and analysis library with no dependencies
+Authors:     m4b
+License:     BSD-3-clause
+
+Library "utils"
+  Path: lib/utils
+  BuildTools: ocamlbuild
+  FindLibParent: rdr  
+  FindLibName: utils
+  Modules:
+    RdrUtils,
+    Binary,
+    Input,
+    Leb128,
+    ByteCoverage,
+    Generics
+
+Library "mach"
+  Path: lib/mach
+  BuildTools: ocamlbuild
+  FindLibParent: rdr
+  FindLibName: mach
+  Modules:
+    Mach,
+    MachBindOpcodes,
+    MachCpuTypes,
+    MachFat,
+    MachLoadCommand,
+    MachLoadCommandTypes,
+    MachConstants,
+    MachExports,
+    MachHeader,
+    MachImports,
+    MachSection,
+    MachSymbolTable,
+    MachRebaseOpcodes,
+    MachVersion,
+    MachCoverage
+  BuildDepends:
+    rdr.utils
+
+Library "elf"
+  Path: lib/elf
+  FindLibParent: rdr  
+  FindLibName: elf
+  BuildTools: ocamlbuild
+  Modules:
+   Elf,
+   ElfHeader,
+   ElfProgramHeader,
+   ElfSectionHeader,
+   ElfConstants,
+   ElfDynamic,
+   ElfReloc,
+   ElfSymbolTable,
+   ElfCoverage
+  BuildDepends:
+   rdr.utils
+
+Library "goblin"
+  Path: lib/goblin
+  BuildTools: ocamlbuild
+  FindLibParent: rdr
+  FindLibName: goblin
+  Modules:
+    Goblin,
+    GoblinSymbol,
+    GoblinExport,
+    GoblinImport,
+    GoblinMach,
+    GoblinElf
+  BuildDepends:
+    rdr.utils,
+    rdr.mach,
+    rdr.elf
+
+Library "rdr"
+  Path: lib
+  FindLibName: rdr
+  BuildTools: ocamlbuild
+  Modules:
+    LibRdr
+  BuildDepends:
+   rdr.goblin,
+   rdr.utils,
+   rdr.mach,
+   rdr.elf
+
+Library "rdrutils"
+  Path: src
+  BuildTools: ocamlbuild
+  Install: false
+  Modules:
+    Config,
+    Command,
+    Object,
+    Graph,
+    Storage,
+    SymbolMap,
+    ReadMach,
+    ReadElf,
+    ToL
+  BuildDepends:
+    rdr.elf,
+    rdr.mach,
+    rdr.goblin,
+    rdr.utils,
+    str,
+    unix
+
+Executable "rdr"
+  Path: src
+  MainIs: Rdr.ml
+  BuildTools: ocamlbuild
+  CompiledObject: best
+  BuildDepends:
+    rdrutils,
+    str

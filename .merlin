@@ -1,7 +1,12 @@
-S src
-S src/mach
-S src/elf
-S src/goblin
-S src/utils
+S lib
+S lib/mach
+S lib/elf
+S lib/goblin
+S lib/utils
 
+S src
+
+B _build/lib
+B _build/lib/*
+B _build/src
 B _build/src/*
