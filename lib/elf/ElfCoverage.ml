@@ -2,10 +2,12 @@ open ByteCoverage
 
 let debug = false
 
+(* add more, and let melding happen *)
 let known_program_headers =
   [(ElfProgramHeader.kPT_INTERP, String);
    (ElfProgramHeader.kPT_NOTE, String);
    (ElfProgramHeader.kPT_DYNAMIC, Symbol);
+   (ElfProgramHeader.kPT_GNU_EH_FRAME, PlatformSpecific);
   ]
 
 let compute_program_header_coverage kind data ph =
@@ -40,7 +42,7 @@ let compute_program_header_coverage phs data =
     (fun data -> List.fold_left f data known_program_headers) data
 
 let known_sections =
-  [(ElfSectionHeader.kSHT_SYMTAB, Symbol);
+  [(ElfSectionHeader.kSHT_SYMTAB, SymbolTable);
    (ElfSectionHeader.kSHT_STRTAB, StringTable);
    (ElfSectionHeader.kSHT_PROGBITS, Code);
    (ElfSectionHeader.kSHT_NOBITS, Semantic);
@@ -48,7 +50,12 @@ let known_sections =
    (ElfSectionHeader.kSHT_FINI_ARRAY, Code);
    (ElfSectionHeader.kSHT_DYNAMIC, Symbol);
    (ElfSectionHeader.kSHT_HASH, Symbol);
+   (ElfSectionHeader.kSHT_GNU_HASH, Symbol);
    (ElfSectionHeader.kSHT_RELA, Rela);
+   (ElfSectionHeader.kSHT_DYNSYM, SymbolTable);
+   (ElfSectionHeader.kSHT_NOTE, PlatformSpecific);
+   (ElfSectionHeader.kSHT_GNU_verdef, PlatformSpecific);
+   (ElfSectionHeader.kSHT_GNU_verneed, PlatformSpecific);
   ]
    
 let compute_section_coverage stype tag data section =

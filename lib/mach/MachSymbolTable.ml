@@ -35,6 +35,12 @@ let sizeof_nlist = 16
 
 (* printing *)
 
+let n_type_to_string n_type =
+  match n_type land kNLIST_TYPE_MASK with
+  | 0x0 -> "LOCAL"
+  | 0x1 -> "GLOBAL"
+  | other -> Printf.sprintf "OTHER 0x%x" other
+
 let nlist_to_string nlist =
   sprintf "strx: %4u type: 0x%02x sect: %x desc: 0x%3u value: %x"
     nlist.n_strx

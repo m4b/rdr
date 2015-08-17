@@ -28,11 +28,18 @@ type symbol_kind =
 exception Unknown_symbol_kind of string
 
 let get_symbol_kind kind =
-  match kind with
+  match kind land kEXPORT_SYMBOL_FLAGS_KIND_MASK with
   | 0x00 -> REGULAR
   | 0x01 -> THREAD_LOCAL
   | 0x02 -> ABSOLUTE
   | _ -> UNKNOWN_SYMBOL_KIND kind
+
+let symbol_kind_to_string =
+  function
+  | REGULAR -> "REGULAR"
+  | ABSOLUTE -> "ABSOLUTE"
+  | THREAD_LOCAL -> "THREAD_LOCAL"
+  | UNKNOWN_SYMBOL_KIND i -> Printf.sprintf "UNKNOWN %d" i
 
 (* "If the flags is EXPORT_SYMBOL_FLAGS_STUB_AND_RESOLVER, then following the flags is two uleb128s: the stub offset and the resolver offset. The stub is used by non-lazy pointers.  The resolver is used by lazy pointers and must be called to get the actual address to use." *)
 type stub_symbol_info = {stub_offset: int; resolver_offset: int; flags: int}

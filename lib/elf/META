@@ -1,0 +1,13 @@
+# OASIS_START
+# DO NOT EDIT (digest: dc13e6ca3cd0fe7a183086218f6af14f)
+version = "1.1"
+description =
+"Lightweight, cross platform binary parsing and analysis library with no dependencies"
+requires = "goblin utils"
+archive(byte) = "elf.cma"
+archive(byte, plugin) = "elf.cma"
+archive(native) = "elf.cmxa"
+archive(native, plugin) = "elf.cmxs"
+exists_if = "elf.cma"
+# OASIS_STOP
+

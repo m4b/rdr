@@ -18,7 +18,3 @@ darwin/*
 
 setup.data
 setup.log
-
-META
-*.mldylib
-*.mllib
