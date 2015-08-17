@@ -1,0 +1,59 @@
+# OASIS_START
+# DO NOT EDIT (digest: 19245a18a78bafcbdce567c9476d0a71)
+version = "2.0.1"
+description =
+"Lightweight, cross platform binary parsing and analysis library with no dependencies"
+requires = "rdr.goblin rdr.utils rdr.mach rdr.elf"
+archive(byte) = "rdr.cma"
+archive(byte, plugin) = "rdr.cma"
+archive(native) = "rdr.cmxa"
+archive(native, plugin) = "rdr.cmxs"
+exists_if = "rdr.cma"
+package "utils" (
+ version = "2.0.1"
+ description =
+ "Lightweight, cross platform binary parsing and analysis library with no dependencies"
+ archive(byte) = "utils.cma"
+ archive(byte, plugin) = "utils.cma"
+ archive(native) = "utils.cmxa"
+ archive(native, plugin) = "utils.cmxs"
+ exists_if = "utils.cma"
+)
+
+package "mach" (
+ version = "2.0.1"
+ description =
+ "Lightweight, cross platform binary parsing and analysis library with no dependencies"
+ requires = "rdr.utils"
+ archive(byte) = "mach.cma"
+ archive(byte, plugin) = "mach.cma"
+ archive(native) = "mach.cmxa"
+ archive(native, plugin) = "mach.cmxs"
+ exists_if = "mach.cma"
+)
+
+package "goblin" (
+ version = "2.0.1"
+ description =
+ "Lightweight, cross platform binary parsing and analysis library with no dependencies"
+ requires = "rdr.utils rdr.mach rdr.elf"
+ archive(byte) = "goblin.cma"
+ archive(byte, plugin) = "goblin.cma"
+ archive(native) = "goblin.cmxa"
+ archive(native, plugin) = "goblin.cmxs"
+ exists_if = "goblin.cma"
+)
+
+package "elf" (
+ version = "2.0.1"
+ description =
+ "Lightweight, cross platform binary parsing and analysis library with no dependencies"
+ requires = "rdr.utils"
+ archive(byte) = "elf.cma"
+ archive(byte, plugin) = "elf.cma"
+ archive(native) = "elf.cmxa"
+ archive(native, plugin) = "elf.cmxs"
+ exists_if = "elf.cma"
+)
+# OASIS_STOP
+

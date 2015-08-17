@@ -1,0 +1,4 @@
+bin: [
+  "?_build/src/Rdr.byte" {"rdr"}
+  "?_build/src/Rdr.native" {"rdr"}
+]
