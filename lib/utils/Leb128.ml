@@ -1,32 +1,4 @@
-(* 
-for testing
-#directory "/Users/matthewbarney/git/rdr/_build/lib/utils/";;
-#load "Binary.cmo";;
- *)
-
 open Binary
-
-let d byte_stream =
-  let rec loop pos shift acc =
-    let byte = Char.code @@ List.nth byte_stream pos in
-    let high_order_bit_is_zero = (byte land 0x80) = 0x0 in
-    let acc' = acc lor ((byte land 0x7f) lsl shift) in
-    if (high_order_bit_is_zero) then
-      acc'
-    else
-      loop (pos + 1) (shift + 7) acc' in
-  loop 0 0 0
-
-let d2 byte_stream =
-  let rec loop pos shift acc =
-    let byte = Char.code @@ List.nth byte_stream pos in
-    let high_order_bit_is_zero = (byte land 0x80) = 0x0 in
-    let acc' = acc lor ((byte land 0x7f) lsl shift) in
-    if (high_order_bit_is_zero) then
-      (acc', pos+1)
-    else
-      loop (pos + 1) (shift + 7) acc' in
-  loop 0 0 0
 
 let decode_uleb128 byte_stream =
   let rec loop pos shift acc =
@@ -95,7 +67,6 @@ let print_uleb128 bytes =
    break;
    }
 
-
    /* sign bit of byte is second high order bit (0x40) */
    if ((shift <size) && (sign bit of byte is set))
    /* sign extend */
@@ -136,7 +107,7 @@ c1 57        +2bc1             -143f
 80 80 80 4f  +9e00000          -6200000
 *)
 
-(* testing *)
+(* testing 
 let gs bytes = 
   let b = Bytes.init (List.length bytes) (fun i -> Char.chr @@ List.nth bytes i) in
   get_sleb128 b 0
@@ -164,9 +135,6 @@ let unit5 = [0x80; 0x80; 0x80; 0x4f] (* +0x9e00000 -0x6200000 *)
 let res = -624485
 (* -624485 *)
 let u1 = [0x9b; 0xf1; 0x59];
-
-  (* 
 let e1  = Bytes.init (List.length unit1) (fun i -> List.nth unit1 i)
-
- *)
-  (* printf = "b0d2 10" @ 0x9cc92 in libsystem_c.dylib *)
+printf = "b0d2 10" @ 0x9cc92 in libsystem_c.dylib
+*)

@@ -14,7 +14,7 @@ build: [
 install: [make "install"]
 remove: [
        ["ocamlfind" "remove" "rdr"]
-       ["rm" "-f" "%{bin}%/rdr"]       
+       ["rm" "-f" "%{bin}%/rdr"]   
        ]
 depends: "ocamlfind" {build}
 available: [ocaml-version >= "4.02"]
