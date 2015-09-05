@@ -1,6 +1,7 @@
 S lib
 S lib/mach
 S lib/elf
+S lib/pe
 S lib/goblin
 S lib/utils
 
