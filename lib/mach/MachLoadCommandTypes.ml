@@ -3,15 +3,16 @@
 (* ==================================== *)
 
 type load_command = {
-  cmd: int;                        (* 4 bytes *)
-  cmdsize: int;                   (* 4 *)
+  cmd: int [@size 4];
+  cmdsize: int [@size 4];
 }
 
 let sizeof_load_command = 8
 
+(* NOTE: str is _not_ apart of the lc_str struct, but added for convenience *)
 type lc_str = {
-  offset: int;                  (* 4 bytes *)
-  str: string;                 (* NOTE: this is _not_ apart of the lc_str struct, but added for convenience *)
+  offset: int [@size 4];
+  str: string [@computed];
 }
 
 let sizeof_lc_str = 4
@@ -34,71 +35,68 @@ struct section_64 { (* for 64-bit architectures *)
 *)
 
 type section = {
-  sectname: string;		(* 16 bytes *)
-  segname: string;		(* 16 bytes *)
-  (* 4 bytes each *)
-  addr: int;
-  size: int;
-  offset: int;
-  align: int;
-  reloff: int;
-  nreloc: int;
-  flags: int;
-  reserved1: int;
-  reserved2: int;
+  sectname: string [@size 16];
+  segname: string [@size 16];
+  addr: int [@size 4];
+  size: int [@size 4];
+  offset: int [@size 4];
+  align: int [@size 4];
+  reloff: int [@size 4];
+  nreloc: int [@size 4];
+  flags: int [@size 4];
+  reserved1: int [@size 4];
+  reserved2: int [@size 4];
 }
 
 let sizeof_section = 68	(* bytes *)
 
-(* verified matches c struct naming *)
 type section_64 = {
-  sectname: string;		(* 16 bytes *)
-  segname: string;		(* 16 bytes *)
-  addr: int;			(* 8 bytes *)
-  size: int;			(* 8 bytes *)
-  (* 4 bytes each *)
-  offset: int;
-  align: int;
-  reloff: int;
-  nreloc: int;
-  flags: int;
-  reserved1: int;
-  reserved2: int;
-  reserved3: int;
+  sectname: string [@size 16];
+  segname: string [@size 16];
+  addr: int [@size 8];
+  size: int [@size 8];
+  offset: int [@size 4];
+  align: int [@size 4];
+  reloff: int [@size 4];
+  nreloc: int [@size 4];
+  flags: int [@size 4];
+  reserved1: int [@size 4];
+  reserved2: int [@size 4];
+  reserved3: int [@size 4];
 }
 
 let sizeof_section_64 = 80 (* bytes *)
 
 type segment_command = {
-  cmd: int;
-  cmdsize: int;
-  segname: string;
-  vmaddr: int;
-  vmsize: int;
-  fileoff: int;
-  filesize: int;
-  maxprot: int;
-  initprot: int;
-  nsects: int;
-  flags: int;
-  sections: section list;
+  cmd: int [@size 4];
+  cmdsize: int [@size 4];
+  segname: string [@size 16];
+  vmaddr: int [@size 4];
+  vmsize: int [@size 4];
+  fileoff: int [@size 4];
+  filesize: int [@size 4];
+  maxprot: int [@size 4];
+  initprot: int [@size 4];
+  nsects: int [@size 4];
+  flags: int [@size 4];
+  sections: section list [@computed nsects];
 }
 
 let sizeof_segment_command_64 = 56
 
 type segment_command_64 = {
-  cmd: int;
-  cmdsize: int;
-  segname: string; (* 16 bytes *)
-  vmaddr: int; (* 8 bytes *)
-  vmsize: int; (* 8 bytes *)
-  fileoff: int; (* 8 bytes *)
-  filesize: int; (* 8 bytes *)
-  maxprot: int;  (* 4 int *)
-  initprot: int; (* 4 int *)
-  nsects: int;   (* 4  *)
-  flags: int;    (* 4 *)
-  sections: section_64 list; 	(* extra *)
+  cmd: int [@size 4];
+  cmdsize: int [@size 4];
+  segname: string [@size 16];
+  vmaddr: int [@size 8];
+  vmsize: int [@size 8];
+  fileoff: int [@size 8];
+  filesize: int [@size 8];
+  maxprot: int [@size 4];
+  initprot: int [@size 4];
+  nsects: int [@size 4];
+  flags: int [@size 4];
+  sections: section_64 list [@computed nsects];
 }
 
 let sizeof_segment_command_64 = 72
@@ -110,9 +108,9 @@ let sizeof_segment_command_64 = 72
  * header_addr. (THIS IS OBSOLETE and no longer supported).
  *)
 type fvmlib = {
-  name: lc_str;		(* 4 library's target pathname *)
-  minor_version: int;	(* 4 library's minor version number *)
-  header_addr: int; (* 4 library's header address *)
+  name: lc_str [@size 4]; (* library's target pathname *)
+  minor_version: int [@size 4];	(* library's minor version number *)
+  header_addr: int [@size 4]; (* library's header address *)
 }
 
 let sizeof_fvmlib = 12
@@ -125,9 +123,9 @@ let sizeof_fvmlib = 12
  * (THIS IS OBSOLETE and no longer supported).
  *)
 type fvmlib_command = {
-  cmd: int;	(* 4 LC_IDFVMLIB or LC_LOADFVMLIB *)
-  cmdsize: int;	(* 4 includes pathname string *)
-  fvmlib: fvmlib;		(* the library identification *)
+  cmd: int [@size 4]; (* LC_IDFVMLIB or LC_LOADFVMLIB *)
+  cmdsize: int [@size 4]; (* includes pathname string *)
+  fvmlib: fvmlib [@size 4]; (* the library identification *)
 }
 
 let sizeof_fvmlib_command = 20
@@ -161,19 +159,19 @@ struct dylib {
  *)
 
 type dylib = {
-  name: lc_str;   (* 4 library's path name *)
-  timestamp: int;   (* 4 library's build time stamp *)
-  current_version: int;  (* 4 library's current version number *)
-  compatibility_version: int; (* 4 library's compatibility vers number*)
+  name: lc_str [@size 4]; (* library's path name *)
+  timestamp: int [@size 4]; (* library's build time stamp *)
+  current_version: int [@size 4]; (* library's current version number *)
+  compatibility_version: int [@size 4]; (* library's compatibility vers number*)
 }
 
 let sizeof_dylib = 16
 
 type dylib_command = 
   {
-    cmd: int; (* LC_ID_DYLIB, LC_LOAD_{,WEAK_}DYLIB, LC_REEXPORT_DYLIB *)
-    cmdsize: int; (* includes pathname string *)
-    dylib: dylib; (* the library identification *)
+    cmd: int [@size 4]; (* LC_ID_DYLIB, LC_LOAD_DYLIB, LC_LOAD_WEAK_DYLIB, LC_REEXPORT_DYLIB *)
+    cmdsize: int [@size 4]; (* includes pathname string *)
+    dylib: dylib [@size 16]; (* the library identification *)
   }
 
 let sizeof_dylib_command = 20 (*bytes*)
@@ -189,9 +187,9 @@ let sizeof_dylib_command = 20 (*bytes*)
  * following structure.
  *)
 type sub_framework_command = {
-  cmd: int;	(* 4 LC_SUB_FRAMEWORK *)
-  cmdsize: int;	(* 4 includes umbrella string *)
-  umbrella: lc_str; (* 4 the umbrella framework name *)
+  cmd: int [@size 4]; (* LC_SUB_FRAMEWORK *)
+  cmdsize: int [@size 4]; (* includes umbrella string *)
+  umbrella: lc_str [@size 4]; (* the umbrella framework name *)
 }
 
 let sizeof_sub_framework_command= 12
@@ -206,9 +204,9 @@ let sizeof_sub_framework_command= 12
  * where the bundle is built with "-client_name client_name".
  *)
 type sub_client_command = {
-  cmd: int;	(* 4 LC_SUB_CLIENT *)
-  cmdsize: int;	(* 4 includes client string *)
-  client: lc_str;	(* 4 the client name *)
+  cmd: int [@size 4]; (* LC_SUB_CLIENT *)
+  cmdsize: int [@size 4]; (* includes client string *)
+  client: lc_str [@size 4]; (* the client name *)
 }
 
 let sizeof_sub_client_command = 12
@@ -227,9 +225,9 @@ let sizeof_sub_client_command = 12
  * The name of a sub_umbrella framework is recorded in the following structure.
  *)
 type sub_umbrella_command = {
-  cmd: int;       (* 4 LC_SUB_UMBRELLA *)
-  cmdsize: int;   (* 4 includes sub_umbrella string *)
-  sub_umbrella: lc_str; (* 4 the sub_umbrella framework name *)
+  cmd: int [@size 4]; (* LC_SUB_UMBRELLA *)
+  cmdsize: int [@size 4]; (* includes sub_umbrella string *)
+  sub_umbrella: lc_str [@size 4]; (* the sub_umbrella framework name *)
 }
 
 let sizeof_sub_umbrella_command = 12
@@ -250,9 +248,9 @@ let sizeof_sub_umbrella_command = 12
  * For example /usr/lib/libobjc_profile.A.dylib would be recorded as "libobjc".
  *)
 type sub_library_command = {
-  cmd: int;       (* 4 LC_SUB_LIBRARY *)
-  cmdsize: int;	(* 4 includes sub_library string *)
-  sub_library: lc_str; (* 4 the sub_library name *)
+  cmd: int [@size 4]; (* LC_SUB_LIBRARY *)
+  cmdsize: int [@size 4]; (* includes sub_library string *)
+  sub_library: lc_str [@size 4]; (* the sub_library name *)
 }
 
 let sizeof_sub_library_command = 12
@@ -267,19 +265,19 @@ let sizeof_sub_library_command = 12
  * (linked_modules[N/8] >> N%8) & 1
  *)
 type prebound_dylib_command = {
-  cmd: int;	(* 4 LC_PREBOUND_DYLIB *)
-  cmdsize: int;	(* 4 includes strings *)
-  name: lc_str;	(* 4 library's path name *)
-  nmodules: int;	(* 4 number of modules in library *)
-  linked_modules: lc_str;	(* 4 bit vector of linked modules *)
+  cmd: int [@size 4]; (* LC_PREBOUND_DYLIB *)
+  cmdsize: int [@size 4]; (* includes strings *)
+  name: lc_str [@size 4]; (* library's path name *)
+  nmodules: int [@size 4]; (* number of modules in library *)
+  linked_modules: lc_str [@size 4]; (* bit vector of linked modules *)
 }
 
 let sizeof_prebound_dylib_command = 20
 
 type dylinker_command = {
-  cmd: int;
-  cmdsize: int;
-  name: lc_str (* offset to zero-terminated string *);
+  cmd: int [@size 4];
+  cmdsize: int [@size 4];
+  name: lc_str [@size 4];
 }
 
 let sizeof_dylinker_command = 12
@@ -305,13 +303,15 @@ let sizeof_dylinker_command = 12
  * created (based on the shell's limit for the stack size).  Command arguments
  * and environment variables are copied onto that stack.
  *)
+(* unimplemented, see machine/thread_status.h for rest of values:
+   uint32_t flavor		   flavor of thread state
+   uint32_t count		   count of longs in thread state
+   struct XXX_thread_state state   thread state for this flavor
+   ... *)
+
 type thread_command = {
-  cmd: int;		(* LC_THREAD or  LC_UNIXTHREAD *)
-  cmdsize: int;	(* total size of this command *)
-  (* uint32_t flavor		   flavor of thread state *)
-  (* uint32_t count		   count of longs in thread state *)
-  (* struct XXX_thread_state state   thread state for this flavor *)
-  (* ... *)
+  cmd: int [@size 4]; (* LC_THREAD or  LC_UNIXTHREAD *)
+  cmdsize: int [@size 4]; (* total size of this command *)
 }
 
 (*
@@ -323,45 +323,41 @@ type thread_command = {
  * routines (used for C++ static constructors) in the library.
  *)
 type routines_command =  { (* for 32-bit architectures *)
-  cmd: int;		(* LC_ROUTINES *)
-  cmdsize: int;	(* total size of this command *)
-  init_address: int;	(* address of initialization routine *)
-  init_module: int;	(* index into the module table that *)
-  (*  the init routine is defined in *)
-  reserved1: int;
-  reserved2: int;
-  reserved3: int;
-  reserved4: int;
-  reserved5: int;
-  reserved6: int;
+  cmd: int [@size 4]; (* LC_ROUTINES *)
+  cmdsize: int [@size 4]; (* total size of this command *)
+  init_address: int [@size 4]; (* address of initialization routine *)
+  init_module: int [@size 4]; (* index into the module table that the init routine is defined in *)
+  reserved1: int [@size 4];
+  reserved2: int [@size 4];
+  reserved3: int [@size 4];
+  reserved4: int [@size 4];
+  reserved5: int [@size 4];
+  reserved6: int [@size 4];
 }
 
 (*
  * The 64-bit routines command.  Same use as above.
  *)
 type routines_command_64 = { (* for 64-bit architectures *)
-  cmd: int;       (* LC_ROUTINES_64 *)
-  cmdsize: int;	(* total size of this command *)
-  init_address: int;	(* 8 address of initialization routine *)
-  init_module: int;	(* 8 index into the module table that *)
-  (*  the init routine is defined in *)
-  (* 8 bytes each *)
-  reserved1: int;
-  reserved2: int;
-  reserved3: int;
-  reserved4: int;
-  reserved5: int;
-  reserved6: int;
+  cmd: int [@size 4]; (* LC_ROUTINES_64 *)
+  cmdsize: int [@size 4]; (* total size of this command *)
+  init_address: int [@size 8];(* address of initialization routine *)
+  init_module: int [@size 8]; (* index into the module table that the init routine is defined in 8 bytes each *)
+  reserved1: int [@size 8];
+  reserved2: int [@size 8];
+  reserved3: int [@size 8];
+  reserved4: int [@size 8];
+  reserved5: int [@size 8];
+  reserved6: int [@size 8];
 }
 
 type symtab_command = {
-  cmd: int;
-  cmdsize: int;
-  (* 4 bytes each *)
-  symoff: int;
-  nsyms: int;
-  stroff: int;
-  strsize: int;
+  cmd: int [@size 4];
+  cmdsize: int [@size 4];
+  symoff: int [@size 4];
+  nsyms: int [@size 4];
+  stroff: int [@size 4];
+  strsize: int [@size 4];
 }
 
 let sizeof_symtab_command = 24
@@ -407,31 +403,31 @@ let sizeof_symtab_command = 24
  * off the section structures.
  *)
 type dysymtab_command  = {
-  cmd: int;
-  cmdsize: int;
-  ilocalsym: int; (* index to local symbols *)
-  nlocalsym: int; (* number of local symbols *)
+  cmd: int [@size 4];
+  cmdsize: int [@size 4];
+  ilocalsym: int [@size 4]; (* index to local symbols *)
+  nlocalsym: int [@size 4]; (* number of local symbols *)
 
-  iextdefsym: int;    (* index to externally defined symbols *)
-  nextdefsym: int;    (* number of externally defined symbols *)
+  iextdefsym: int [@size 4]; (* index to externally defined symbols *)
+  nextdefsym: int [@size 4]; (* number of externally defined symbols *)
 
-  iundefsym: int; (* index to undefined symbols *)
-  nundefsym: int; (* number of undefined symbols *)
+  iundefsym: int [@size 4]; (* index to undefined symbols *)
+  nundefsym: int [@size 4]; (* number of undefined symbols *)
 
-  tocoff: int; (* file offset to table of contents *)
-  ntoc: int; (* number of entries in table of contents *)
-  modtaboff: int; (* file offset to module table *)
-  nmodtab: int; (* number of module table entries *)
+  tocoff: int [@size 4]; (* file offset to table of contents *)
+  ntoc: int [@size 4]; (* number of entries in table of contents *)
+  modtaboff: int [@size 4]; (* file offset to module table *)
+  nmodtab: int [@size 4]; (* number of module table entries *)
 
-  extrefsymoff: int; (* offset to referenced symbol table *)
-  nextrefsyms: int; (* number of referenced symbol table entries *)
+  extrefsymoff: int [@size 4]; (* offset to referenced symbol table *)
+  nextrefsyms: int [@size 4]; (* number of referenced symbol table entries *)
 
-  indirectsymoff: int; (* file offset to the indirect symbol table *)
-  nindirectsyms: int;  (* number of indirect symbol table entries *)
-  extreloff: int; (* offset to external relocation entries *)
-  nextrel: int; (* number of external relocation entries *)
-  locreloff: int; (* offset to local relocation entries *)
-  nlocrel: int; (* number of local relocation entries *)
+  indirectsymoff: int [@size 4]; (* file offset to the indirect symbol table *)
+  nindirectsyms: int [@size 4];  (* number of indirect symbol table entries *)
+  extreloff: int [@size 4]; (* offset to external relocation entries *)
+  nextrel: int [@size 4]; (* number of external relocation entries *)
+  locreloff: int [@size 4]; (* offset to local relocation entries *)
+  nlocrel: int [@size 4]; (* number of local relocation entries *)
 }
 
 let sizeof_dysymtab_command = 80 (* bytes *)
@@ -439,66 +435,51 @@ let sizeof_dysymtab_command = 80 (* bytes *)
 (* TODO: unimplemented *)
 (* a table of contents entry *)
 type dylib_table_of_contents = {
-  symbol_index: int;	(* 4 the defined external symbol
-			(index into the symbol table) *)
-  module_index: int;	(* 4 index into the module table this symbol
-			is defined in *)
+  symbol_index: int [@size 4]; (* the defined external symbol (index into the symbol table) *)
+  module_index: int [@size 4]; (* index into the module table this symbol is defined in *)
 }	
 
 (* TODO: unimplemented *)
 (* a module table entry *)
 type dylib_module = {
-  module_name: int;	(* 4 the module name (index into string table) *)
+  module_name: int [@size 4]; (* the module name (index into string table) *)
 
-  iextdefsym: int;	(* 4 index into externally defined symbols *)
-  nextdefsym: int;	(* 4 number of externally defined symbols *)
-  irefsym: int;		(* 4 index into reference symbol table *)
-  nrefsym: int;		(* 4 number of reference symbol table entries *)
-  ilocalsym: int;		(* 4 index into symbols for local symbols *)
-  nlocalsym: int;		(* 4 number of local symbols *)
+  iextdefsym: int [@size 4]; (*index into externally defined symbols *)
+  nextdefsym: int [@size 4]; (*number of externally defined symbols *)
+  irefsym: int [@size 4]; (* index into reference symbol table *)
+  nrefsym: int [@size 4]; (*number of reference symbol table entries *)
+  ilocalsym: int [@size 4]; (* index into symbols for local symbols *)
+  nlocalsym: int [@size 4]; (*number of local symbols *)
 
-  iextrel: int;		(* 4 index into external relocation entries *)
-  nextrel: int;		(* 4 number of external relocation entries *)
+  iextrel: int [@size 4]; (* index into external relocation entries *)
+  nextrel: int [@size 4]; (* number of external relocation entries *)
 
-  iinit_iterm: int;	(* 4 low 16 bits are the index into the init
-		       section, high 16 bits are the index into
-		       the term section *)
-  ninit_nterm: int;	(* 4 low 16 bits are the number of init section
-		       entries, high 16 bits are the number of
-		       term section entries *)
-
-  (* for this module address of the start of *)
-  objc_module_info_addr: int;  (* 4 the (__OBJC,__module_info) section *)
-  (* for this module size of *)
-  objc_module_info_size: int;	(* 4 the (__OBJC,__module_info) section *)
+  iinit_iterm: int [@size 4]; (* low 16 bits are the index into the init section, high 16 bits are the index into the term section *)
+  ninit_nterm: int [@size 4]; (* low 16 bits are the number of init section entries, high 16 bits are the number of term section entries *)
+  objc_module_info_addr: int [@size 4]; (* the (__OBJC,__module_info) section *)
+  objc_module_info_size: int [@size 4]; (* the (__OBJC,__module_info) section *)
 }	
 
 (* TODO: unimplemented *)
 (* a 64-bit module table entry *)
 type dylib_module_64 = {
-  module_name: int;	(* 4 the module name (index into string table) *)
+  module_name: int [@size 4]; (* the module name (index into string table) *)
 
-  iextdefsym: int;	(* 4 index into externally defined symbols *)
-  nextdefsym: int;	(* 4 number of externally defined symbols *)
-  irefsym: int;		(* 4 index into reference symbol table *)
-  nrefsym: int;		(* 4 number of reference symbol table entries *)
-  ilocalsym: int;		(* 4 index into symbols for local symbols *)
-  nlocalsym: int;		(* 4 number of local symbols *)
+  iextdefsym: int [@size 4]; (* index into externally defined symbols *)
+  nextdefsym: int [@size 4]; (* number of externally defined symbols *)
+  irefsym: int [@size 4]; (* index into reference symbol table *)
+  nrefsym: int [@size 4]; (* number of reference symbol table entries *)
+  ilocalsym: int [@size 4]; (* index into symbols for local symbols *)
+  nlocalsym: int [@size 4]; (* number of local symbols *)
 
-  iextrel: int;		(* 4 index into external relocation entries *)
-  nextrel: int;		(* 4 number of external relocation entries *)
+  iextrel: int [@size 4]; (* index into external relocation entries *)
+  nextrel: int [@size 4]; (* number of external relocation entries *)
 
-  iinit_iterm: int;	(* 4 low 16 bits are the index into the init
-		       section, high 16 bits are the index into
-		       the term section *)
-  ninit_nterm: int;      (* 4 low 16 bits are the number of init section
-			    entries, high 16 bits are the number of
-			    term section entries *)
+  iinit_iterm: int [@size 4]; (* low 16 bits are the index into the init section, high 16 bits are the index into the term section *)
+  ninit_nterm: int [@size 4]; (* low 16 bits are the number of init section entries, high 16 bits are the number of term section entries *)
 
-  (* for this module size of *)
-  objc_module_info_size: int;	(* 4  the (__OBJC,__module_info) section *)
-  (* for this module address of the start of *)
-  objc_module_info_addr: int;	(* 8 the (__OBJC,__module_info) section *)
+  objc_module_info_size: int [@size 4]; (* the (__OBJC,__module_info) section *)
+  objc_module_info_addr: int [@size 8]; (* the (__OBJC,__module_info) section *)
 }
 
 (* 
@@ -511,11 +492,8 @@ type dylib_module_64 = {
  *)
 (* TODO: unimplemented, BIT FIELDS *)
 type dylib_reference = {
-  (* 4 bytes 32 bits *)
-  (* 24 bits *)
-  isym: int;		(* index into the symbol table *)
-  (* 8 bits *)
-  flags: int;	(* flags to indicate the type of reference *)
+  isym: bytes [@size 24]; (* 24 bits bit-field index into the symbol table *)
+  flags: int [@size 8]; (* flags to indicate the type of reference *)
 }
 
 (*
@@ -524,10 +502,10 @@ type dylib_reference = {
  *)
 (* TODO: unimplemented *)
 type twolevel_hints_command = {
-  cmd: int;	(* 4 LC_TWOLEVEL_HINTS *)
-  cmdsize: int;	(* 4 sizeof(struct twolevel_hints_command) *)
-  offset: int;	(* 4 offset to the hint table *)
-  nhints: int;	(* 4 number of hints in the hint table *)
+  cmd: int [@size 4];(* LC_TWOLEVEL_HINTS *)
+  cmdsize: int [@size 4]; (* sizeof(struct twolevel_hints_command) *)
+  offset: int [@size 4]; (* offset to the hint table *)
+  nhints: int [@size 4]; (* number of hints in the hint table *)
 }
 
 (*
@@ -548,11 +526,8 @@ type twolevel_hints_command = {
  *)
 (* TODO: unimplemented, BITFIELDS *)
 type twolevel_hint = {
-  (* 4 bytes *)
-  (* 8 bits *)
-  isub_image: int;	(* index into the sub images *)
-  (* 24 bits *)
-  itoc: int;	(* index into the table of contents *)
+  isub_image: int [@size 8]; (* index into the sub images *)
+  itoc: bytes [@size 24]; (* 24 bit field index into the table of contents *)
 }
 
 (*
@@ -567,9 +542,9 @@ type twolevel_hint = {
  *)
 (* TODO: unimplemented *)
 type prebind_cksum_command = {
-  cmd: int;	(* 4 LC_PREBIND_CKSUM *)
-  cmdsize: int;	(* 4 sizeof(struct prebind_cksum_command) *)
-  cksum: int;	(* 4 the check sum or zero *)
+  cmd: int [@size 4]; (* LC_PREBIND_CKSUM *)
+  cmdsize: int [@size 4]; (* sizeof(struct prebind_cksum_command) *)
+  cksum: int [@size 4]; (* the check sum or zero *)
 }
 
 (*
@@ -577,9 +552,9 @@ type prebind_cksum_command = {
  * identifies an object produced by the static link editor.
  *)
 type uuid_command = {
-  cmd: int;		(* LC_UUID *)
-  cmdsize: int;	(* sizeof(struct uuid_command) *)
-  uuid: bytes;	(* 16 bytes the 128-bit uuid *)
+  cmd: int [@size 4]; (* LC_UUID *)
+  cmdsize: int [@size 4]; (* sizeof(struct uuid_command) *)
+  uuid: bytes [@size 16]; (* 16 bytes the 128-bit uuid *)
 }
 
 let sizeof_uuid_command = 24
@@ -589,9 +564,9 @@ let sizeof_uuid_command = 24
  * the current run path used to find @rpath prefixed dylibs.
  *)
 type rpath_command = {
-  cmd: int; (* LC_RPATH *)
-  cmdsize: int; (* includes string *)
-  path: lc_str; (* path to add to run path *)
+  cmd: int [@size 4]; (* LC_RPATH *)
+  cmdsize: int [@size 4]; (* includes string *)
+  path: lc_str [@size 4]; (* path to add to run path *)
 }
 
 let sizeof_rpath_command = 12
@@ -601,13 +576,10 @@ let sizeof_rpath_command = 12
  * of data in the __LINKEDIT segment.  
  *)
 type linkedit_data_command = {
-  cmd: int;		(* LC_CODE_SIGNATURE, LC_SEGMENT_SPLIT_INFO,
-                                 LC_FUNCTION_STARTS, LC_DATA_IN_CODE,
-		LC_DYLIB_CODE_SIGN_DRS or
-		LC_LINKER_OPTIMIZATION_HINT. *)
-  cmdsize: int;	(* sizeof(struct linkedit_data_command) *)
-  dataoff: int;	(* 4 file offset of data in __LINKEDIT segment *)
-  datasize: int;	(* 4 file size of data in __LINKEDIT segment  *)
+  cmd: int [@size 4]; (* LC_CODE_SIGNATURE, LC_SEGMENT_SPLIT_INFO, LC_FUNCTION_STARTS, LC_DATA_IN_CODE, LC_DYLIB_CODE_SIGN_DRS or LC_LINKER_OPTIMIZATION_HINT. *)
+  cmdsize: int [@size 4]; (* sizeof(struct linkedit_data_command) *)
+  dataoff: int [@size 4]; (* file offset of data in __LINKEDIT segment *)
+  datasize: int [@size 4]; (* file size of data in __LINKEDIT segment  *)
 }
 
 let sizeof_linkedit_data_command = 16
@@ -617,11 +589,11 @@ let sizeof_linkedit_data_command = 16
  * of an encrypted segment.
  *)
 type encryption_info_command = {
-  cmd: int;		(* 4 LC_ENCRYPTION_INFO *)
-  cmdsize: int;	(* 4 sizeof(struct encryption_info_command) *)
-  cryptoff: int;	(* 4 file offset of encrypted range *)
-  cryptsize: int;	(* 4 file size of encrypted range *)
-  cryptid: int;	(* 4 which enryption system, 0 means not-encrypted yet *)
+  cmd: int [@size 4]; (* LC_ENCRYPTION_INFO *)
+  cmdsize: int [@size 4]; (* sizeof(struct encryption_info_command) *)
+  cryptoff: int [@size 4]; (* file offset of encrypted range *)
+  cryptsize: int [@size 4]; (* file size of encrypted range *)
+  cryptid: int [@size 4]; (* which enryption system, 0 means not-encrypted yet *)
 }
 
 let sizeof_encryption_info_command = 20
@@ -631,12 +603,12 @@ let sizeof_encryption_info_command = 20
  * of an encrypted segment (for use in x86_64 targets).
  *)
 type encryption_info_command_64 = {
-  cmd: int;		(* 4 LC_ENCRYPTION_INFO_64 *)
-  cmdsize: int;	(* 4 sizeof(struct encryption_info_command_64) *)
-  cryptoff: int;	(* 4 file offset of encrypted range *)
-  cryptsize: int;	(* 4 file size of encrypted range *)
-  cryptid: int;	(* 4 which enryption system, 0 means not-encrypted yet *)
-  pad: int;		(* 4 padding to make this struct's size a multiple of 8 bytes *)
+  cmd: int [@size 4]; (* LC_ENCRYPTION_INFO_64 *)
+  cmdsize: int [@size 4]; (* sizeof(struct encryption_info_command_64) *)
+  cryptoff: int [@size 4]; (* file offset of encrypted range *)
+  cryptsize: int [@size 4]; (* file size of encrypted range *)
+  cryptid: int [@size 4]; (* which enryption system, 0 means not-encrypted yet *)
+  pad: int [@size 4]; (* padding to make this struct's size a multiple of 8 bytes *)
 }
 
 let sizeof_encryption_info_command_64 = 24
@@ -647,10 +619,10 @@ let sizeof_encryption_info_command_64 = 24
  *
  * LC_VERSION_MIN_MACOSX or LC_VERSION_MIN_IPHONEOS  *)
 type version_min_command = {
-  cmd: int;
-  cmdsize: int;
-  version: int; (* 4 X.Y.Z is encoded in nibbles xxxx.yy.zz *)
-  sdk: int;  (* 4 X.Y.Z is encoded in nibbles xxxx.yy.zz *)
+  cmd: int [@size 4];
+  cmdsize: int [@size 4];
+  version: int [@size 4]; (* X.Y.Z is encoded in nibbles xxxx.yy.zz *)
+  sdk: int [@size 4]; (* X.Y.Z is encoded in nibbles xxxx.yy.zz *)
 }
 
 let sizeof_version_min_command = 16 (* bytes *)
@@ -674,19 +646,18 @@ struct dyld_info_command {
 
 type dyld_info_command = 
   {
-    cmd: int;
-    cmdsize: int;
-    (* 4 bytes *)
-    rebase_off: int;
-    rebase_size: int;
-    bind_off: int;
-    bind_size: int;
-    weak_bind_off: int;
-    weak_bind_size: int;
-    lazy_bind_off: int;
-    lazy_bind_size: int;
-    export_off: int;
-    export_size: int;
+    cmd: int [@size 4];
+    cmdsize: int [@size 4];
+    rebase_off: int [@size 4];
+    rebase_size: int [@size 4];
+    bind_off: int [@size 4];
+    bind_size: int [@size 4];
+    weak_bind_off: int [@size 4];
+    weak_bind_size: int [@size 4];
+    lazy_bind_off: int [@size 4];
+    lazy_bind_size: int [@size 4];
+    export_off: int [@size 4];
+    export_size: int [@size 4];
   }
 
 let sizeof_dylib_info_command = 48
@@ -695,11 +666,9 @@ let sizeof_dylib_info_command = 48
  * The linker_option_command contains linker options embedded in object files.
  *)
 type linker_option_command = {
-  cmd: int;	(* 4 LC_LINKER_OPTION only used in MH_OBJECT filetypes *)
-  cmdsize: int;    (* 4 *)
-  count: int;	(* 4 number of strings *)
-  (* concatenation of zero terminated UTF8 strings.
-     Zero filled at end to align *)
+  cmd: int [@size 4]; (* LC_LINKER_OPTION only used in MH_OBJECT filetypes *)
+  cmdsize: int [@size 4];
+  count: int [@size 4];	(* number of strings concatenation of zero terminated UTF8 strings. Zero filled at end to align *)
 }
 
 let sizeof_linker_option_command = 12
@@ -714,10 +683,10 @@ let sizeof_linker_option_command = 12
  * zeroed. (THIS IS OBSOLETE and no longer supported).
  *)
 type symseg_command =  {
-  cmd: int;		(* 4 LC_SYMSEG *)
-  cmdsize: int;	(* 4 sizeof(struct symseg_command) *)
-  offset: int;		(* 4 symbol segment offset *)
-  size: int;		(* 4 symbol segment size in bytes *)
+  cmd: int [@size 4]; (* LC_SYMSEG *)
+  cmdsize: int [@size 4]; (* sizeof(struct symseg_command) *)
+  offset: int [@size 4]; (* symbol segment offset *)
+  size: int [@size 4]; (* symbol segment size in bytes *)
 }
 
 let sizeof_symseg_command = 16
@@ -729,8 +698,8 @@ let sizeof_symseg_command = 16
  * (THIS IS OBSOLETE and no longer supported).
  *)
 type ident_command = {
-  cmd: int;		(* 4 LC_IDENT *)
-  cmdsize: int;	(* 4 strings that follow this command *)
+  cmd: int [@size 4]; (* LC_IDENT *)
+  cmdsize: int [@size 4]; (* strings that follow this command *)
 }
 
 let sizeof_ident_command = 8
@@ -742,10 +711,10 @@ let sizeof_ident_command = 8
  * memory).
  *)
 type fvmfile_command = {
-  cmd: int;		(* 4 LC_FVMFILE *)
-  cmdsize: int;		(* 4 includes pathname string *)
-  name: lc_str;		(* 4 files pathname *)
-  header_addr: int;	(* 4 files virtual address *)
+  cmd: int [@size 4]; (* LC_FVMFILE *)
+  cmdsize: int [@size 4]; (* includes pathname string *)
+  name: lc_str [@size 4]; (* files pathname *)
+  header_addr: int [@size 4]; (* files virtual address *)
 }
 
 let sizeof_fvmfile_command = 16
@@ -757,10 +726,10 @@ let sizeof_fvmfile_command = 16
  * field will contain the stack size need for the main thread.
  *)
 type entry_point_command = {
-  cmd: int;
-  cmdsize: int;
-  entryoff: int; (* 8 uint64_t file (__TEXT) offset of main() *)
-  stacksize: int ;(* 8 uint64_t if not zero, initial stack size *) 
+  cmd: int [@size 4];
+  cmdsize: int [@size 4];
+  entryoff: int [@size 8]; (* uint64_t file __TEXT offset of main *)
+  stacksize: int  [@size 8]; (* uint64_t if not zero, initial stack size *) 
 }
 
 let sizeof_entry_point_command = 24 (* bytes *)
@@ -770,9 +739,9 @@ let sizeof_entry_point_command = 24 (* bytes *)
  * the version of the sources used to build the binary.
  *)
 type source_version_command = {
-  cmd: int;     (* 4 LC_SOURCE_VERSION *)
-  cmdsize: int; (* 4 16 *)
-  version: int; (* 8A.B.C.D.E packed as a24.b10.c10.d10.e10 *)
+  cmd: int [@size 4]; (* LC_SOURCE_VERSION *)
+  cmdsize: int [@size 4];
+  version: int [@size 8]; (* A.B.C.D.E packed as a24.b10.c10.d10.e10 *)
 }
 
 (*
@@ -781,9 +750,9 @@ type source_version_command = {
  * describes a range of data in a code section.
  *)
 type data_in_code_entry = {
-  offset: int;  (* 4 from mach_header to start of data range*)
-  length: int;  (* 2 number of bytes in data range *)
-  kind: int;    (* 2 a DICE_KIND_* value  *)
+  offset: int [@size 4]; (* from mach_header to start of data range*)
+  length: int [@size 2]; (* number of bytes in data range *)
+  kind: int [@size 2]; (* a DICE_KIND_* value  *)
 }
 
 (* ==================================== *)

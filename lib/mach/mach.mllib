@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: af66e3ae60a4dcdd18c82ff30a72f829)
+# DO NOT EDIT (digest: f564cdbce57aab570eaa64260e122d5f)
 Mach
 MachBindOpcodes
 MachCpuTypes
@@ -15,4 +15,5 @@ MachSymbolTable
 MachRebaseOpcodes
 MachVersion
 MachCoverage
+MachLoadCommandMacro
 # OASIS_STOP
