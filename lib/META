@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 19245a18a78bafcbdce567c9476d0a71)
+# DO NOT EDIT (digest: 3f888b06aa4fe2e24d08d0fcfc66854e)
 version = "2.0.1"
 description =
 "Lightweight, cross platform binary parsing and analysis library with no dependencies"
@@ -18,6 +18,18 @@ package "utils" (
  archive(native) = "utils.cmxa"
  archive(native, plugin) = "utils.cmxs"
  exists_if = "utils.cma"
+)
+
+package "pe" (
+ version = "2.0.1"
+ description =
+ "Lightweight, cross platform binary parsing and analysis library with no dependencies"
+ requires = "rdr.utils"
+ archive(byte) = "pe.cma"
+ archive(byte, plugin) = "pe.cma"
+ archive(native) = "pe.cmxa"
+ archive(native, plugin) = "pe.cmxs"
+ exists_if = "pe.cma"
 )
 
 package "mach" (

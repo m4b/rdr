@@ -90,6 +90,19 @@ Library "elf"
   BuildDepends:
    rdr.utils
 
+Library "pe"
+  Path: lib/pe
+  FindLibParent: rdr
+  FindLibName: pe
+  BuildTools: ocamlbuild
+  CompiledObject: best
+  Modules:
+   PE,
+   PEHeader
+#   PECoverage
+  BuildDepends:
+   rdr.utils
+
 Library "goblin"
   Path: lib/goblin
   BuildTools: ocamlbuild
