@@ -1,9 +1,9 @@
 # OASIS_START
-# DO NOT EDIT (digest: 3f888b06aa4fe2e24d08d0fcfc66854e)
+# DO NOT EDIT (digest: 6a984f0d2caf7903883ef096a735ed44)
 version = "2.0.1"
 description =
 "Lightweight, cross platform binary parsing and analysis library with no dependencies"
-requires = "rdr.goblin rdr.utils rdr.mach rdr.elf"
+requires = "rdr.goblin rdr.utils rdr.mach rdr.elf rdr.pe"
 archive(byte) = "rdr.cma"
 archive(byte, plugin) = "rdr.cma"
 archive(native) = "rdr.cmxa"
@@ -24,7 +24,7 @@ package "pe" (
  version = "2.0.1"
  description =
  "Lightweight, cross platform binary parsing and analysis library with no dependencies"
- requires = "rdr.utils"
+ requires = "rdr.utils ppx_deriving.show ppx_deriving.yojson"
  archive(byte) = "pe.cma"
  archive(byte, plugin) = "pe.cma"
  archive(native) = "pe.cmxa"

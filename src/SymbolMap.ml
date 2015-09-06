@@ -49,7 +49,7 @@ for testing
 #load "SectionHeader.cmo";;
 #load "ProgramHeader.cmo";;
 
-#load "Object.cmo";;
+#load "LibRdr.Object.cmo";;
 #load "Graph.cmo";;
 *)
 open Unix
@@ -201,13 +201,13 @@ let build_polymorphic_map config =
       end
     else
       let lib = Stack.pop libstack in
-      let bytes = try Object.get_bytes ~verbose:verbose lib with _ -> Object.Unknown lib in
+      let bytes = try LibRdr.Object.get ~verbose:verbose lib with _ -> LibRdr.Object.Unknown (lib, "Exception reading binary") in
       let name = Filename.basename lib in
       let install_name = lib in
       let config = {config with silent=true; verbose=false; name; install_name; filename=lib} in
       match bytes with
       (* could do a |> ReadMach.to_goblin here ? --- better yet, to goblin, then map building code after to avoid DRY violations *)
-      | Object.Mach binary ->
+      | LibRdr.Object.Mach binary ->
          let binary = ReadMach.analyze config binary in
 	 let imports = binary.Goblin.imports in
 	 Array.iter
@@ -243,7 +243,7 @@ let build_polymorphic_map config =
 	     ) map symbols
 	 in
          loop map' ((binary.Goblin.name, binary.Goblin.libs)::lib_deps)
-      | Object.Elf binary ->
+      | LibRdr.Object.Elf binary ->
          (* hurr durr iman elf *)
          let binary = ReadElf.analyze config binary in
 	 let imports = binary.Goblin.imports in

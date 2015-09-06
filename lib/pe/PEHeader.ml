@@ -1,18 +1,16 @@
 (* 
 #directory "/home/m4b/projects/rdr/_build/lib/utils";;
 #load "Binary.cmo";;
-#require "ppx_deriving.show"
 *)
-
-
-
 open Binary
 
 type dos_header =
   {
     signature: int [@size 2]; (* 5a4d *)
     pe_pointer: int [@size 4];  (* at offset 0x3c *)
-  } [@@deriving show]
+  } [@@deriving (show)]
+
+let kDOS_MAGIC = 0x5a4d
 
 (* COFF Header *)
 type coff_header =
@@ -25,12 +23,13 @@ type coff_header =
     number_of_symbol_table: int [@size 4];
     size_of_optional_header: int [@size 2];
     characteristics: int [@size 2];
-  } [@@deriving show]
+  } [@@deriving (show)]
 
 let sizeof_coff_header = 24     (* bytes *)
+let kCOFF_MAGIC = 0x50450000
 
 (* standard COFF fields *)
-type coff_fields =
+type standard_fields =
   {
     magic: int [@size 2];
     major_linker_version: int [@size 1];
@@ -40,15 +39,15 @@ type coff_fields =
     size_of_uninitialized_data: int [@size 4];
     address_of_entry_point: int [@size 4];
     base_of_code: int [@size 4];
-    base_of_data: int [@size 4];
-  }
+    base_of_data: int [@size 4]; (* absent in 64-bit PE32+ *)
+  } [@@deriving (show)]
 
-let sizeof_coff_fields = (3 * 8) + 4
+let sizeof_standard_fields = (3 * 8) + 4
 
 (* windows specific fields *)    
 type windows_fields =
   {
-    image_base: int [@size 4];
+    image_base: int [@size 4];  (* 8 in 64-bit *)
     section_alignment: int [@size 4];
     file_alignment: int [@size 4];
     major_operating_system_version: int [@size 2];
@@ -63,16 +62,17 @@ type windows_fields =
     check_sum: int [@size 4];
     subsystem: int [@size 2];
     dll_characteristics: int [@size 2];
-    size_of_stack_reserve: int [@size 4];
-    size_of_stack_commit: int [@size 4];
-    size_of_heap_reserve: int [@size 4];
-    size_of_heap_commit: int [@size 4];
+    size_of_stack_reserve: int [@size 4]; (* 8 64-bit *)
+    size_of_stack_commit: int [@size 4];  (* 8 *)
+    size_of_heap_reserve: int [@size 4];  (* 8 *)
+    size_of_heap_commit: int [@size 4];   (* 8 *)
     loader_flags: int [@size 4];
     number_of_rva_and_sizes: int [@size 4];
-  } [@@deriving show]
+  } [@@deriving (show)]
 
 let sizeof_windows_fields = (8 * 8) + 4
 
+(* these are variable width and only exist if number_of_rva_and_sizes allows them *)
 type data_directories =
   {
     export_table: int [@size 4];
@@ -89,8 +89,10 @@ type data_directories =
     size_of_base_relocation_table: int [@size 4];
     debug: int [@size 4];
     size_of_debug: int [@size 4];
+    architecture: int [@size 4];
+    size_of_architecture: int [@size 4];    
     global_ptr: int [@size 4];
-    zero1: int [@size 4, padding];
+    size_of_global_ptr: int [@size 4];
     tls_table: int [@size 4];
     size_of_tls_table: int [@size 4];
     load_config_table: int [@size 4];
@@ -103,8 +105,8 @@ type data_directories =
     size_of_delay_import_descriptor: int [@size 4];
     clr_runtime_header: int [@size 4];
     size_of_clr_runtime_header: int [@size 4];
-    zero2: int [@size 8, padding];
-  } [@@deriving show]
+    reserved: int [@size 8, padding];
+  } [@@deriving (show)]
 
 let sizeof_data_directories = 15 * 8
 
@@ -119,18 +121,23 @@ type section_table = {
     number_of_relocations: int [@size 2];
     number_of_linenumbers: int [@size 2];
     characteristics: int [@size 4];
-  }
+  } [@@deriving (show)]
 
 let sizeof_section_table = 8 * 5
+
+type optional_header =
+  {
+    standard_fields: standard_fields;
+    windows_fields: windows_fields;
+    data_directories: data_directories;
+  } [@@deriving (show)]
 
 type t = {
     dos_header: dos_header;
     coff_header: coff_header;
-    coff_fields: coff_fields option;
-    windows_fields: windows_fields option;
-    data_directories: data_directories option;
+    optional_header: optional_header option;
     section_tables: section_table list;
-  } [@@deriving show]
+  } [@@deriving (show)]
 
 let get_dos_header binary offset :dos_header =
   let signature,o = Binary.u16o binary offset in
@@ -148,7 +155,7 @@ let get_coff_header binary offset :coff_header =
   let characteristics = Binary.u16 binary o in
   {signature;machine;number_of_sections;time_date_stamp;pointer_to_symbol_table;number_of_symbol_table;size_of_optional_header;characteristics;}
 
-let get_coff_fields binary offset :coff_fields =
+let get_standard_fields binary offset :standard_fields =
   let magic,o = Binary.u16o binary offset in
   let major_linker_version,o = Binary.u8o binary o in
   let minor_linker_version,o = Binary.u8o binary o in
@@ -199,8 +206,10 @@ let get_data_directories binary offset :data_directories =
   let size_of_base_relocation_table,o = Binary.u32o binary o in
   let debug,o = Binary.u32o binary o in
   let size_of_debug,o = Binary.u32o binary o in
+  let architecture,o = Binary.u32o binary o in
+  let size_of_architecture,o = Binary.u32o binary o in
   let global_ptr,o = Binary.u32o binary o in
-  let zero1,o = Binary.u32o binary o in
+  let size_of_global_ptr,o = Binary.u32o binary o in
   let tls_table,o = Binary.u32o binary o in
   let size_of_tls_table,o = Binary.u32o binary o in
   let load_config_table,o = Binary.u32o binary o in
@@ -213,8 +222,8 @@ let get_data_directories binary offset :data_directories =
   let size_of_delay_import_descriptor,o = Binary.u32o binary o in
   let clr_runtime_header,o = Binary.u32o binary o in
   let size_of_clr_runtime_header,o = Binary.u32o binary o in
-  let zero2 = Binary.u64 binary o in
-  {export_table;size_of_export_table;import_table;size_of_import_table;resource_table;size_of_resource_table;exception_table;size_of_exception_table;certificate_table;size_of_certificate_table;base_relocation_table;size_of_base_relocation_table;debug;size_of_debug;global_ptr;zero1;tls_table;size_of_tls_table;load_config_table;size_of_load_config_table;bound_import;size_of_bound_import;import_address_table;size_of_import_address_table;delay_import_descriptor;size_of_delay_import_descriptor;clr_runtime_header;size_of_clr_runtime_header;zero2;}
+  let reserved = Binary.u64 binary o in
+  {export_table;size_of_export_table;import_table;size_of_import_table;resource_table;size_of_resource_table;exception_table;size_of_exception_table;certificate_table;size_of_certificate_table;base_relocation_table;size_of_base_relocation_table;debug;size_of_debug;architecture;size_of_architecture;global_ptr;size_of_global_ptr;tls_table;size_of_tls_table;load_config_table;size_of_load_config_table;bound_import;size_of_bound_import;import_address_table;size_of_import_address_table;delay_import_descriptor;size_of_delay_import_descriptor;clr_runtime_header;size_of_clr_runtime_header;reserved;}
 
 let get_section_table binary offset :section_table =
   let name,o = Binary.stringo binary offset ~num_bytes:8 in
@@ -250,21 +259,35 @@ let get_header binary =
   let section_tables =
     get_section_tables binary section_tables_offset coff_header.number_of_sections in
   let optional_offset = sizeof_coff_header + coff_header_offset in
-  let coff_fields,windows_fields,data_directories =
+  let optional_header =
     if (coff_header.size_of_optional_header > 0) then
-      let cf = get_coff_fields binary optional_offset in
-      let wf_offset = optional_offset + sizeof_coff_fields in
-      let wf = get_windows_fields binary wf_offset in
+      let standard_fields = get_standard_fields binary optional_offset in
+      let wf_offset = optional_offset + sizeof_standard_fields in
+      let windows_fields = get_windows_fields binary wf_offset in
       let dd_offset = wf_offset + sizeof_windows_fields in
-      let dd = get_data_directories binary dd_offset in
-      Some cf, Some wf, Some dd
+      let data_directories = get_data_directories binary dd_offset in
+      Some {standard_fields; windows_fields; data_directories;}
     else
-      None,None,None
+      None
   in
-  {dos_header; coff_header; coff_fields;
-   windows_fields; data_directories; section_tables}
+  {dos_header; coff_header;
+   optional_header; section_tables}
 
-let csrss_header = list_to_bytes [0x4d; 0x5a; 0x90; 0x00; 0x03; 0x00; 0x00; 0x00; 0x04; 0x00; 0x00; 0x00; 0xff; 0xff; 0x00; 0x00;
+(* this won't work, requires a constructed header
+   but we don't know which header to construct yet *)
+let is_32 header =
+  match header.optional_header with
+  | Some header ->
+     header.standard_fields.magic = 0x10B
+  | None -> false
+
+let is_64 header =
+  match header.optional_header with
+  | Some header ->
+     header.standard_fields.magic = 0x20B
+  | None -> false
+
+let csrss_header = get_header @@ list_to_bytes [0x4d; 0x5a; 0x90; 0x00; 0x03; 0x00; 0x00; 0x00; 0x04; 0x00; 0x00; 0x00; 0xff; 0xff; 0x00; 0x00;
 0xb8; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x40; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00;
 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00;
 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0xd0; 0x00; 0x00; 0x00;
@@ -307,3 +330,5 @@ let csrss_header = list_to_bytes [0x4d; 0x5a; 0x90; 0x00; 0x03; 0x00; 0x00; 0x00
 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x40; 0x00; 0x00; 0x42;
 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00;
 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00;]
+
+let to_hex hex = Printf.printf "0x%x\n" hex

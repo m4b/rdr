@@ -1,12 +1,12 @@
 # OASIS_START
-# DO NOT EDIT (digest: 6f355e939c9a50c3db107ae9169b1bbd)
+# DO NOT EDIT (digest: bd7035f08258b82d421d45e37c9dfdcf)
 Config
 Command
-Object
 Graph
 Storage
 SymbolMap
 ReadMach
 ReadElf
+ReadPE
 ToL
 # OASIS_STOP

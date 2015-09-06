@@ -100,6 +100,68 @@ let set_framework_directories dir_string =
 let set_anon_argument string =
   anonarg := string
 	       
+let analyze config binary =
+  match binary with
+  | LibRdr.Object.Mach bytes ->
+    let binary = ReadMach.analyze config bytes in     
+    if (config.search) then
+      try
+        ReadMach.find_export
+	  config.search_term binary
+	|> Goblin.Export.print
+             (* TODO: add find import symbol *)
+      with Not_found ->
+        Printf.printf "";
+    else 
+    if (config.graph) then
+      Graph.graph_goblin 
+	~draw_imports:true
+	~draw_libs:true binary
+      @@ Filename.basename config.filename;
+
+    (* 
+         if (config.use_goblin) then
+           begin
+             let goblin = ReadMach.to_goblin binary in
+             Graph.graph_goblin
+~draw_imports:true
+~draw_libs:true goblin
+@@ Filename.basename config.filename;
+           end
+         else
+   *)
+    (* 
+Graph.graph_mach_binary 
+             ~draw_imports:true 
+             ~draw_libs:true 
+             binary 
+             (Filename.basename config.filename);
+   *)
+    (* ===================== *)
+    (* ELF *)
+    (* ===================== *)
+  | LibRdr.Object.Elf binary ->
+    (* analyze the binary and print program headers, etc. *)
+    let binary = ReadElf.analyze config binary in
+    if (config.search) then
+      try
+        ReadElf.find_export_symbol
+	  config.search_term
+	  binary |> Goblin.Export.print
+      with Not_found ->
+        Printf.printf "";
+    else
+    if (config.graph) then
+      Graph.graph_goblin binary
+      @@ Filename.basename config.filename;
+
+  | LibRdr.Object.PE32 binary ->
+     ignore (PE.get binary)
+  | LibRdr.Object.Unknown (string, filename) ->
+     failwith (Printf.sprintf "%s %s" string filename)
+
+(*     raise @@ Unknown_binary_type (Printf.sprintf "Unknown binary %s" filename) *)
+
 let main =
   let speclist = 
     [("-m", Arg.Set use_map, "Use a pre-marshalled system symbol map; use this in conjunction with -f, -D, -g, or -w");
@@ -155,4 +217,4 @@ let main =
     SymbolMap.build_symbol_map config
   else
     (* analyzing a binary using anon arg *)
-    Object.get_bytes config.filename |> Object.analyze config
+    LibRdr.Object.get config.filename |> analyze config

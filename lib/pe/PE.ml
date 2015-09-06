@@ -1,13 +1,13 @@
 open Binary
 
 module Header = PEHeader
-
+module Import = PEImport
 
 type t =
   {
     header: Header.t;
     size: int;
-  }
+  } [@@deriving (show)]
 
 let get binary =
   let size = Bytes.length binary in

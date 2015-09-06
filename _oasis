@@ -101,7 +101,9 @@ Library "pe"
    PEHeader
 #   PECoverage
   BuildDepends:
-   rdr.utils
+   rdr.utils,
+   ppx_deriving.show,
+   ppx_deriving.yojson
 
 Library "goblin"
   Path: lib/goblin
@@ -132,7 +134,8 @@ Library "rdr"
    rdr.goblin,
    rdr.utils,
    rdr.mach,
-   rdr.elf
+   rdr.elf,
+   rdr.pe
 
 Library "rdrutils"
   Path: src
@@ -142,18 +145,20 @@ Library "rdrutils"
   Modules:
     Config,
     Command,
-    Object,
     Graph,
     Storage,
     SymbolMap,
     ReadMach,
     ReadElf,
+    ReadPE,    
     ToL
   BuildDepends:
+    rdr.pe,  
     rdr.elf,
     rdr.mach,
     rdr.goblin,
     rdr.utils,
+    rdr,
     str,
     unix
 
