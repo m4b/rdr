@@ -6,6 +6,7 @@ module Header = PEHeader
 type t =
   {
     header: Header.t;
+    size: int;
   }
 
 let get binary =
@@ -13,6 +14,7 @@ let get binary =
   let header = Header.get_header binary in
   {
     header;
+    size;
     (* 
     load_commands; name; nlist; nnlist;
     imports; nimports; exports; nexports;

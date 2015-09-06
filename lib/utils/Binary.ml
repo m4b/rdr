@@ -120,6 +120,15 @@ let u16be binary offset =
   let one = Char.code @@ Bytes.get binary offset in
   (one lsl 8) lor (Char.code (Bytes.get binary (1 + offset)))
 
+let u16beo binary offset =
+  (u16be binary offset), offset+2
+
+let u32beo binary offset =
+  (u32be binary offset), offset+4
+
+let u64beo binary offset =
+  (u64be binary offset), offset+8
+
 (* signed integers*)
 (* read the byte as a signed integer into our internal representation *)
 let i8 binary offset =
@@ -225,7 +234,12 @@ let uint_be_to_bytes integer size =
   let _ = set_uint_be bytes integer size 0 in
   bytes
 
-(* to bytes testing
+let list_to_bytes list =
+  let b = Bytes.create (List.length list) in
+  List.iteri (fun i byte -> Bytes.set b i (Char.chr byte)) list;
+  b
+
+    (* to bytes testing
 let elfk = 0x7f454c46
 
 let u1 = (u16 (uint_to_bytes 0xdead 2) 0) = 0xdead
