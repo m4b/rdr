@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: cc654f7a536aa6b9659507f56b3463e8)
+# DO NOT EDIT (digest: f6e8a636bea0c9762b787e3f8f42b3ad)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -25,7 +25,7 @@ true: annot, bin_annot
 # Library pe
 "lib/pe/pe.cmxs": use_pe
 <lib/pe/*.ml{,i,y}>: pkg_ppx_deriving.show
-<lib/pe/*.ml{,i,y}>: pkg_ppx_deriving.yojson
+<lib/pe/*.ml{,i,y}>: pkg_ppx_deriving_yojson
 <lib/pe/*.ml{,i,y}>: use_utils
 # Library goblin
 "lib/goblin/goblin.cmxs": use_goblin
@@ -35,7 +35,7 @@ true: annot, bin_annot
 # Library rdr
 "lib/rdr.cmxs": use_rdr
 <lib/*.ml{,i,y}>: pkg_ppx_deriving.show
-<lib/*.ml{,i,y}>: pkg_ppx_deriving.yojson
+<lib/*.ml{,i,y}>: pkg_ppx_deriving_yojson
 <lib/*.ml{,i,y}>: use_elf
 <lib/*.ml{,i,y}>: use_goblin
 <lib/*.ml{,i,y}>: use_mach
@@ -44,19 +44,19 @@ true: annot, bin_annot
 # Library rdrutils
 "src/rdrutils.cmxs": use_rdrutils
 # Executable rdr
-<src/Rdr.{native,byte}>: pkg_ppx_deriving.show
-<src/Rdr.{native,byte}>: pkg_ppx_deriving.yojson
-<src/Rdr.{native,byte}>: pkg_str
-<src/Rdr.{native,byte}>: pkg_unix
-<src/Rdr.{native,byte}>: use_elf
-<src/Rdr.{native,byte}>: use_goblin
-<src/Rdr.{native,byte}>: use_mach
-<src/Rdr.{native,byte}>: use_pe
-<src/Rdr.{native,byte}>: use_rdr
-<src/Rdr.{native,byte}>: use_rdrutils
-<src/Rdr.{native,byte}>: use_utils
+<src/main.{native,byte}>: pkg_ppx_deriving.show
+<src/main.{native,byte}>: pkg_ppx_deriving_yojson
+<src/main.{native,byte}>: pkg_str
+<src/main.{native,byte}>: pkg_unix
+<src/main.{native,byte}>: use_elf
+<src/main.{native,byte}>: use_goblin
+<src/main.{native,byte}>: use_mach
+<src/main.{native,byte}>: use_pe
+<src/main.{native,byte}>: use_rdr
+<src/main.{native,byte}>: use_rdrutils
+<src/main.{native,byte}>: use_utils
 <src/*.ml{,i,y}>: pkg_ppx_deriving.show
-<src/*.ml{,i,y}>: pkg_ppx_deriving.yojson
+<src/*.ml{,i,y}>: pkg_ppx_deriving_yojson
 <src/*.ml{,i,y}>: pkg_str
 <src/*.ml{,i,y}>: pkg_unix
 <src/*.ml{,i,y}>: use_elf

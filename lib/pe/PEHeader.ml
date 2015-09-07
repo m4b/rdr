@@ -8,9 +8,11 @@ type dos_header =
   {
     signature: int [@size 2]; (* 5a4d *)
     pe_pointer: int [@size 4];  (* at offset 0x3c *)
-  } [@@deriving (show)]
+  } [@@deriving (show, yojson)]
 
 let kDOS_MAGIC = 0x5a4d
+let kDOS_CIGAM = 0x4d5a
+let kPE_POINTER_OFFSET = 0x3c
 
 (* COFF Header *)
 type coff_header =
@@ -23,7 +25,7 @@ type coff_header =
     number_of_symbol_table: int [@size 4];
     size_of_optional_header: int [@size 2];
     characteristics: int [@size 2];
-  } [@@deriving (show)]
+  } [@@deriving (show, yojson)]
 
 let sizeof_coff_header = 24     (* bytes *)
 let kCOFF_MAGIC = 0x50450000
@@ -40,7 +42,7 @@ type standard_fields =
     address_of_entry_point: int [@size 4];
     base_of_code: int [@size 4];
     base_of_data: int [@size 4]; (* absent in 64-bit PE32+ *)
-  } [@@deriving (show)]
+  } [@@deriving (show, yojson)]
 
 let sizeof_standard_fields = (3 * 8) + 4
 
@@ -68,7 +70,7 @@ type windows_fields =
     size_of_heap_commit: int [@size 4];   (* 8 *)
     loader_flags: int [@size 4];
     number_of_rva_and_sizes: int [@size 4];
-  } [@@deriving (show)]
+  } [@@deriving (show, yojson)]
 
 let sizeof_windows_fields = (8 * 8) + 4
 
@@ -106,7 +108,7 @@ type data_directories =
     clr_runtime_header: int [@size 4];
     size_of_clr_runtime_header: int [@size 4];
     reserved: int [@size 8, padding];
-  } [@@deriving (show)]
+  } [@@deriving (show, yojson)]
 
 let sizeof_data_directories = 15 * 8
 
@@ -121,7 +123,7 @@ type section_table = {
     number_of_relocations: int [@size 2];
     number_of_linenumbers: int [@size 2];
     characteristics: int [@size 4];
-  } [@@deriving (show)]
+  } [@@deriving (show, yojson)]
 
 let sizeof_section_table = 8 * 5
 
@@ -130,18 +132,18 @@ type optional_header =
     standard_fields: standard_fields;
     windows_fields: windows_fields;
     data_directories: data_directories;
-  } [@@deriving (show)]
+  } [@@deriving (show, yojson)]
 
 type t = {
     dos_header: dos_header;
     coff_header: coff_header;
     optional_header: optional_header option;
     section_tables: section_table list;
-  } [@@deriving (show)]
+  } [@@deriving (show, yojson)]
 
 let get_dos_header binary offset :dos_header =
   let signature,o = Binary.u16o binary offset in
-  let pe_pointer = Binary.u32 binary (offset+0x3c) in
+  let pe_pointer = Binary.u32 binary (offset+kPE_POINTER_OFFSET) in
   {signature;pe_pointer;}
 
 let get_coff_header binary offset :coff_header =

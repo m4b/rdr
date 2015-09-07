@@ -102,7 +102,7 @@ let set_anon_argument string =
 	       
 let analyze config binary =
   match binary with
-  | LibRdr.Object.Mach bytes ->
+  | Rdr.Object.Mach bytes ->
     let binary = ReadMach.analyze config bytes in     
     if (config.search) then
       try
@@ -140,7 +140,7 @@ Graph.graph_mach_binary
     (* ===================== *)
     (* ELF *)
     (* ===================== *)
-  | LibRdr.Object.Elf binary ->
+  | Rdr.Object.Elf binary ->
     (* analyze the binary and print program headers, etc. *)
     let binary = ReadElf.analyze config binary in
     if (config.search) then
@@ -155,9 +155,9 @@ Graph.graph_mach_binary
       Graph.graph_goblin binary
       @@ Filename.basename config.filename;
 
-  | LibRdr.Object.PE32 binary ->
-     ignore (PE.get binary)
-  | LibRdr.Object.Unknown (string, filename) ->
+  | Rdr.Object.PE32 binary ->
+     ignore @@ ReadPE.analyze config binary
+  | Rdr.Object.Unknown (string, filename) ->
      failwith (Printf.sprintf "%s %s" string filename)
 
 (*     raise @@ Unknown_binary_type (Printf.sprintf "Unknown binary %s" filename) *)
@@ -217,4 +217,4 @@ let main =
     SymbolMap.build_symbol_map config
   else
     (* analyzing a binary using anon arg *)
-    LibRdr.Object.get config.filename |> analyze config
+    Rdr.Object.get config.filename |> analyze config

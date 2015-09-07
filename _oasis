@@ -103,7 +103,7 @@ Library "pe"
   BuildDepends:
    rdr.utils,
    ppx_deriving.show,
-   ppx_deriving.yojson
+   ppx_deriving_yojson
 
 Library "goblin"
   Path: lib/goblin
@@ -129,7 +129,8 @@ Library "rdr"
   BuildTools: ocamlbuild
   CompiledObject: best
   Modules:
-    LibRdr
+    Rdr,
+    RdrObject
   BuildDepends:
    rdr.goblin,
    rdr.utils,
@@ -150,7 +151,7 @@ Library "rdrutils"
     SymbolMap,
     ReadMach,
     ReadElf,
-    ReadPE,    
+    ReadPE, 
     ToL
   BuildDepends:
     rdr.pe,  
@@ -164,7 +165,7 @@ Library "rdrutils"
 
 Executable "rdr"
   Path: src
-  MainIs: Rdr.ml
+  MainIs: main.ml
   BuildTools: ocamlbuild
   CompiledObject: best
   BuildDepends:

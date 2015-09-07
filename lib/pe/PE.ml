@@ -7,7 +7,7 @@ type t =
   {
     header: Header.t;
     size: int;
-  } [@@deriving (show)]
+  } [@@deriving (show, yojson)]
 
 let get binary =
   let size = Bytes.length binary in

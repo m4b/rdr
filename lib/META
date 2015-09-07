@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 6a984f0d2caf7903883ef096a735ed44)
+# DO NOT EDIT (digest: 3bf3cfbede2a11b2e8cf6c9a3e92f627)
 version = "2.0.1"
 description =
 "Lightweight, cross platform binary parsing and analysis library with no dependencies"
@@ -24,7 +24,7 @@ package "pe" (
  version = "2.0.1"
  description =
  "Lightweight, cross platform binary parsing and analysis library with no dependencies"
- requires = "rdr.utils ppx_deriving.show ppx_deriving.yojson"
+ requires = "rdr.utils ppx_deriving.show ppx_deriving_yojson"
  archive(byte) = "pe.cma"
  archive(byte, plugin) = "pe.cma"
  archive(native) = "pe.cmxa"
