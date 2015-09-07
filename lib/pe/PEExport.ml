@@ -37,7 +37,18 @@ let sizeof_export_address_table_entry = 4
 
 type export_address_table = export_address_table_entry list
 
-(* 
+type export_name_table = bytes list [@@deriving show]
+
+let get_export_name_table binary nexports offset =
+  let rec loop acc count current =
+    let name,o = Binary.stringo binary current in
+    if (count >= nexports) then
+      List.rev acc
+    else
+      loop (name::acc) (count+1) o
+  in loop [] 0 offset
+
+          (* 
 let get_export_address_table binary offset =
   let rec loop acc i =
     let entry =

@@ -11,7 +11,7 @@ let get ?verbose:(verbose=false) filename =
   else
     (* BEGIN Binary cases *)
     let magic = Input.input_i32be ic in
-    if (true) then
+    if (verbose) then
       Printf.printf "opening %s with magic: 0x%x\n" filename magic;
     (* MACH FAT *)
     if (magic = Mach.Fat.kFAT_MAGIC) (* cafe babe *) then
@@ -78,7 +78,7 @@ let get ?verbose:(verbose=false) filename =
           let pe_offset = Input.input_i32 ic in
           seek_in ic pe_offset;
           let coff_magic = Input.input_i32be ic in
-          Printf.printf "0x%x\n" coff_magic;
+          (* Printf.printf "0x%x\n" coff_magic; *)
           if (coff_magic = PE.Header.kCOFF_MAGIC) then
             begin
               seek_in ic 0;
