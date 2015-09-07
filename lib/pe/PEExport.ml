@@ -1,3 +1,5 @@
+open PEHeader
+
 type export_directory_table = {
     export_flags: int [@size 4];
     time_date_stamp: int [@size 4];
@@ -35,7 +37,42 @@ type export_address_table_entry =
 
 let sizeof_export_address_table_entry = 4
 
-type export_address_table = export_address_table_entry list
+type export_address_table = export_address_table_entry list [@@deriving show]
+
+let get_export_address_table binary offset address_table_entries =
+  let rec loop acc count o =
+    if (count >= address_table_entries) then
+      List.rev acc
+    else
+      let pointer,o = Binary.u32o binary o in
+      loop ((ExportRVA pointer)::acc) (count+1) o
+  in loop [] 0 offset
+
+(* array of rvas into the export name table; 
+   export name is defined iff pointer table has pointer to the name*)
+type name_pointer_table = (int [@size 4]) list [@@deriving show]
+
+let get_name_pointer_table binary offset number_of_name_pointers =
+  let rec loop acc count o =
+    if (count >= number_of_name_pointers) then
+      List.rev acc
+    else
+      let pointer,o = Binary.u32o binary o in
+      loop (pointer::acc) (count+1) o
+  in loop [] 0 offset
+
+(* array of indexes into the export addres table *)
+(* idx = ordinal - ordinalbase *)
+type export_ordinal_table = (int [@size 2]) list [@@deriving show]
+
+let get_export_ordinal_table binary offset number_of_name_pointers =
+  let rec loop acc count o =
+    if (count >= number_of_name_pointers) then
+      List.rev acc
+    else
+      let idx,o = Binary.u16o binary o in
+      loop (idx::acc) (count+1) o
+  in loop [] 0 offset
 
 type export_name_table = bytes list [@@deriving show]
 
@@ -48,7 +85,83 @@ let get_export_name_table binary nexports offset =
       loop (name::acc) (count+1) o
   in loop [] 0 offset
 
-          (* 
+type t =
+  {
+    export_directory_table: export_directory_table;
+    name_pointer_table: name_pointer_table;
+    export_ordinal_table: export_ordinal_table;
+    export_address_table: export_address_table;
+    export_name_table: export_name_table;
+  } [@@deriving show]
+
+let get binary (data_directories:PEHeader.data_directories) section_tables =
+  let export_rva = data_directories.export_table in
+  let export_offset =
+    PEUtils.get_offset export_rva section_tables
+  in
+  let export_directory_table =
+    get_export_directory_table binary export_offset
+  in
+  let number_of_name_pointers =
+    export_directory_table.number_of_name_pointers
+  in
+  let address_table_entries =
+    export_directory_table.address_table_entries
+  in
+  let name_pointer_table_offset =
+    PEUtils.get_offset
+      export_directory_table.name_pointer_rva
+      section_tables
+  in
+  let export_address_table_offset =
+    PEUtils.get_offset
+      export_directory_table.export_address_table_rva
+      section_tables
+  in
+  let export_ordinal_table_offset =
+    PEUtils.get_offset
+      export_directory_table.ordinal_table_rva
+      section_tables
+  in  
+  let export_name_table_offset =
+    PEUtils.get_offset
+      export_directory_table.name_rva
+      section_tables
+  in
+  (* Printf.printf "name table offset 0x%x\n" export_name_table_offset; *)
+  let name_pointer_table =
+    get_name_pointer_table
+      binary
+      name_pointer_table_offset
+      number_of_name_pointers
+  in
+  let export_ordinal_table =
+    get_export_ordinal_table
+      binary
+      export_ordinal_table_offset
+      number_of_name_pointers    
+  in
+  let export_address_table =
+    get_export_address_table
+      binary
+      export_address_table_offset
+      address_table_entries
+  in
+  let export_name_table =
+    get_export_name_table
+      binary
+      number_of_name_pointers
+      export_name_table_offset
+  in
+  {
+    export_directory_table;
+    name_pointer_table;
+    export_ordinal_table;
+    export_address_table;
+    export_name_table;
+  }
+
+(* 
 let get_export_address_table binary offset =
   let rec loop acc i =
     let entry =
@@ -61,4 +174,4 @@ let get_export_address_table binary offset =
     else
       loop (entry::acc) (i+1)
   in loop [] 0
- *)
+*)

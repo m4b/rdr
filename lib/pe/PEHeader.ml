@@ -78,7 +78,10 @@ type windows_fields =
 
 let sizeof_windows_fields = (8 * 8) + 4
 
+(* TODO: module DataDirectories *)
 (* these are variable width and only exist if number_of_rva_and_sizes allows them *)
+
+
 type data_directories =
   {
     export_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];

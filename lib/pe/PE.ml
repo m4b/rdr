@@ -11,7 +11,7 @@ type t =
   {
     header: Header.t;
     size: int;
-    exports: Export.export_directory_table list;
+    exports: Export.t option;
     imports: Import.import_directory_table list;
   } [@@deriving (show)]
 
@@ -22,6 +22,8 @@ let get binary =
   let exports, imports =
     match header.Header.optional_header with
     | Some headers ->
+       let export_data = PEExport.get binary headers.data_directories section_tables in
+       (*
        let export_rva = headers.data_directories.export_table in
        let export_offset =
          Utils.get_offset export_rva section_tables
@@ -44,6 +46,7 @@ let get binary =
            nexports
            export_name_table_offset
        in
+        *)
        let import_rva = headers.data_directories.import_table in
        let import_offset =
          Utils.get_offset import_rva section_tables
@@ -51,13 +54,13 @@ let get binary =
        let import_directory_table =
          Import.get_import_directory_table binary import_offset
        in
-       Printf.printf "%s\n" @@ Export.show_export_name_table export_name_table;
+       (* Printf.printf "%s\n" @@ Export.show_export_name_table export_name_table; *)
        (* 
        Printf.printf "offset export: 0x%x\n" export_offset;
-        *)
-       [export_directory_table],[import_directory_table]
+       *)
+       (Some export_data),[import_directory_table]
     | None ->
-       [],[]
+       None,[]
   in
   {
     header;
