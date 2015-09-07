@@ -98,7 +98,10 @@ Library "pe"
   CompiledObject: best
   Modules:
    PE,
-   PEHeader
+   PEHeader,
+   PEImport,
+   PEExport,
+   PEUtils
 #   PECoverage
   BuildDepends:
    rdr.utils,

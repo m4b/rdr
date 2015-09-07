@@ -23,7 +23,7 @@ let is_null entry =
         (entry.name_rva = 0) &&
           (entry.import_address_table_rva = 0)
 
-type import_directory_table = import_directory_entry list
+type import_directory_table = import_directory_entry list [@@deriving show]
 
 let get_import_directory_table binary offset =
   let rec loop acc i =

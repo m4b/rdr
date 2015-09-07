@@ -4,10 +4,14 @@
 *)
 open Binary
 
+(* 
+[@printer fun fmt -> fprintf fmt "0x%x"];
+ *)
+       
 type dos_header =
   {
-    signature: int [@size 2]; (* 5a4d *)
-    pe_pointer: int [@size 4];  (* at offset 0x3c *)
+    signature: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"]; (* 5a4d *)
+    pe_pointer: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];  (* at offset 0x3c *)
   } [@@deriving (show, yojson)]
 
 let kDOS_MAGIC = 0x5a4d
@@ -17,14 +21,14 @@ let kPE_POINTER_OFFSET = 0x3c
 (* COFF Header *)
 type coff_header =
   {
-    signature: int [@size 4, be]; (* 0x50450000 *)
-    machine: int [@size 2];
-    number_of_sections: int [@size 2];
-    time_date_stamp: int [@size 4];
-    pointer_to_symbol_table: int [@size 4];
-    number_of_symbol_table: int [@size 4];
-    size_of_optional_header: int [@size 2];
-    characteristics: int [@size 2];
+    signature: int [@size 4, be][@printer fun fmt -> fprintf fmt "0x%x"]; (* 0x50450000 *)
+    machine: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"];
+    number_of_sections: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"];
+    time_date_stamp: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    pointer_to_symbol_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    number_of_symbol_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_optional_header: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"];
+    characteristics: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"];
   } [@@deriving (show, yojson)]
 
 let sizeof_coff_header = 24     (* bytes *)
@@ -33,15 +37,15 @@ let kCOFF_MAGIC = 0x50450000
 (* standard COFF fields *)
 type standard_fields =
   {
-    magic: int [@size 2];
-    major_linker_version: int [@size 1];
-    minor_linker_version: int [@size 1];
-    size_of_code: int [@size 4];
-    size_of_initialized_data: int [@size 4];
-    size_of_uninitialized_data: int [@size 4];
-    address_of_entry_point: int [@size 4];
-    base_of_code: int [@size 4];
-    base_of_data: int [@size 4]; (* absent in 64-bit PE32+ *)
+    magic: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"];
+    major_linker_version: int [@size 1][@printer fun fmt -> fprintf fmt "0x%x"];
+    minor_linker_version: int [@size 1][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_code: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_initialized_data: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_uninitialized_data: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    address_of_entry_point: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    base_of_code: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    base_of_data: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"]; (* absent in 64-bit PE32+ *)
   } [@@deriving (show, yojson)]
 
 let sizeof_standard_fields = (3 * 8) + 4
@@ -49,27 +53,27 @@ let sizeof_standard_fields = (3 * 8) + 4
 (* windows specific fields *)    
 type windows_fields =
   {
-    image_base: int [@size 4];  (* 8 in 64-bit *)
-    section_alignment: int [@size 4];
-    file_alignment: int [@size 4];
-    major_operating_system_version: int [@size 2];
-    minor_operating_system_version: int [@size 2];
-    major_image_version: int [@size 2];
-    minor_image_version: int [@size 2];
-    major_subsystem_version: int [@size 2];
-    minor_subsystem_version: int [@size 2];
-    win32_version_value: int [@size 4];
-    size_of_image: int [@size 4];
-    size_of_headers: int [@size 4];
-    check_sum: int [@size 4];
-    subsystem: int [@size 2];
-    dll_characteristics: int [@size 2];
-    size_of_stack_reserve: int [@size 4]; (* 8 64-bit *)
-    size_of_stack_commit: int [@size 4];  (* 8 *)
-    size_of_heap_reserve: int [@size 4];  (* 8 *)
-    size_of_heap_commit: int [@size 4];   (* 8 *)
-    loader_flags: int [@size 4];
-    number_of_rva_and_sizes: int [@size 4];
+    image_base: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];  (* 8 in 64-bit *)
+    section_alignment: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    file_alignment: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    major_operating_system_version: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"];
+    minor_operating_system_version: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"];
+    major_image_version: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"];
+    minor_image_version: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"];
+    major_subsystem_version: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"];
+    minor_subsystem_version: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"];
+    win32_version_value: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_image: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_headers: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    check_sum: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    subsystem: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"];
+    dll_characteristics: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_stack_reserve: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"]; (* 8 64-bit *)
+    size_of_stack_commit: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];  (* 8 *)
+    size_of_heap_reserve: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];  (* 8 *)
+    size_of_heap_commit: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];   (* 8 *)
+    loader_flags: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    number_of_rva_and_sizes: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
   } [@@deriving (show, yojson)]
 
 let sizeof_windows_fields = (8 * 8) + 4
@@ -77,52 +81,52 @@ let sizeof_windows_fields = (8 * 8) + 4
 (* these are variable width and only exist if number_of_rva_and_sizes allows them *)
 type data_directories =
   {
-    export_table: int [@size 4];
-    size_of_export_table: int [@size 4];
-    import_table: int [@size 4];
-    size_of_import_table: int [@size 4];
-    resource_table: int [@size 4];
-    size_of_resource_table: int [@size 4];
-    exception_table: int [@size 4];
-    size_of_exception_table: int [@size 4];
-    certificate_table: int [@size 4];
-    size_of_certificate_table: int [@size 4];
-    base_relocation_table: int [@size 4];
-    size_of_base_relocation_table: int [@size 4];
-    debug: int [@size 4];
-    size_of_debug: int [@size 4];
-    architecture: int [@size 4];
-    size_of_architecture: int [@size 4];    
-    global_ptr: int [@size 4];
-    size_of_global_ptr: int [@size 4];
-    tls_table: int [@size 4];
-    size_of_tls_table: int [@size 4];
-    load_config_table: int [@size 4];
-    size_of_load_config_table: int [@size 4];
-    bound_import: int [@size 4];
-    size_of_bound_import: int [@size 4];
-    import_address_table: int [@size 4];
-    size_of_import_address_table: int [@size 4];
-    delay_import_descriptor: int [@size 4];
-    size_of_delay_import_descriptor: int [@size 4];
-    clr_runtime_header: int [@size 4];
-    size_of_clr_runtime_header: int [@size 4];
-    reserved: int [@size 8, padding];
+    export_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_export_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    import_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_import_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    resource_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_resource_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    exception_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_exception_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    certificate_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_certificate_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    base_relocation_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_base_relocation_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    debug: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_debug: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    architecture: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_architecture: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];    
+    global_ptr: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_global_ptr: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    tls_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_tls_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    load_config_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_load_config_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    bound_import: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_bound_import: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    import_address_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_import_address_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    delay_import_descriptor: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_delay_import_descriptor: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    clr_runtime_header: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_clr_runtime_header: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    reserved: int [@size 8, padding][@printer fun fmt -> fprintf fmt "0x%x"];
   } [@@deriving (show, yojson)]
 
 let sizeof_data_directories = 15 * 8
 
 type section_table = {
     name: string [@size 8];
-    virtual_size: int [@size 4];
-    virtual_address: int [@size 4];
-    size_of_raw_data: int [@size 4];
-    pointer_to_raw_data: int [@size 4];
-    pointer_to_relocations: int [@size 4];
-    pointer_to_linenumbers: int [@size 4];
-    number_of_relocations: int [@size 2];
-    number_of_linenumbers: int [@size 2];
-    characteristics: int [@size 4];
+    virtual_size: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    virtual_address: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    size_of_raw_data: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    pointer_to_raw_data: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    pointer_to_relocations: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    pointer_to_linenumbers: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
+    number_of_relocations: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"];
+    number_of_linenumbers: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"];
+    characteristics: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
   } [@@deriving (show, yojson)]
 
 let sizeof_section_table = 8 * 5
@@ -274,6 +278,15 @@ let get_header binary =
   in
   {dos_header; coff_header;
    optional_header; section_tables}
+
+let rec get_section name sections =
+  match sections with
+  | [] -> raise Not_found
+  | section::sections ->
+     if (section.name = name) then
+       section
+     else
+       get_section name sections
 
 (* this won't work, requires a constructed header
    but we don't know which header to construct yet *)
