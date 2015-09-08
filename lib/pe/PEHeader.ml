@@ -12,7 +12,7 @@ type dos_header =
   {
     signature: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"]; (* 5a4d *)
     pe_pointer: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];  (* at offset 0x3c *)
-  } [@@deriving (show, yojson)]
+  } [@@deriving (show)]
 
 let kDOS_MAGIC = 0x5a4d
 let kDOS_CIGAM = 0x4d5a
@@ -29,7 +29,7 @@ type coff_header =
     number_of_symbol_table: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
     size_of_optional_header: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"];
     characteristics: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"];
-  } [@@deriving (show, yojson)]
+  } [@@deriving (show)]
 
 let sizeof_coff_header = 24     (* bytes *)
 let kCOFF_MAGIC = 0x50450000
@@ -46,7 +46,7 @@ type standard_fields =
     address_of_entry_point: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
     base_of_code: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
     base_of_data: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"]; (* absent in 64-bit PE32+ *)
-  } [@@deriving (show, yojson)]
+  } [@@deriving (show)]
 
 let sizeof_standard_fields = (3 * 8) + 4
 
@@ -74,7 +74,7 @@ type windows_fields =
     size_of_heap_commit: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];   (* 8 *)
     loader_flags: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
     number_of_rva_and_sizes: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
-  } [@@deriving (show, yojson)]
+  } [@@deriving (show)]
 
 let sizeof_windows_fields = (8 * 8) + 4
 
@@ -115,7 +115,7 @@ type data_directories =
     clr_runtime_header: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
     size_of_clr_runtime_header: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
     reserved: int [@size 8, padding][@printer fun fmt -> fprintf fmt "0x%x"];
-  } [@@deriving (show, yojson)]
+  } [@@deriving (show)]
 
 let sizeof_data_directories = 15 * 8
 
@@ -130,7 +130,7 @@ type section_table = {
     number_of_relocations: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"];
     number_of_linenumbers: int [@size 2][@printer fun fmt -> fprintf fmt "0x%x"];
     characteristics: int [@size 4][@printer fun fmt -> fprintf fmt "0x%x"];
-  } [@@deriving (show, yojson)]
+  } [@@deriving (show)]
 
 let sizeof_section_table = 8 * 5
 
@@ -139,14 +139,14 @@ type optional_header =
     standard_fields: standard_fields;
     windows_fields: windows_fields;
     data_directories: data_directories;
-  } [@@deriving (show, yojson)]
+  } [@@deriving (show)]
 
 type t = {
     dos_header: dos_header;
     coff_header: coff_header;
     optional_header: optional_header option;
     section_tables: section_table list;
-  } [@@deriving (show, yojson)]
+  } [@@deriving (show)]
 
 let get_dos_header binary offset :dos_header =
   let signature,o = Binary.u16o binary offset in
