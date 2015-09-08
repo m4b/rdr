@@ -26,10 +26,20 @@ let get binary =
          if (headers.data_directories.export_table = 0) then
            None
          else
-           Some (PEExport.get binary headers.data_directories section_tables) in
-       let import_data = PEImport.get binary headers.data_directories section_tables in
-    (*        (Some export_data),(Some import_data) *)
-       export_data,(Some import_data)       
+           Some (PEExport.get
+                   binary headers.data_directories
+                   section_tables)
+       in
+       let import_data =
+         if (headers.data_directories.import_table = 0) then
+           None
+         else
+           Some (PEImport.get
+           binary
+           headers.data_directories
+           section_tables)
+       in
+       export_data,import_data
     | None ->
        None,None
   in
