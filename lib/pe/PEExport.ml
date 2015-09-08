@@ -97,7 +97,7 @@ type t =
 let get binary (data_directories:PEHeader.data_directories) section_tables =
   let export_rva = data_directories.export_table in
   let export_offset =
-    PEUtils.get_offset export_rva section_tables
+    PEUtils.find_offset export_rva section_tables
   in
   let export_directory_table =
     get_export_directory_table binary export_offset
@@ -109,22 +109,22 @@ let get binary (data_directories:PEHeader.data_directories) section_tables =
     export_directory_table.address_table_entries
   in
   let name_pointer_table_offset =
-    PEUtils.get_offset
+    PEUtils.find_offset
       export_directory_table.name_pointer_rva
       section_tables
   in
   let export_address_table_offset =
-    PEUtils.get_offset
+    PEUtils.find_offset
       export_directory_table.export_address_table_rva
       section_tables
   in
   let export_ordinal_table_offset =
-    PEUtils.get_offset
+    PEUtils.find_offset
       export_directory_table.ordinal_table_rva
       section_tables
   in  
   let export_name_table_offset =
-    PEUtils.get_offset
+    PEUtils.find_offset
       export_directory_table.name_rva
       section_tables
   in
