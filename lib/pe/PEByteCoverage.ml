@@ -1,13 +1,34 @@
+(* 
+TODO:
+
+* verify sizes
+* implement import
+* implement certificate and other data directories
+ *)
+
 open ByteCoverage
 open PEHeader
 open PEExport
 
 let debug = false
 
+(* TODO: implement import data coverage *)
 let compute_import_data_coverage data_directory export_data sections data =
   data
 
-let compute_export_data_coverage data_directory (export_data:PEExport.export_data) sections data =
+let compute_exports_data_coverage exports data =
+  List.fold_left (fun acc export ->
+      ByteCoverage.add
+        (create_data
+         ~tag:Code
+         ~r1:export.offset
+         ~r2:(export.offset+export.size)
+         ~extra:export.name
+         ~understood:true
+      ) acc
+    ) data exports
+
+let compute_export_data_coverage data_directory export_data exports sections data =
   assert (data_directory.export_table <> 0);
   let size = data_directory.size_of_export_table in
   try
@@ -54,6 +75,7 @@ let compute_export_data_coverage data_directory (export_data:PEExport.export_dat
     in
     let r2 =
       r1
+      (* TODO: verify pointer table size is 4 *)
       + ((List.length export_data.name_pointer_table) * 4)
       (* bytes *)
     in
@@ -75,6 +97,7 @@ let compute_export_data_coverage data_directory (export_data:PEExport.export_dat
     in
     let r2 =
       r1
+      (* TODO: verify ordinal size is 4 *)
       + ((List.length export_data.export_ordinal_table) * 4)
     in
     let tag = SymbolTable in
@@ -88,12 +111,14 @@ let compute_export_data_coverage data_directory (export_data:PEExport.export_dat
          ~understood:true
       ) data
     in
-    let r1 = PEUtils.find_offset
+    let r1 =
+      PEUtils.find_offset
         export_data.export_directory_table.export_address_table_rva
         sections
     in
     let r2 =
       r1
+      (* TODO: verify address table is 4 *)
       + ((List.length export_data.export_address_table) * 4)
     in
     let tag = SymbolTable in
@@ -106,9 +131,10 @@ let compute_export_data_coverage data_directory (export_data:PEExport.export_dat
          ~extra:extra
          ~understood:true
       ) data
+    |> compute_exports_data_coverage exports
   with Not_found -> data
 
-let compute_data_directory_coverage optional_header (export_data:PEExport.export_data option) import_data sections data =
+let compute_data_directory_coverage optional_header export_data exports import_data sections data =
   match optional_header with
   | None ->
     data
@@ -117,7 +143,7 @@ let compute_data_directory_coverage optional_header (export_data:PEExport.export
     let data =
       match export_data with
       | Some d ->
-        compute_export_data_coverage dd d sections data
+        compute_export_data_coverage dd d exports sections data
       | _ -> data
     in
     match import_data with
@@ -135,7 +161,7 @@ let known_sections =
     SectionMap.empty
     [(".idata", SymbolTable);
      (".edata", SymbolTable);
-     (".text", Code);
+     (".text", Semantic);
      (".rdata", Data);
      (".data", Data);
      (".tls", Data);
@@ -175,7 +201,11 @@ let compute_section_table_coverage sections data =
           ) acc
     ) data sections
 
-let compute_byte_coverage header size (export_data:PEExport.export_data option) (import_data:PEImport.import_data option) sections binary :ByteCoverage.t =
+let compute_byte_coverage
+    header size
+    export_data exports
+    import_data imports 
+    sections binary :ByteCoverage.t =
   let dos_end = header.dos_header.pe_pointer in
   let coff_end = dos_end + PEHeader.sizeof_coff_header in
   let optional_end =
@@ -208,7 +238,7 @@ let compute_byte_coverage header size (export_data:PEExport.export_data option) 
     )
   |> compute_data_directory_coverage
     header.optional_header
-    export_data import_data
+    export_data exports import_data
     sections
   |> compute_section_table_coverage sections
   |> ByteCoverage.create size binary
