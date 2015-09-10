@@ -153,7 +153,9 @@ let compute_section_table_coverage sections data =
         let tag = SectionMap.find section.name known_sections in
         ByteCoverage.add
           (create_data
-             ~tag:tag
+             ~tag:tag (* TODO: 
+                         we need to add semantic tag,
+                         but lose so much understanding when so *)
              ~r1:r1
              ~r2:r2
              ~extra:extra

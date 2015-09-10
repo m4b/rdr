@@ -169,6 +169,23 @@ type synthetic_export = {
 
 type t = synthetic_export list [@@deriving show]
 
+let sort ex1 ex2 =
+  Pervasives.compare ex1.offset ex2.offset
+
+[@@@invariant sorted]
+let compute_size exports =
+  let rec loop acc exports =
+    match exports with
+    | [] ->
+      List.rev acc
+    | ex1::[] ->
+      List.rev (ex1::acc)
+    | ex1::((ex2::_) as exports) ->
+      loop
+        ({ex1 with size = (ex2.offset - ex1.offset)}::acc)
+        exports
+  in loop [] exports
+
 let get_exports export_data sections :t =
   let names = export_data.export_name_table in
   let addresses = export_data.export_address_table in
@@ -181,4 +198,4 @@ let get_exports export_data sections :t =
           rva
       in
       {name; offset; size = 0}
-    ) names
+    ) names |> List.sort sort |> compute_size
