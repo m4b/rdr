@@ -65,7 +65,9 @@ let get_name_pointer_table binary offset number_of_name_pointers =
 (* idx = ordinal - ordinalbase *)
 type export_ordinal_table = (int [@size 2]) list [@@deriving show]
 
-let get_export_ordinal_table binary offset number_of_name_pointers =
+let get_export_ordinal_table 
+    binary offset number_of_name_pointers
+  =
   let rec loop acc count o =
     if (count >= number_of_name_pointers) then
       List.rev acc
