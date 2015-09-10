@@ -96,7 +96,7 @@ type export_data =
     export_name_table: export_name_table;
   } [@@deriving show]
 
-let get binary (data_directories:PEHeader.data_directories) section_tables =
+let get binary data_directories section_tables =
   let export_rva = data_directories.export_table in
   let export_offset =
     PEUtils.find_offset export_rva section_tables
