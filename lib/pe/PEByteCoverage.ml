@@ -74,9 +74,19 @@ let compute_section_table_coverage sections data =
              ~r2:r2
              ~extra:extra
              ~understood:true
-          ) data
+          ) acc
       else
-        data
+        (* TODO: 
+           remove this hack for understanding
+           if we can get more granularity *)
+        ByteCoverage.add
+          (create_data
+             ~tag:Meta
+             ~r1:r1
+             ~r2:r2
+             ~extra:extra
+             ~understood:true
+          ) acc
     ) data sections
 
 let compute_byte_coverage header size (export_data:PEExport.export_data option) (import_data:PEImport.import_data option) sections binary :ByteCoverage.t =
