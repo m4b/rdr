@@ -171,8 +171,10 @@ type synthetic_export = {
 
 type t = synthetic_export list [@@deriving show]
 
-let sort ex1 ex2 =
-  Pervasives.compare ex1.offset ex2.offset
+let sort =
+  List.sort (fun ex1 ex2 -> 
+      Pervasives.compare ex1.offset ex2.offset
+    ) 
 
 [@@@invariant sorted]
 let compute_size exports =
@@ -200,4 +202,4 @@ let get_exports export_data sections :t =
           rva
       in
       {name; offset; size = 0}
-    ) names |> List.sort sort |> compute_size
+    ) names |> sort |> compute_size
