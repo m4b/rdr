@@ -112,7 +112,7 @@ let compute_section_header_coverage h shs data =
       (fun data -> List.fold_left f data known_sections)
     end
 
-let compute_byte_coverage h phs shs elf_size : ByteCoverage.t =
+let compute_byte_coverage h phs shs elf_size binary :ByteCoverage.t =
   let ehsize = h.ElfHeader.e_ehsize in
   let phsize = 
     (h.ElfHeader.e_phentsize * h.ElfHeader.e_phnum)
@@ -136,4 +136,4 @@ let compute_byte_coverage h phs shs elf_size : ByteCoverage.t =
     )
   |> compute_program_header_coverage phs
   |> compute_section_header_coverage h shs
-  |> ByteCoverage.create elf_size
+  |> ByteCoverage.create elf_size binary

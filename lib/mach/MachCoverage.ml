@@ -186,8 +186,8 @@ let compute_segment_coverage (segments:segment_command_64 list) dataset =
       ) in
     (fun dataset -> List.fold_left f dataset known_segments) dataset
 
-let compute header (load_commands:lc list) size =
+let compute header (load_commands:lc list) size binary =
   compute_header_coverage header ByteCoverage.empty
   |> compute_dyldinfo_coverage load_commands
   |> compute_segment_coverage (get_segments load_commands)
-  |> ByteCoverage.create size
+  |> ByteCoverage.create size binary
