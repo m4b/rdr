@@ -1,5 +1,6 @@
 open ByteCoverage
 open PEHeader
+open PEExport
 
 let debug = false
 
@@ -14,12 +15,95 @@ let compute_export_data_coverage data_directory (export_data:PEExport.export_dat
       PEUtils.find_offset data_directory.export_table sections
     in
     let r2 = r1 + size in
-    ByteCoverage.add
+    let data = ByteCoverage.add
       (create_data
-         ~tag:Meta
+         ~tag:SymbolTable
          ~r1:r1
          ~r2:r2
          ~extra:"Export Table"
+         ~understood:true
+      ) data
+    in
+    let r1 = 
+      PEUtils.find_offset
+        export_data.export_directory_table.name_rva
+        sections
+    in
+    let r2 =
+      r1
+      + (List.fold_left (fun acc name ->
+          (String.length name) + acc
+        )
+          0 export_data.export_name_table)
+    in
+    let tag = StringTable in
+    let extra = "Name Table" in
+    let data = ByteCoverage.add
+      (create_data
+         ~tag:tag
+         ~r1:r1
+         ~r2:r2
+         ~extra:extra
+         ~understood:true
+      ) data
+    in
+    let r1 =
+      PEUtils.find_offset
+        export_data.export_directory_table.name_pointer_rva
+        sections
+    in
+    let r2 =
+      r1
+      + ((List.length export_data.name_pointer_table) * 4)
+      (* bytes *)
+    in
+    let tag = SymbolTable in
+    let extra = "Name Pointer Table" in
+    let data = ByteCoverage.add
+      (create_data
+         ~tag:tag
+         ~r1:r1
+         ~r2:r2
+         ~extra:extra
+         ~understood:true
+      ) data
+    in
+    let r1 =
+      PEUtils.find_offset
+        export_data.export_directory_table.name_pointer_rva
+        sections
+    in
+    let r2 =
+      r1
+      + ((List.length export_data.export_ordinal_table) * 4)
+    in
+    let tag = SymbolTable in
+    let extra = "Ordinal Table" in
+    let data = ByteCoverage.add
+      (create_data
+         ~tag:tag
+         ~r1:r1
+         ~r2:r2
+         ~extra:extra
+         ~understood:true
+      ) data
+    in
+    let r1 = PEUtils.find_offset
+        export_data.export_directory_table.export_address_table_rva
+        sections
+    in
+    let r2 =
+      r1
+      + ((List.length export_data.export_address_table) * 4)
+    in
+    let tag = SymbolTable in
+    let extra = "Address Table" in
+    ByteCoverage.add
+      (create_data
+         ~tag:tag
+         ~r1:r1
+         ~r2:r2
+         ~extra:extra
          ~understood:true
       ) data
   with Not_found -> data
@@ -92,7 +176,9 @@ let compute_section_table_coverage sections data =
 let compute_byte_coverage header size (export_data:PEExport.export_data option) (import_data:PEImport.import_data option) sections binary :ByteCoverage.t =
   let dos_end = header.dos_header.pe_pointer in
   let coff_end = dos_end + PEHeader.sizeof_coff_header in
-  let optional_end = coff_end + header.coff_header.size_of_optional_header in
+  let optional_end =
+    coff_end + header.coff_header.size_of_optional_header
+  in
   ByteCoverage.add
     (create_data
        ~tag:Meta
@@ -118,6 +204,9 @@ let compute_byte_coverage header size (export_data:PEExport.export_data option) 
        ~extra:"Optional Headers"
        ~understood:true
     )
+  |> compute_data_directory_coverage
+    header.optional_header
+    export_data import_data
+    sections
   |> compute_section_table_coverage sections
-  |> compute_data_directory_coverage header.optional_header export_data import_data sections
   |> ByteCoverage.create size binary
