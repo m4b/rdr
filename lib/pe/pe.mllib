@@ -1,0 +1,11 @@
+# OASIS_START
+# DO NOT EDIT (digest: ae252bacb1256218de3088cb5b895afc)
+PE
+PEHeader
+PEImport
+PEExport
+PEMachineType
+PECharacteristic
+PEByteCoverage
+PEUtils
+# OASIS_STOP

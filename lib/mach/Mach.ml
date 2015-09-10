@@ -98,5 +98,5 @@ let get binary =
     header; load_commands; name; nlist; nnlist;
     imports; nimports; exports; nexports;
     is_lib; libraries; nlibraries; raw_code; size;
-    byte_coverage = Coverage.compute header load_commands size;
+    byte_coverage = Coverage.compute header load_commands size binary;
   }

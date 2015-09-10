@@ -85,7 +85,7 @@ let get_export_name_table binary nexports offset =
       loop (name::acc) (count+1) o
   in loop [] 0 offset
 
-type t =
+type export_data =
   {
     export_directory_table: export_directory_table;
     name_pointer_table: name_pointer_table;
@@ -128,7 +128,7 @@ let get binary (data_directories:PEHeader.data_directories) section_tables =
       export_directory_table.name_rva
       section_tables
   in
-  (* Printf.printf "name table offset 0x%x\n" export_name_table_offset; *)
+  (*   Printf.printf "name table offset 0x%x\n" export_name_table_offset; *)
   let name_pointer_table =
     get_name_pointer_table
       binary
@@ -161,17 +161,24 @@ let get binary (data_directories:PEHeader.data_directories) section_tables =
     export_name_table;
   }
 
-(* 
-let get_export_address_table binary offset =
-  let rec loop acc i =
-    let entry =
-      get_export_address_table_entry
-        binary
-        (offset + (i*sizeof_export_address_table_entry))
-    in
-    if (is_null entry) then
-      List.rev (entry::acc)
-    else
-      loop (entry::acc) (i+1)
-  in loop [] 0
-*)
+type synthetic_export = {
+  name: string;
+  offset: int;
+  size: int;
+} [@@deriving show]
+
+type t = synthetic_export list [@@deriving show]
+
+let get_exports export_data sections :t =
+  let names = export_data.export_name_table in
+  let addresses = export_data.export_address_table in
+  List.mapi (fun i name ->
+      let offset = 
+        match (List.nth addresses i) with 
+        | ExportRVA rva ->
+          PEUtils.find_offset rva sections
+        | ForwarderRVA rva ->
+          rva
+      in
+      {name; offset; size = 0}
+    ) names

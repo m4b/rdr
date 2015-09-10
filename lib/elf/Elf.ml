@@ -97,7 +97,7 @@ let get ?meta_only:(meta_only=false) binary =
   in
   if (debug) then Reloc.print_relocs64 relocations;
   let byte_coverage =
-      ElfCoverage.compute_byte_coverage header program_headers section_headers size
+      ElfCoverage.compute_byte_coverage header program_headers section_headers size binary
   in
   (* TODO: fix *)
   let raw_code = if (meta_only) then

@@ -1,3 +1,5 @@
+(* TODO: add zero scanner *)
+
 let debug = false
 
 type tag = | Meta
@@ -12,7 +14,7 @@ type tag = | Meta
            | Data
            | Invalid
            | Semantic
-           | Zero
+           | Zero [@@deriving show]
 
 let tag_to_string =
   function
@@ -49,7 +51,17 @@ type data =
     extra: string;
     understood: bool;
     container: bool;
-  }
+  } [@@deriving show]
+
+let data_to_string (data:data) =
+  Printf.sprintf "size: %d tag: %s\n  range_start: 0x%x range_end 0x%x understood: %b container: %b extra: %s"
+    data.size
+    (tag_to_string data.tag)
+    data.range_start
+    data.range_end
+    data.understood
+    data.container
+    data.extra
 
 (* range specific *)
 let is_contained d1 d2 = 
@@ -77,22 +89,12 @@ let sort a b =
 (* DataSet specific functions *)
 module DataSet = Set.Make(
   struct 
-    type t = data
+    type t = data [@@deriving show]
     let compare = sort
   end)
 
-type t = {
-  data: DataSet.t;
-  size: int;
-  total_coverage: int;
-  total_understood: int;
-  percent_coverage: float;
-  percent_understood: float;
-  tags: string list;
-}
-
 let mem = DataSet.mem
-let add data set = DataSet.add data set             (* DataSet.add *)
+let add data set = DataSet.add data set    (* DataSet.add *)
 let empty = DataSet.empty                  (* DataSet.empty *)
 let fold = DataSet.fold
 let iter = DataSet.iter
@@ -105,8 +107,31 @@ let is_covered x dataset =
       && (is_contained x y)
     ) dataset
 
-let is_semantic x = x.tag = Semantic
+let print_data data =
+  iter (fun data -> Printf.printf "%s\n" (data_to_string data)) data
 
+type t = {
+  data: DataSet.t [@printer fun fmt -> print_data];
+  size: int;
+  total_coverage: int;
+  total_understood: int;
+  percent_coverage: float;
+  percent_understood: float;
+  tags: string list;
+} [@@deriving show]
+
+let print coverage =
+  print_data coverage.data;
+  Printf.printf "Total Coverage: %d / %d = %f\n"
+    coverage.total_coverage
+    coverage.size
+    coverage.percent_coverage;
+  Printf.printf "Understood Coverage: %d / %d = %f\n"
+    coverage.total_understood
+    coverage.size
+    coverage.percent_understood
+
+let is_semantic x = x.tag = Semantic
 
 (* there exists an equal range in the dataset *)
 let is_same_range x dataset =
@@ -169,30 +194,6 @@ let finalize dataset =
       else
         add el acc) dataset empty
 
-let data_to_string (data:data) =
-  Printf.sprintf "size: %d tag: %s\n  range_start: 0x%x range_end 0x%x understood: %b container: %b extra: %s"
-    data.size
-    (tag_to_string data.tag)
-    data.range_start
-    data.range_end
-    data.understood
-    data.container
-    data.extra
-
-let print_data data =
-  iter (fun data -> Printf.printf "%s\n" (data_to_string data)) data
-
-let print coverage =
-  print_data coverage.data;
-  Printf.printf "Total Coverage: %d / %d = %f\n"
-    coverage.total_coverage
-    coverage.size
-    coverage.percent_coverage;
-  Printf.printf "Understood Coverage: %d / %d = %f\n"
-    coverage.total_understood
-    coverage.size
-    coverage.percent_understood
-
 (* creates data; defaults container to false and auto-computes size *)
 let create_data
     ~tag:tag 
@@ -225,8 +226,25 @@ let count_coverage dataset =
   in
   total,understood
 
+
+let rec zeroes_in_range r1 r2 binary =
+  if (r1 >= r2) then true
+  else
+  if (Bytes.get binary r1 |> Char.code <> 0) then
+    false
+  else
+    zeroes_in_range (r1+1) r2 binary
+
+let zero_scan datalist binary =
+  List.map (fun data ->
+      if (not data.understood && zeroes_in_range data.range_start data.range_end binary) then
+        {data with understood=true; tag=Zero; extra="Zeroes // Computed"}
+      else
+        data
+    ) datalist
+
 (* @invariant sorted, normalized *)
-let compute_unknown dataset size =
+let compute_unknown dataset size binary =
   let extra = "Unknown // Computed" in
   let bindings = to_list dataset in
   (*   if (debug) then print dataset; *)
@@ -248,7 +266,7 @@ let compute_unknown dataset size =
           if (d1.range_end = d2.range_start || same_range d1 d2) then
             loop acc tail
           else
-            (* if it's semantic, and the first's range end is 
+            (* if it's semantic, and the first's range end is
                greater than the second's start
                (it contains it, which is guaranteed by our sorting), we ignore it *)
           if (d1.tag = Semantic && d1.range_end >= d2.range_start) then
@@ -259,11 +277,13 @@ let compute_unknown dataset size =
             loop (data::acc) tail
       in loop [] bindings
   in
+  (* scan for zeroes and fixup *)
+  zero_scan unknown binary
   (* add the unknown data back into the dataset *)
-  List.fold_left (fun dataset data -> add data dataset) dataset unknown
+  |> List.fold_left (fun dataset data -> add data dataset) dataset
 
 (* the preliminary data comes from an oracle which knows about the binary format, e.g., elf or mach specific counters *)
-let create size data =
+let create size binary data =
   (* normalize right here, send only the largest covers into compute_unknown, similarly for counting *)
   let normalized_data,rest = normalize data in
   if (debug) then
@@ -274,7 +294,7 @@ let create size data =
       print_data rest;
       print_string "\n\n---------------------------\n\n";
     end;
-  let data = compute_unknown normalized_data size
+  let data = compute_unknown normalized_data size binary
              |> DataSet.union rest |> finalize in
   let total_coverage,total_understood = count_coverage data in
   let percent_coverage = (float_of_int total_coverage) /.  (float_of_int size) in

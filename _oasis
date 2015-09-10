@@ -44,6 +44,8 @@ Library "utils"
     Leb128,
     ByteCoverage,
     Generics
+  BuildDepends:
+    ppx_deriving.show
 
 Library "mach"
   Path: lib/mach
@@ -101,12 +103,14 @@ Library "pe"
    PEHeader,
    PEImport,
    PEExport,
+   PEMachineType,
+   PECharacteristic,
+   PEByteCoverage,
    PEUtils
-#   PECoverage
   BuildDepends:
-   rdr.utils,
+   ppx_import,
    ppx_deriving.show,
-   ppx_deriving_yojson
+   rdr.utils,
 
 Library "goblin"
   Path: lib/goblin
