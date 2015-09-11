@@ -2,22 +2,88 @@
 TODO:
 
 * verify sizes
-* implement import
+* consider postprocessing sizes with coverage information?
 * implement certificate and other data directories
  *)
 
 open ByteCoverage
 open PEHeader
 open PEExport
+open PEImport
 
 let debug = false
 
-(* TODO: implement import data coverage *)
-let compute_import_data_coverage data_directory export_data sections data =
-  data
+let compute_import_lookup_coverage sections acc import =
+  try
+    match import._synthetic with
+    | HintNameTableRVA (rva, entry) ->
+      let r1 = PEUtils.find_offset rva sections in
+      let r2 = r1 + (String.length entry.name) + 2 (* size black magic number *) in
+      let extra = entry.name ^ " // Import Symbol" in
+      ByteCoverage.add
+        (create_data
+           ~tag:Symbol
+           ~r1:r1
+           ~r2:r2
+           ~extra:extra
+           ~understood:true
+        ) acc
+    | OrdinalNumber ordinal ->
+      acc
+  with Not_found -> acc
 
-let compute_exports_data_coverage exports data =
-  List.fold_left (fun acc export ->
+let compute_import_entry_coverage sections acc entry =
+  (* TODO: fix with auto-computed offset? *)
+  let acc = try
+      let r1 = PEUtils.find_offset entry.import_directory_entry.name_rva sections in
+      let extra = entry._name ^ " // Library Name" in
+      ByteCoverage.add
+        (create_data
+           ~tag:String
+           ~r1:r1
+           ~r2:(r1 + (String.length entry._name))
+           ~extra:extra
+           ~understood:true
+        ) acc
+    with Not_found -> acc
+  in
+  let r1 = PEUtils.find_offset entry.import_directory_entry.import_address_table_rva sections in
+  let r2 =
+    r1 +
+    (List.length entry._import_address_table*(PEImport.sizeof_import_address_table_entry))
+  in
+  let extra = entry._name ^ " // Import Address Table" in
+  let acc =
+    ByteCoverage.add
+      (create_data
+         ~tag:Meta
+         ~r1:r1
+         ~r2:r2
+         ~extra:extra
+         ~understood:true
+      ) acc
+  in List.fold_left (compute_import_lookup_coverage sections) acc entry._import_lookup_table
+
+let compute_import_data_coverage data_directory import_data imports sections data =
+  assert (data_directory.import_table <> 0);
+  try 
+    let size = data_directory.size_of_import_table in
+    let r1 = PEUtils.find_offset data_directory.import_table sections in
+    let data =
+    ByteCoverage.add
+      (create_data
+         ~tag:Semantic
+         ~r1:r1
+         ~r2:(r1 + size)
+         ~extra:"Import Directory Table"
+         ~understood:true
+      ) data
+    in
+    List.fold_left (compute_import_entry_coverage sections) data import_data
+  with Not_found -> data
+
+let compute_exports_data_coverage (exports:PEExport.t) data =
+  List.fold_left (fun acc (export:synthetic_export) ->
       ByteCoverage.add
         (create_data
          ~tag:Code
@@ -28,7 +94,7 @@ let compute_exports_data_coverage exports data =
       ) acc
     ) data exports
 
-let compute_export_data_coverage data_directory export_data exports sections data =
+let compute_export_data_coverage data_directory export_data (exports:PEExport.t) sections data =
   assert (data_directory.export_table <> 0);
   let size = data_directory.size_of_export_table in
   try
@@ -134,7 +200,11 @@ let compute_export_data_coverage data_directory export_data exports sections dat
     |> compute_exports_data_coverage exports
   with Not_found -> data
 
-let compute_data_directory_coverage optional_header export_data exports import_data sections data =
+let compute_data_directory_coverage
+    optional_header
+    export_data (exports:PEExport.t)
+    import_data (imports:PEImport.t)
+    sections data =
   match optional_header with
   | None ->
     data
@@ -148,7 +218,7 @@ let compute_data_directory_coverage optional_header export_data exports import_d
     in
     match import_data with
     | Some d ->
-      compute_import_data_coverage dd d sections data
+      compute_import_data_coverage dd d imports sections data
     | _ -> data
 
 module SectionMap = Map.Make(String)
@@ -176,24 +246,20 @@ let compute_section_table_coverage sections data =
       let r2 = r1 + section.size_of_raw_data in
       let extra = "Section Table // " ^ section.name in
       if (SectionMap.mem section.name known_sections) then
+        (* all semantic for now *)
         let tag = SectionMap.find section.name known_sections in
         ByteCoverage.add
           (create_data
-             ~tag:tag (* TODO: 
-                         we need to add semantic tag,
-                         but lose so much understanding when so *)
+             ~tag:tag
              ~r1:r1
              ~r2:r2
              ~extra:extra
              ~understood:true
           ) acc
       else
-        (* TODO: 
-           remove this hack for understanding
-           if we can get more granularity *)
         ByteCoverage.add
           (create_data
-             ~tag:Meta
+             ~tag:Semantic
              ~r1:r1
              ~r2:r2
              ~extra:extra
@@ -238,7 +304,8 @@ let compute_byte_coverage
     )
   |> compute_data_directory_coverage
     header.optional_header
-    export_data exports import_data
+    export_data exports
+    import_data imports
     sections
   |> compute_section_table_coverage sections
   |> ByteCoverage.create size binary

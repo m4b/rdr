@@ -2,17 +2,30 @@ open PEHeader
 
 let debug = false
 
-type synthetic_import_lookup_table_entry =
-  | OrdinalNumber of int [@size 16]
-  | HintNameTableRVA of int [@size 31]
-                            [@@deriving show]
-
 type hint_name_table_entry = {
     hint: int [@size 2];
     name: string;
-  } [@@deriving show]
+  }
 
-type hint_name_table = hint_name_table_entry list [@@deriving show]
+let pp_hint_name_table_entry ppf h =
+  Format.fprintf ppf "@[%s hint: 0x%x@]" h.name h.hint
+
+let show_hint_name_table_entry h =
+  pp_hint_name_table_entry Format.str_formatter h;
+  Format.flush_str_formatter()
+
+type synthetic_import_lookup_table_entry =
+  | OrdinalNumber of int [@size 16]
+  | HintNameTableRVA of (int [@size 31] * hint_name_table_entry)
+
+let pp_synthetic_import_lookup_table_entry ppf import =
+  match import with
+  | OrdinalNumber ordinal -> Format.fprintf ppf "@[ordinal: 0x%x@]" ordinal
+  | HintNameTableRVA (rva,entry) -> Format.fprintf ppf "@[%a@ rva: 0x%x@]" pp_hint_name_table_entry entry rva
+
+let show_synthetic_import_lookup_table_entry entry =
+  pp_synthetic_import_lookup_table_entry Format.str_formatter entry;
+  Format.flush_str_formatter()
 
 let get_hint_name_table_entry binary offset :hint_name_table_entry =
   let hint,o = Binary.u16o binary offset in
@@ -23,14 +36,33 @@ let get_hint_name_table_entry binary offset :hint_name_table_entry =
 type import_lookup_table_entry = {
     bitfield: int [@size 32];
     _synthetic: synthetic_import_lookup_table_entry;
-    _hint_name_table_entry: hint_name_table_entry option;
-  } [@@deriving show]
+  }
+
+let pp_import_lookup_table_entry ppf entry =
+  Format.fprintf ppf "@[%a@ bitfield: 0x%x@]" pp_synthetic_import_lookup_table_entry entry._synthetic entry.bitfield
+
+let show_import_lookup_table_entry entry =
+  pp_import_lookup_table_entry Format.str_formatter entry;
+  Format.flush_str_formatter()
 
 (* 32-bit *)
-type import_lookup_table = import_lookup_table_entry list [@@deriving show]
+type import_lookup_table = import_lookup_table_entry list
+
+let pp_import_lookup_table ppf table =
+  match table with
+  | [] -> Format.fprintf ppf "@[None@]"
+  | x::[] -> Format.fprintf ppf "@[%a@]" pp_import_lookup_table_entry x
+  | x::xs ->
+    Format.fprintf ppf "@[<v 2>@,%a@ " pp_import_lookup_table_entry x;
+    List.iter (fun x -> Format.fprintf ppf "@,%a@ " pp_import_lookup_table_entry x) xs;
+    Format.fprintf ppf "@]"
+
+let show_pp_import_lookup_table table =
+  pp_import_lookup_table Format.str_formatter table;
+  Format.flush_str_formatter()
 
 (* 32-bit *)
-let get_synthetic_import_lookup_table binary offset sections :import_lookup_table_entry list =
+let get_synthetic_import_lookup_table binary offset sections :import_lookup_table =
   let rec loop acc o =
     let bitfield,o = Binary.u32o binary o in
     if (bitfield = 0) then
@@ -43,28 +75,25 @@ let get_synthetic_import_lookup_table binary offset sections :import_lookup_tabl
         if (0x800000000 land bitfield = 1) then (* import by ordinal *)
           OrdinalNumber (0xffff land bitfield)
         else
-          HintNameTableRVA (0x8ffffffff land bitfield)
-      in
-      let _hint_name_table_entry =
-        match _synthetic with
-        | HintNameTableRVA rva ->
-          if (debug) then Printf.printf "searching for RVA 0x%x " rva;
-          begin
-          try
-            let offset = PEUtils.find_offset rva sections in
-            if (debug) then Printf.printf "offset 0x%x\n" offset;
-            flush stdout;
-            Some (get_hint_name_table_entry binary offset)
-          with Not_found -> 
-            begin 
-              if (debug) then Printf.printf "... NONE\n";
-              None 
+          let rva = 0x8ffffffff land bitfield in
+          let hentry =
+            begin
+              if (debug) then Printf.printf "searching for RVA 0x%x " rva;
+              try
+                let offset = PEUtils.find_offset rva sections in
+                if (debug) then Printf.printf "offset 0x%x\n" offset;flush stdout;
+                get_hint_name_table_entry binary offset
+              with Not_found ->
+                begin 
+                  if (debug) then Printf.printf "... NONE\n";
+                  {hint = 0; name = ""}
+                end
             end
-          end
-        | _ -> None
+          in
+          HintNameTableRVA (rva, hentry)
       in
       let entry =
-        {bitfield; _synthetic; _hint_name_table_entry}
+        {bitfield; _synthetic;}
       in
       loop (entry::acc) o
   in loop [] offset  
@@ -82,7 +111,18 @@ let get_import_lookup_table binary offset =
 (* where binding occurs; virtual memory addresses of imported symbols
  resolved by the loader are placed here
  *)
-type import_address_table = int list [@@deriving show]
+type import_address_table = int list
+
+let pp_import_address_table ppf list =
+  match list with
+  | [] -> Format.fprintf ppf "@[[]@]"
+  | x::[] -> Format.fprintf ppf "@[[0x%x]@]" x
+  | x::xs ->
+    Format.fprintf ppf "@[[@]@[@ 0x%x@ " x;
+    List.iter (fun x -> Format.fprintf ppf "0x%x@ " x) xs;
+    Format.fprintf ppf "@]@[]@]"
+
+let sizeof_import_address_table_entry = 4 (* bytes *)
 
 let get_import_address_table binary offset =
   let rec loop acc o =
@@ -99,18 +139,45 @@ type import_directory_entry = {
     forwarder_chain: int [@size 4];
     name_rva: int [@size 4];
     import_address_table_rva: int [@size 4];
-  } [@@deriving show]
+  }
+
+let pp_import_directory_entry ppf entry =
+  Format.fprintf ppf 
+    "import_lookup_table_rva: 0x%x@ time_date_stamp: %d@ forwarder_chain: 0x%x@ name_rva: 0x%x@ import_address_table_rva: 0x%x"
+    entry.import_lookup_table_rva
+    entry.time_date_stamp
+    entry.forwarder_chain
+    entry.name_rva
+    entry.import_address_table_rva
 
 type synthetic_import_directory_entry = {
     import_directory_entry: import_directory_entry;
     _name: string [@computed];
     _import_lookup_table: import_lookup_table [@computed];
     _import_address_table: import_address_table [@computed];
-  } [@@deriving show]
+  }
+
+let pp_synthetic_import_directory_entry ppf entry =
+  Format.fprintf ppf 
+    "@[@[<v>%s@ @]@[<v 2>@ %a@ lookup_table:@ @[%a@]@ address_table:@ @[%a@]@]@]"
+    entry._name
+    pp_import_directory_entry entry.import_directory_entry
+    pp_import_lookup_table entry._import_lookup_table
+    pp_import_address_table entry._import_address_table
 
 let sizeof_import_directory_entry = 20 (* bytes *)
 
-type import_directory_table = synthetic_import_directory_entry list [@@deriving show]
+type import_directory_table = synthetic_import_directory_entry list
+
+let pp_import_directory_table ppf table =
+  Format.fprintf ppf "Import Data:";
+  match table with
+  | [] -> Format.fprintf ppf "@[No Import Data@]"
+  | x::[] -> Format.fprintf ppf "@[%a@]" pp_synthetic_import_directory_entry x
+  | x::xs ->
+    Format.fprintf ppf "@[<v>@, %a@ " pp_synthetic_import_directory_entry x;
+    List.iter (fun x -> Format.fprintf ppf "@, %a@ " pp_synthetic_import_directory_entry x) xs;
+    Format.fprintf ppf "@]"
 
 let get_import_directory_entry binary offset :import_directory_entry =
   let import_lookup_table_rva,o = Binary.u32o binary offset in
@@ -176,7 +243,10 @@ let get_import_directory_table binary offset sections=
       loop (synthetic_entry::acc) (i+1)
   in loop [] 0
 
-type import_data = import_directory_table [@@deriving show]
+type import_data = import_directory_table
+
+let pp_import_data ppf data =
+  pp_import_directory_table ppf data
 
 let get binary data_directories sections =
   let import_directory_table_rva = data_directories.import_table in
@@ -193,30 +263,48 @@ let get binary data_directories sections =
   if (debug) then Printf.printf "finished import directory table\n"; flush stdout;
   import_directory_table
 
+(* TODO: figure out best way to implement offset *)
 type synthetic_import = {
   name: string;
   dll: string;
   ordinal: int [@size 2];
+  offset: int [@size 4];
 } [@@deriving show]
 
-let get_synthetic_import dll (entry:import_lookup_table_entry) =
-  let name,ordinal = match entry._hint_name_table_entry with
-    | Some hint_entry ->
-      hint_entry.name,hint_entry.hint (* ordinal *)
-    | None ->
-      match entry._synthetic with
-      | OrdinalNumber ordinal ->
-        "",ordinal
-      | HintNameTableRVA rva ->
-        begin
-          Printf.eprintf "<PE.Import> warning hint/name table rva from %s without hint 0x%x\n" dll rva;
-        (* this shouldn't be possible *)
-          "",0
-        end
-  in
-  {name; ordinal; dll;}
+let pp_synthetic_import ppf import =
+  Format.fprintf ppf "@[%16x %s -> %s[%d]@]"
+    import.offset import.name import.dll import.ordinal
 
-type t = synthetic_import list [@@deriving show]
+let show_pp_synthetic_import import =
+  pp_synthetic_import Format.str_formatter import;
+  Format.flush_str_formatter()
+
+let get_synthetic_import dll (entry:import_lookup_table_entry) =
+  (* let offset = try PEUtils.find_offset entry. *)
+  let name,ordinal = match entry._synthetic with
+    | HintNameTableRVA (rva, hint_entry) ->
+      let res = hint_entry.name,hint_entry.hint (* ordinal *) in
+      if (hint_entry.name = "" && hint_entry.hint = 0) then
+        Printf.eprintf "<PE.Import> warning hint/name table rva from %s without hint 0x%x\n" dll rva;
+      res
+    | OrdinalNumber ordinal ->
+      "",ordinal
+  in
+  {name; ordinal; dll; offset=0x0}
+
+type t = synthetic_import list
+
+let pp ppf t =
+  match t with
+  | [] -> Format.fprintf ppf "@[[]@]"
+  | x::[] -> Format.fprintf ppf "@[[%a]@]" pp_synthetic_import x
+  | x::xs ->
+    Format.fprintf ppf "@[[@]@[<v>%a@ " pp_synthetic_import x;
+    List.iter (fun x -> Format.fprintf ppf "%a@ " pp_synthetic_import x) xs;
+    Format.fprintf ppf "@]@[]@]"
+
+let print t =
+   pp Format.std_formatter t
 
 let get_imports import_data :t =
   let rec loop acc entries =
