@@ -12,9 +12,27 @@ type export_directory_table = {
     export_address_table_rva: int [@size 4];
     name_pointer_rva: int [@size 4];
     ordinal_table_rva: int [@size 4];
-  } [@@deriving show]
+  }
 
 let sizeof_export_directory_table = 40 (* bytes *)
+
+let pp_export_directory_table ppf table =
+  Format.fprintf ppf "ExportFlags: 0x%x@ TimeDateStamp: %d@ MajorVersion: %d@ MinorVersion: %d@ NameRVA: 0x%x@ OrdinalBase: 0x%x@ AddressTableEntries: %d@ NumberOfNamePointers: %d@ ExportAddressTableRVA: 0x%x@ NamePointerRVA: 0x%x@ OrdinalTableRVA: 0x%x"
+    table.export_flags
+    table.time_date_stamp
+    table.major_version
+    table.minor_version
+    table.name_rva
+    table.ordinal_base
+    table.address_table_entries
+    table.number_of_name_pointers
+    table.export_address_table_rva
+    table.name_pointer_rva
+    table.ordinal_table_rva
+
+let show_export_directory_table table =
+  pp_export_directory_table Format.str_formatter table;
+  Format.flush_str_formatter()
 
 let get_export_directory_table binary offset :export_directory_table =
   let export_flags,o = Binary.u32o binary offset in
@@ -33,11 +51,20 @@ let get_export_directory_table binary offset :export_directory_table =
 type export_address_table_entry =
   | ExportRVA of int [@size 4]
   | ForwarderRVA of int [@size 4]
-                        [@@deriving show]
 
 let sizeof_export_address_table_entry = 4
 
-type export_address_table = export_address_table_entry list [@@deriving show]
+let pp_export_address_table_entry ppf entry =
+  match entry with
+  | ExportRVA rva ->
+    Format.fprintf ppf "Export 0x%x" rva
+  | ForwarderRVA rva ->
+    Format.fprintf ppf "Forwarder 0x%x" rva
+
+type export_address_table = export_address_table_entry list
+
+let pp_export_address_table ppf table =
+  RdrUtils.Printer.pp_seq ppf pp_export_address_table_entry table
 
 let get_export_address_table binary offset address_table_entries =
   let rec loop acc count o =
@@ -50,7 +77,10 @@ let get_export_address_table binary offset address_table_entries =
 
 (* array of rvas into the export name table; 
    export name is defined iff pointer table has pointer to the name*)
-type name_pointer_table = (int [@size 4]) list [@@deriving show]
+type name_pointer_table = (int [@size 4]) list
+
+let pp_name_pointer_table ppf table =
+  RdrUtils.Printer.pp_h ppf RdrUtils.Printer.pp_hex table
 
 let get_name_pointer_table binary offset number_of_name_pointers =
   let rec loop acc count o =
@@ -63,7 +93,10 @@ let get_name_pointer_table binary offset number_of_name_pointers =
 
 (* array of indexes into the export addres table *)
 (* idx = ordinal - ordinalbase *)
-type export_ordinal_table = (int [@size 2]) list [@@deriving show]
+type export_ordinal_table = (int [@size 2]) list
+
+let pp_export_ordinal_table ppf table =
+  RdrUtils.Printer.pp_h ppf RdrUtils.Printer.pp_hex table
 
 let get_export_ordinal_table 
     binary offset number_of_name_pointers =
@@ -75,7 +108,10 @@ let get_export_ordinal_table
       loop (idx::acc) (count+1) o
   in loop [] 0 offset
 
-type export_name_table = bytes list [@@deriving show]
+type export_name_table = bytes list
+
+let pp_export_name_table ppf table =
+  RdrUtils.Printer.pp_h ppf RdrUtils.Printer.pp_string table
 
 let get_export_name_table binary nexports offset =
   let rec loop acc count current =
@@ -93,7 +129,36 @@ type export_data =
     export_ordinal_table: export_ordinal_table;
     export_address_table: export_address_table;
     export_name_table: export_name_table;
-  } [@@deriving show]
+  }
+
+let pp_export_data ppf data =
+  Format.fprintf ppf "@[<v 2>Export Directory Table";
+  Format.fprintf ppf
+    "@ %a" pp_export_directory_table data.export_directory_table;
+  Format.fprintf ppf "@]";
+  Format.fprintf ppf "@ @[<v 2>Name Pointer Table";
+  Format.fprintf ppf
+    "@ %a" pp_name_pointer_table data.name_pointer_table;
+  Format.fprintf ppf "@]";
+  Format.fprintf ppf "@ @[<v 2>Export Ordinal Table";
+  Format.fprintf ppf
+    "@ %a" pp_export_ordinal_table data.export_ordinal_table;
+  Format.fprintf ppf "@]";
+  Format.fprintf ppf "@ @[<v 2>Export Address Table";
+  Format.fprintf ppf
+    "@ %a" pp_export_address_table data.export_address_table;
+  Format.fprintf ppf "@]";
+  Format.fprintf ppf "@ @[<v 2>Export Name Table";
+  Format.fprintf ppf
+    "@ %a" pp_export_name_table data.export_name_table;
+  Format.fprintf ppf "@]@]"
+
+let show_export_data data =
+  pp_export_data Format.str_formatter data;
+  Format.flush_str_formatter()
+
+let print_export_data data =
+  pp_export_data Format.std_formatter data
 
 let get binary data_directories section_tables =
   let export_rva = data_directories.export_table in
@@ -166,9 +231,30 @@ type synthetic_export = {
   name: string;
   offset: int;
   size: int;
-} [@@deriving show]
+}
 
-type t = synthetic_export list [@@deriving show]
+let pp_synthetic_export ppf export =
+  Format.fprintf ppf "%16x %s (0x%x)"
+    export.offset export.name export.size
+
+let show_synthetic_export export =
+  pp_synthetic_export Format.str_formatter export;
+  Format.flush_str_formatter()
+
+let print_synthetic_export export =
+  pp_synthetic_export Format.std_formatter export
+
+type t = synthetic_export list
+
+let pp ppf t =
+  RdrUtils.Printer.pp_seq ppf pp_synthetic_export t
+
+let show t =
+  pp Format.str_formatter t;
+  Format.flush_str_formatter()
+
+let print t =
+  pp Format.std_formatter t
 
 let sort =
   List.sort (fun ex1 ex2 -> 

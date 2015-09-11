@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 0a5d2f5d3c7f4bb14065f751838eba88)
+# DO NOT EDIT (digest: 67618a98eadaae0674c378249e28a283)
 version = "2.0.1"
 description =
 "Lightweight, cross platform binary parsing and analysis library with no dependencies"
@@ -13,7 +13,6 @@ package "utils" (
  version = "2.0.1"
  description =
  "Lightweight, cross platform binary parsing and analysis library with no dependencies"
- requires = "ppx_deriving.show"
  archive(byte) = "utils.cma"
  archive(byte, plugin) = "utils.cma"
  archive(native) = "utils.cmxa"
@@ -25,7 +24,7 @@ package "pe" (
  version = "2.0.1"
  description =
  "Lightweight, cross platform binary parsing and analysis library with no dependencies"
- requires = "ppx_import ppx_deriving.show rdr.utils "
+ requires = "rdr.utils "
  archive(byte) = "pe.cma"
  archive(byte, plugin) = "pe.cma"
  archive(native) = "pe.cmxa"

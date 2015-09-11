@@ -45,8 +45,6 @@ Library "utils"
     ByteCoverage,
     Generics,
     RdrPrinter
-  BuildDepends:
-    ppx_deriving.show
 
 Library "mach"
   Path: lib/mach
@@ -109,8 +107,6 @@ Library "pe"
    PEByteCoverage,
    PEUtils
   BuildDepends:
-   ppx_import,
-   ppx_deriving.show,
    rdr.utils,
 
 Library "goblin"

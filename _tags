@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: f51d55f758b0aa603854c1befbfe6f96)
+# DO NOT EDIT (digest: 6fa59f2a107bc1e58f72e533a697dc7c)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -16,32 +16,24 @@ true: annot, bin_annot
 "_darcs": not_hygienic
 # Library utils
 "lib/utils/utils.cmxs": use_utils
-<lib/utils/*.ml{,i,y}>: pkg_ppx_deriving.show
 # Library mach
 "lib/mach/mach.cmxs": use_mach
-<lib/mach/*.ml{,i,y}>: pkg_ppx_deriving.show
 <lib/mach/*.ml{,i,y}>: use_utils
 # Library elf
 "lib/elf/elf.cmxs": use_elf
-<lib/elf/*.ml{,i,y}>: pkg_ppx_deriving.show
 <lib/elf/*.ml{,i,y}>: use_utils
 # Library pe
 "lib/pe/pe.cmxs": use_pe
 <lib/pe/*.ml{,i,y}>: pkg_
-<lib/pe/*.ml{,i,y}>: pkg_ppx_deriving.show
-<lib/pe/*.ml{,i,y}>: pkg_ppx_import
 <lib/pe/*.ml{,i,y}>: use_utils
 # Library goblin
 "lib/goblin/goblin.cmxs": use_goblin
-<lib/goblin/*.ml{,i,y}>: pkg_ppx_deriving.show
 <lib/goblin/*.ml{,i,y}>: use_elf
 <lib/goblin/*.ml{,i,y}>: use_mach
 <lib/goblin/*.ml{,i,y}>: use_utils
 # Library rdr
 "lib/rdr.cmxs": use_rdr
 <lib/*.ml{,i,y}>: pkg_
-<lib/*.ml{,i,y}>: pkg_ppx_deriving.show
-<lib/*.ml{,i,y}>: pkg_ppx_import
 <lib/*.ml{,i,y}>: use_elf
 <lib/*.ml{,i,y}>: use_goblin
 <lib/*.ml{,i,y}>: use_mach
@@ -51,8 +43,6 @@ true: annot, bin_annot
 "src/rdrutils.cmxs": use_rdrutils
 # Executable rdr
 <src/main.{native,byte}>: pkg_
-<src/main.{native,byte}>: pkg_ppx_deriving.show
-<src/main.{native,byte}>: pkg_ppx_import
 <src/main.{native,byte}>: pkg_str
 <src/main.{native,byte}>: pkg_unix
 <src/main.{native,byte}>: use_elf
@@ -63,8 +53,6 @@ true: annot, bin_annot
 <src/main.{native,byte}>: use_rdrutils
 <src/main.{native,byte}>: use_utils
 <src/*.ml{,i,y}>: pkg_
-<src/*.ml{,i,y}>: pkg_ppx_deriving.show
-<src/*.ml{,i,y}>: pkg_ppx_import
 <src/*.ml{,i,y}>: pkg_str
 <src/*.ml{,i,y}>: pkg_unix
 <src/*.ml{,i,y}>: use_elf
