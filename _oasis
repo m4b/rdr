@@ -43,7 +43,8 @@ Library "utils"
     Input,
     Leb128,
     ByteCoverage,
-    Generics
+    Generics,
+    RdrPrinter
   BuildDepends:
     ppx_deriving.show
 

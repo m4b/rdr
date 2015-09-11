@@ -173,9 +173,9 @@ let pp_import_directory_table ppf table =
   Format.fprintf ppf "Import Data:";
   match table with
   | [] -> Format.fprintf ppf "@[No Import Data@]"
-  | x::[] -> Format.fprintf ppf "@[%a@]" pp_synthetic_import_directory_entry x
+  | x::[] -> Format.fprintf ppf "@[<v 2>%a@]" pp_synthetic_import_directory_entry x
   | x::xs ->
-    Format.fprintf ppf "@[<v>@, %a@ " pp_synthetic_import_directory_entry x;
+    Format.fprintf ppf "@[<v 2>@, %a@ " pp_synthetic_import_directory_entry x;
     List.iter (fun x -> Format.fprintf ppf "@, %a@ " pp_synthetic_import_directory_entry x) xs;
     Format.fprintf ppf "@]"
 
@@ -295,13 +295,7 @@ let get_synthetic_import dll (entry:import_lookup_table_entry) =
 type t = synthetic_import list
 
 let pp ppf t =
-  match t with
-  | [] -> Format.fprintf ppf "@[[]@]"
-  | x::[] -> Format.fprintf ppf "@[[%a]@]" pp_synthetic_import x
-  | x::xs ->
-    Format.fprintf ppf "@[[@]@[<v>%a@ " pp_synthetic_import x;
-    List.iter (fun x -> Format.fprintf ppf "%a@ " pp_synthetic_import x) xs;
-    Format.fprintf ppf "@]@[]@]"
+  RdrPrinter.pp_seq ppf pp_synthetic_import t
 
 let print t =
    pp Format.std_formatter t
