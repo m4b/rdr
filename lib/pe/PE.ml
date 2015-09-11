@@ -8,60 +8,6 @@ module MachineType = PEMachineType
 module Utils = PEUtils
 module Coverage = PEByteCoverage
 
-(* 
-module Coverage = struct
-  type tag = ByteCoverage.tag = | Meta
-           | Code
-           | Unknown
-           | Symbol
-           | SymbolTable
-           | String
-           | StringTable
-           | Rela
-           | PlatformSpecific
-           | Data
-           | Invalid
-           | Semantic
-           | Zero [@@deriving show]
-  type data = ByteCoverage.data =   {
-    size: int;
-    tag: tag;
-    range_start: int;
-    range_end: int;
-    extra: string;
-    understood: bool;
-    container: bool;
-  } [@@deriving show]
-
-  module DataSet = ByteCoverage.DataSet (Set.Make(struct 
-      type t = ByteCoverage.data = {
-        size: int;
-        tag: tag;
-        range_start: int;
-        range_end: int;
-        extra: string;
-        understood: bool;
-        container: bool;
-      } [@@deriving show]
-      let compare = ByteCoverage.sort
-    end)) [@@deriving show]
-
-  type datasett = DataSet.t
-
-  type t = ByteCoverage.t = {
-    data: datasett;
-    size: int;
-    total_coverage: int;
-    total_understood: int;
-    percent_coverage: float;
-    percent_understood: float;
-    tags: string list;
-  } [@@deriving show]
-
-end
- *)
-
-
 open Header
 
 (* 
@@ -85,7 +31,23 @@ type t =
     is_lib: bool;
     main_offset: int;
     byte_coverage: ByteCoverage.t;
-  } [@@deriving (show)]
+  }
+
+let pp ppf t =
+  Format.fprintf ppf "@[<v>";
+  Header.pp ppf t.header;
+  Format.fprintf ppf "@ @ Exports(%d)@ " t.nexports;
+  (* todo: add exports *)
+  (* Import.pp ppf t.exports; *)
+  Format.fprintf ppf "@ Imports(%d)@ " t.nimports;
+  Import.pp ppf t.imports;
+  Format.fprintf ppf "@ @[<v 2>Libraries(%d)@ " t.nlibraries;
+  RdrUtils.Printer.pp_seq ppf RdrUtils.Printer.pp_string t.libraries;
+  (* todo: add byte_coverage *)
+  Format.fprintf ppf "@]";
+  Format.fprintf ppf "@ IsLib: %b" t.is_lib;
+  Format.fprintf ppf "@ Main: 0x%x" t.main_offset;
+  Format.fprintf ppf "@]"
 
 let get binary =
   let size = Bytes.length binary in

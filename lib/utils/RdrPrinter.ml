@@ -18,6 +18,9 @@ let pp_seq ?brackets:(brackets=false) ppf pp list =
       List.iter (fun x -> Format.fprintf ppf "%a@ " pp x) xs;
       Format.fprintf ppf "@]"
 
+let pp_string ppf s=
+  Format.fprintf ppf "%s" s
+
       (* 
   match list with
   | [] -> Format.fprintf ppf "@[@]"
