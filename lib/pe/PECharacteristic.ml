@@ -80,3 +80,13 @@ let characteristic_to_string =
 let is_dll characteristics =
   let characteristic = characteristic_to_int IMAGE_FILE_DLL in
   characteristics land characteristic = characteristic
+
+let has characteristic characteristics =
+  let characteristic = characteristic_to_int characteristic in
+  characteristics land characteristic = characteristic
+
+(* TODO: this is a mad hack *)
+let show_type characteristics =
+  if (has IMAGE_FILE_DLL characteristics) then "DLL"
+  else if (has IMAGE_FILE_EXECUTABLE_IMAGE characteristics) then "EXE"
+  else "MANY"                   (* print all *)

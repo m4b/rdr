@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 67618a98eadaae0674c378249e28a283)
+# DO NOT EDIT (digest: a0c4c91cd8368b711f5a66bae6a10edc)
 version = "2.0.1"
 description =
 "Lightweight, cross platform binary parsing and analysis library with no dependencies"
@@ -48,7 +48,7 @@ package "goblin" (
  version = "2.0.1"
  description =
  "Lightweight, cross platform binary parsing and analysis library with no dependencies"
- requires = "rdr.utils rdr.mach rdr.elf"
+ requires = "rdr.utils rdr.mach rdr.elf rdr.pe"
  archive(byte) = "goblin.cma"
  archive(byte, plugin) = "goblin.cma"
  archive(native) = "goblin.cmxa"

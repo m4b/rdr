@@ -175,3 +175,43 @@ let create_goblin_binary soname install_name libraries islib goblin_exports gobl
  *)
 (*     {name; install_name; islib; libs; nlibs; exports; nexports; imports; nimports; code} *)
 end
+
+module PE = struct
+  open PE
+  open PE.Import
+  open PE.Export
+  open GoblinImport
+  open GoblinExport
+
+  let from name pe =
+    let goblin_imports :GoblinImport.t list =
+      List.map
+        (fun (symbol:PE.Import.synthetic_import) ->
+           {name = symbol.name; lib = symbol.dll;
+            (* TODO implement is lazy, implement offset*)
+            is_lazy = false; idx = symbol.ordinal;
+            offset = symbol.offset; size = symbol.size}
+        )
+        pe.imports
+    in
+    let goblin_exports =
+      List.map
+        (fun (symbol:PE.Export.synthetic_export) ->
+           {name = symbol.name; offset = symbol.offset;
+            size = symbol.size}
+        )
+        pe.exports
+    in
+    {
+      name;
+      install_name = name;
+      islib = pe.is_lib;
+      libs = Array.of_list pe.libraries;
+      nlibs = pe.nlibraries;
+      imports = Array.of_list goblin_imports;
+      nimports = pe.nimports;
+      exports = Array.of_list goblin_exports;
+      nexports = pe.nexports;
+      code = Bytes.empty;
+    }
+end

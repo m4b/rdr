@@ -125,7 +125,8 @@ Library "goblin"
   BuildDepends:
     rdr.utils,
     rdr.mach,
-    rdr.elf
+    rdr.elf,
+    rdr.pe
 
 Library "rdr"
   Path: lib

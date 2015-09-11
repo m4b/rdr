@@ -276,6 +276,10 @@ let show t =
   pp Format.str_formatter t;
   Format.flush_str_formatter()
 
+let print t =
+  pp Format.std_formatter t;
+  Format.print_newline()
+
 let get_dos_header binary offset :dos_header =
   let signature,o = Binary.u16o binary offset in
   let pe_pointer = Binary.u32 binary (offset+kPE_POINTER_OFFSET) in

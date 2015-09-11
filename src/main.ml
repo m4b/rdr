@@ -3,7 +3,7 @@
        which would essentially build a map of the entire system, or something like that
 *)
 
-let version = "2.0"
+let version = "3.0"
 
 open Config (* because only has a record type *)
 
@@ -156,14 +156,23 @@ Graph.graph_mach_binary
       @@ Filename.basename config.filename;
 
   | Rdr.Object.PE32 binary ->
-     ignore @@ ReadPE.analyze config binary
+    let binary = ReadPE.analyze config binary in
+    if (config.search) then
+      try
+        Goblin.get_export
+          config.search_term binary.Goblin.exports
+        |> Goblin.Export.print
+      with Not_found ->
+        Printf.printf "";
+    else
+    if (config.graph) then
+      Graph.graph_goblin binary
+      @@ Filename.basename config.filename;
   | Rdr.Object.Unknown (string, filename) ->
-     failwith (Printf.sprintf "%s %s" string filename)
-
-(*     raise @@ Unknown_binary_type (Printf.sprintf "Unknown binary %s" filename) *)
+     failwith (Printf.sprintf "%s: %s" string filename)
 
 let main =
-  let speclist = 
+  let speclist =
     [("-m", Arg.Set use_map, "Use a pre-marshalled system symbol map; use this in conjunction with -f, -D, -g, or -w");
      ("-g", Arg.Set graph, "Creates a graphviz file; generates lib dependencies if -b given");
      ("-d", Arg.String (set_base_symbol_map_directories), "String of space separated directories to build symbol map from; default is /usr/lib");

@@ -36,6 +36,14 @@ let pp_h ?brackets:(brackets=false) ppf pp list =
       List.iter (fun x -> Format.fprintf ppf "%a@ " pp x) xs;
       Format.fprintf ppf "@]"
 
+(* let pp_header ppf  *)
+
+let pp_option ppf pp optional =
+  match optional with
+  | Some data ->
+    pp ppf data
+  | None ->
+    Format.fprintf ppf "None"
 
 let pp_string ppf s =
   Format.fprintf ppf "%s" s

@@ -158,7 +158,8 @@ let show_export_data data =
   Format.flush_str_formatter()
 
 let print_export_data data =
-  pp_export_data Format.std_formatter data
+  pp_export_data Format.std_formatter data;
+  Format.print_newline()
 
 let get binary data_directories section_tables =
   let export_rva = data_directories.export_table in
@@ -234,7 +235,7 @@ type synthetic_export = {
 }
 
 let pp_synthetic_export ppf export =
-  Format.fprintf ppf "%16x %s (0x%x)"
+  Format.fprintf ppf "%16x %s (%d)"
     export.offset export.name export.size
 
 let show_synthetic_export export =
@@ -254,7 +255,10 @@ let show t =
   Format.flush_str_formatter()
 
 let print t =
-  pp Format.std_formatter t
+  let ppf = Format.std_formatter in
+  Format.fprintf ppf "@ @ Exports(%d)@ " (List.length t);
+  pp Format.std_formatter t;
+  Format.print_newline()
 
 let sort =
   List.sort (fun ex1 ex2 -> 

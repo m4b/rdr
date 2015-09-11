@@ -248,6 +248,14 @@ type import_data = import_directory_table
 let pp_import_data ppf data =
   pp_import_directory_table ppf data
 
+let show_import_data data =
+  pp_import_data Format.str_formatter data;
+  Format.flush_str_formatter()
+
+let print_import_data data =
+  pp_import_data Format.std_formatter data;
+  Format.print_newline()
+
 let get binary data_directories sections =
   let import_directory_table_rva = data_directories.import_table in
   let import_directory_table_offset =
@@ -269,6 +277,7 @@ type synthetic_import = {
   dll: string;
   ordinal: int [@size 2];
   offset: int [@size 4];
+  size: int;
 } [@@deriving show]
 
 let pp_synthetic_import ppf import =
@@ -290,7 +299,7 @@ let get_synthetic_import dll (entry:import_lookup_table_entry) =
     | OrdinalNumber ordinal ->
       "",ordinal
   in
-  {name; ordinal; dll; offset=0x0}
+  {name; ordinal; dll; size = 4; offset=0x0}
 
 type t = synthetic_import list
 
@@ -312,6 +321,14 @@ let get_imports import_data :t =
   in loop [] import_data
 
 module LibSet = Set.Make(String)
+
+let print_libraries libraries =
+  let ppf = Format.std_formatter in
+  Format.fprintf ppf  "@ @[<v 2>Libraries(%d)@ "
+    (List.length libraries);
+  RdrUtils.Printer.pp_seq
+    ppf RdrUtils.Printer.pp_string libraries;
+  Format.print_newline()
 
 let get_libraries imports =
   List.fold_left (fun acc import ->

@@ -1,4 +1,8 @@
-type t = | Mach of bytes | Elf of bytes | PE32 of bytes | Unknown of string * string
+type t =
+  | Mach of bytes
+  | Elf of bytes
+  | PE32 of bytes
+  | Unknown of string * string
 
 let get ?verbose:(verbose=false) filename =
   let ic = open_in_bin filename in
@@ -19,7 +23,7 @@ let get ?verbose:(verbose=false) filename =
       if (nfat_arch > 4) then (* hack to avoid java class file errors which have same magic num *)
         begin
           close_in ic;
-          Unknown (filename, "mach fat too many archs (probably a java class file)")
+          Unknown (filename, "Mach-o fat too many archs (probably a java class file)")
         end
       else
         let sizeof_arch_bytes = nfat_arch * Mach.Fat.sizeof_fat_arch in
@@ -41,15 +45,14 @@ let get ?verbose:(verbose=false) filename =
              end
 	   else
              begin
-               close_in ic; Unknown (filename, "mach fat has no 64 bit binaries")
+               close_in ic; Unknown (filename, "Mach-o fat has no 64 bit binaries")
              end
         | None ->
 	   close_in ic;
-	   Printf.eprintf "<Rdr.Object> ERROR, bad binary: %s\n" filename;
-	   Unknown (filename, "mach fat has no binaries")
-	           (* backwards cause we read the 32bit int big E style *)
-                   (* MACH *)
+	   Unknown (filename, "Mach-o fat has no binaries")
+    (* MACH *)
     else if (magic = Mach.Header.kMH_CIGAM_64) then
+    (* backwards cause we read the 32bit int big E style *)
       begin
 	seek_in ic 0;
 	let binary = Bytes.create (in_channel_length ic) in
@@ -57,7 +60,7 @@ let get ?verbose:(verbose=false) filename =
 	close_in ic;
 	Mach binary
       end
-        (* ELF *)
+      (* ELF *)
     else if (magic = Elf.Header.kMAGIC_ELF) then
       begin
 	seek_in ic 0;
@@ -67,14 +70,15 @@ let get ?verbose:(verbose=false) filename =
 	if (Elf.Header.check_64bit binary) then
 	  Elf binary
 	else
-	  Unknown (filename, "elf binary is not 64-bit")
+	  Unknown (filename, "ELF binary is not 64-bit")
       end
-        (* PE *)
+      (* PE *)
     else
-      let dos_magic = (magic lsr 16) land 0xffff in
+      let dos_magic = (magic lsr 16) land 0xffff in (* grabs the leftmost 31:16 bits *)
       if (dos_magic = PE.Header.kDOS_CIGAM) then
         begin
           seek_in ic PE.Header.kPE_POINTER_OFFSET;
+          (* TODO: determine 64-bit here *)
           let pe_offset = Input.input_i32 ic in
           seek_in ic pe_offset;
           let coff_magic = Input.input_i32be ic in
@@ -89,7 +93,7 @@ let get ?verbose:(verbose=false) filename =
             end
           else
             Unknown (filename, (Printf.sprintf "Not a PE32 binary: 0x%x and 0x%x" dos_magic coff_magic))
-        end                    
+        end
       else
       begin
 	close_in ic;

@@ -330,6 +330,8 @@ let create size binary data =
     tags;
   }
 
+let null = create 0 Bytes.empty empty
+
 (* UNIT *)
 (* unusual sequences, like one range starting in one range and ending in another need to be dealt with *)
 (*

@@ -101,3 +101,11 @@ let machine_type_to_string =
   | IMAGE_FILE_MACHINE_WCEMIPSV2 -> "IMAGE_FILE_MACHINE_WCEMIPSV2"
   | UNKNOWN x -> Printf.sprintf "UNKNOWN_MACHINE_TYPE 0x%x" x
 
+let show_machine machine =
+  match get_machine_type machine with
+  | IMAGE_FILE_MACHINE_AMD64 -> "x86-64"
+  | IMAGE_FILE_MACHINE_I386 -> "i386"
+  | IMAGE_FILE_MACHINE_IA64 -> "IA64"
+  | IMAGE_FILE_MACHINE_ARM64 -> "ARM64"
+  | IMAGE_FILE_MACHINE_ARM -> "ARM"
+  | other -> machine_type_to_string other
