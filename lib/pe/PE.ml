@@ -43,8 +43,9 @@ let pp ppf t =
   Import.pp ppf t.imports;
   Format.fprintf ppf "@ @[<v 2>Libraries(%d)@ " t.nlibraries;
   RdrUtils.Printer.pp_seq ppf RdrUtils.Printer.pp_string t.libraries;
-  (* todo: add byte_coverage *)
   Format.fprintf ppf "@]";
+  Format.fprintf ppf "@ ";
+  ByteCoverage.pp ppf t.byte_coverage;
   Format.fprintf ppf "@ IsLib: %b" t.is_lib;
   Format.fprintf ppf "@ Main: 0x%x" t.main_offset;
   Format.fprintf ppf "@]"

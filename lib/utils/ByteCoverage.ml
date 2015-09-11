@@ -1,5 +1,3 @@
-(* TODO: add zero scanner *)
-
 let debug = false
 
 type tag = | Meta
@@ -14,7 +12,7 @@ type tag = | Meta
            | Data
            | Invalid
            | Semantic
-           | Zero [@@deriving show]
+           | Zero
 
 let tag_to_string =
   function
@@ -31,6 +29,9 @@ let tag_to_string =
   | Invalid -> "Invalid"
   | Semantic -> "Semantic"
   | Zero -> "Zero"
+
+let pp_tag ppf tag =
+  Format.fprintf ppf "%s" @@ tag_to_string tag
 
 (* MUST ADD THESE IF ADDING NEW TAG, probably a way to ensure compile time we're safe... *)
 let tags = [
@@ -51,17 +52,21 @@ type data =
     extra: string;
     understood: bool;
     container: bool;
-  } [@@deriving show]
+  }
 
-let data_to_string (data:data) =
-  Printf.sprintf "size: %d tag: %s\n  range_start: 0x%x range_end 0x%x understood: %b container: %b extra: %s"
-    data.size
-    (tag_to_string data.tag)
+let pp_data ppf data =
+    Format.fprintf ppf "@[<v 2>@[<h>0x%x - 0x%x@]@ @[<h>%s * %s@ (0x%x)@]@ @[<h>understood: %b@ container: %b@]@]"
     data.range_start
     data.range_end
+    (tag_to_string data.tag)
+    data.extra
+    data.size
     data.understood
     data.container
-    data.extra
+
+let show_data data =
+  pp_data Format.str_formatter data;
+  Format.flush_str_formatter()
 
 (* range specific *)
 let is_contained d1 d2 = 
@@ -89,7 +94,7 @@ let sort a b =
 (* DataSet specific functions *)
 module DataSet = Set.Make(
   struct 
-    type t = data [@@deriving show]
+    type t = data
     let compare = sort
   end)
 
@@ -107,29 +112,45 @@ let is_covered x dataset =
       && (is_contained x y)
     ) dataset
 
-let print_data data =
-  iter (fun data -> Printf.printf "%s\n" (data_to_string data)) data
+type dataset = DataSet.t
+
+let pp_dataset ppf dataset =
+  Format.fprintf ppf "@[<v 2>@ ";
+  iter (fun data -> Format.fprintf ppf "%a@ " pp_data data) dataset;
+  Format.fprintf ppf "@]"
+
+let show_dataset dataset =
+  pp_dataset Format.str_formatter dataset;
+  Format.flush_str_formatter()
+
+let print_dataset dataset =
+  pp_dataset Format.std_formatter dataset
 
 type t = {
-  data: DataSet.t [@printer fun fmt -> print_data];
+  data: dataset;
   size: int;
   total_coverage: int;
   total_understood: int;
   percent_coverage: float;
   percent_understood: float;
   tags: string list;
-} [@@deriving show]
+}
+
+let pp ppf t =
+  Format.fprintf ppf "@[<v 2>Byte Coverage(%d)" @@ DataSet.cardinal t.data;
+  Format.fprintf ppf
+    "@ size: 0x%x@ total_coverage: 0x%x@ total_understood: 0x%x@ percent_coverage: %f@ percent_understood: %f@ "
+    t.size
+    t.total_coverage
+    t.total_understood
+    t.percent_coverage
+    t.percent_understood
+  ;
+  Format.fprintf ppf "%a" pp_dataset t.data;
+  Format.fprintf ppf "@]"
 
 let print coverage =
-  print_data coverage.data;
-  Printf.printf "Total Coverage: %d / %d = %f\n"
-    coverage.total_coverage
-    coverage.size
-    coverage.percent_coverage;
-  Printf.printf "Understood Coverage: %d / %d = %f\n"
-    coverage.total_understood
-    coverage.size
-    coverage.percent_understood
+  pp Format.std_formatter coverage
 
 let is_semantic x = x.tag = Semantic
 
@@ -260,7 +281,7 @@ let compute_unknown dataset size binary =
             acc
           else
             let data = create_data Unknown d.range_end size extra false in
-            if (debug) then Printf.printf "END %s\n" (data_to_string data);
+            if (debug) then Printf.printf "END %s\n" (show_data data);
             data::acc
         | d1::(d2::rest as tail)->
           if (d1.range_end = d2.range_start || same_range d1 d2) then
@@ -273,7 +294,7 @@ let compute_unknown dataset size binary =
             loop acc tail
           else
             let data = create_data Unknown d1.range_end d2.range_start extra false in
-            if (debug) then Printf.printf "NEW %s\n" (data_to_string data);
+            if (debug) then Printf.printf "NEW %s\n" (show_data data);
             loop (data::acc) tail
       in loop [] bindings
   in
@@ -289,9 +310,9 @@ let create size binary data =
   if (debug) then
     begin
       print_string "\nSIGIL Normalized ranges\n\n----------------------\n\n";
-      print_data normalized_data;
+      print_dataset normalized_data;
       print_string "\nSIGIL Remainder\n\n---------------------------\n\n";
-      print_data rest;
+      print_dataset rest;
       print_string "\n\n---------------------------\n\n";
     end;
   let data = compute_unknown normalized_data size binary
