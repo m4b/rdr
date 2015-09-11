@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 
+# This takes a file of form:
+# <typename> <type>
+# <name> <value>
+# .... .....
+# where <typename> is the name of type you want generated
+# <type> is the type, i.e., int
+# <name> is the singleton constructor to create (must be capitalized obviously
+# and <value> is the int that you want the constructor to match with
+
 import re
 import sys
 

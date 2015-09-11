@@ -10,12 +10,6 @@ module Coverage = PEByteCoverage
 
 open Header
 
-(* 
-let is_dll characteristics =
-  let characteristic = characteristic_to_int IMAGE_FILE_DLL in
-  characteristics land characteristic = characteristic
- *)
-
 type t =
   {
     header: Header.t;
