@@ -145,9 +145,16 @@ Graph.graph_mach_binary
     let binary = ReadElf.analyze config binary in
     if (config.search) then
       try
-        ReadElf.find_export_symbol
+       let symbol = ReadElf.find_export_symbol
 	  config.search_term
-	  binary |> Goblin.Export.print
+	  binary
+       in
+       Goblin.Export.print symbol;
+       if (config.disassemble) then
+           Command.disassemble
+             config.name
+             symbol.Goblin.Export.offset
+             symbol.Goblin.Export.size
       with Not_found ->
         Printf.printf "";
     else

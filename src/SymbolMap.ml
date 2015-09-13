@@ -330,23 +330,10 @@ let use_symbol_map config =
 		if (config.disassemble) then
 		  begin
 
-		    let lib = Goblin.Symbol.find_symbol_lib data in
+		    let lib = Goblin.Symbol.find_symbol_lib data |> snd in
 		    let startsym = Goblin.Symbol.find_symbol_offset data in
-		    let size = Goblin.Symbol.find_symbol_size data in (* this may not be correct size... but i do it for the lulz *)
-		    let ic = open_in_bin (snd lib) in
-		    seek_in ic startsym;
-		    let code = really_input_string ic size |> Binary.to_hex_string in
-		    close_in ic;
-		    flush Pervasives.stdout;
-		    Printf.printf "\t\n";
-		    (* NOW FOR THE HACKS *)
- 		    if (Command.program_in_path "llvm-mc") then
-		      Sys.command
-		      @@ Printf.sprintf
-			"echo \"%s\" | llvm-mc --disassemble" code
-		      |> ignore
-		    else
-		      Printf.eprintf "Error: llvm-mc not installed or not in ${PATH}\n";
+		    let size = Goblin.Symbol.find_symbol_size data in
+                    Command.disassemble lib startsym size
 		  end
 	       );
         with Not_found ->
