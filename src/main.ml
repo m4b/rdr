@@ -198,8 +198,8 @@ let main =
      ("-w", Arg.Set write_symbols, "Write out a flattened system map to $(HOME)/.rdr/symbols (good for grepping)");
      ("-G", Arg.Set use_goblin, "Use the goblin binary format");
      ("--goblin", Arg.Set use_goblin, "Use the goblin binary format");
-     ("-D", Arg.Set disassemble, "Disassemble all found symbols");
-     ("--dis", Arg.Set disassemble, "Disassemble all found symbols");
+     ("-D", Arg.Set disassemble, "Disassemble found symbol(s)");
+     ("--dis", Arg.Set disassemble, "Disassemble found symbol(s)");
     ] in
   let usage_msg = "usage: rdr [-r] [-b] [-m] [-d] [-g] [-G --goblin] [-v | -l | -e | -i] [<path_to_binary>]\noptions:" in
   Arg.parse speclist set_anon_argument usage_msg;
