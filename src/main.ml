@@ -183,7 +183,7 @@ let main =
     [("-m", Arg.Set use_map, "Use a pre-marshalled system symbol map; use this in conjunction with -f, -D, -g, or -w");
      ("-g", Arg.Set graph, "Creates a graphviz file; generates lib dependencies if -b given");
      ("-d", Arg.String (set_base_symbol_map_directories), "String of space separated directories to build symbol map from; default is /usr/lib");
-     ("-F", Arg.String (set_framework_directories), "(OSX Only) String of space or colon separated base framework directories to additionally search when building the symbol map");
+     ("-F", Arg.String (set_framework_directories), "(OSX Only, Experimental) String of space or colon separated base framework directories to additionally search when building the symbol map");
      ("-r", Arg.Set recursive, "Recursively search directories for binaries; use with -b");
      ("-v", Arg.Set verbose, "Print all the things");
      ("--version", Arg.Set print_version, "Print the version and exit");
