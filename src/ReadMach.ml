@@ -1,8 +1,8 @@
-(* 
+(*
   #TODO
   * add load segment boundaries, and nlists locals as a parameters to the compute size
   * compute final sizes after imports, locals, and exports are glommed into a goblin symbol soup, using all the information available
- *)
+*)
 
 open Printf
 
