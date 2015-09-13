@@ -38,15 +38,13 @@ module Map = struct
           let binary = 
             match bytes with
             | Object.Mach binary ->
-               let binary = Mach.get binary in
-               Goblin.Mach.to_goblin binary install_name
+               let mach = Mach.get binary in
+               Goblin.Mach.to_goblin mach install_name
             | Object.Elf binary ->
                (* hurr durr iman elf *)
-               let binary = Elf.get binary in
-               Goblin.Elf.to_goblin binary install_name
+               Elf.get binary |> Goblin.Elf.from install_name
             | Object.PE32 binary ->
-               let binary = PE.get binary in
-               Goblin.PE.from install_name binary
+               PE.get binary |> Goblin.PE.from install_name
             | Object.Unknown (lib,error) ->
                failwith "ERROR"
                (*                loop map lib_deps *)
