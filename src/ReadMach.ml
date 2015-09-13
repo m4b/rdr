@@ -1,6 +1,5 @@
 (* 
   #TODO
-  * Implement byte coverage
   * add load segment boundaries, and nlists locals as a parameters to the compute size
   * compute final sizes after imports, locals, and exports are glommed into a goblin symbol soup, using all the information available
  *)
@@ -27,20 +26,4 @@ let analyze config binary =
         ByteCoverage.print mach.Mach.byte_coverage
     end;
   goblin
-
-(* this will lookup the binary in the goblin binary *)
-let find_export symbol (binary:Goblin.t) = 
-  let len = binary.Goblin.nexports in
-  let rec loop i =
-    if (i >= len) then raise Not_found
-    else if (binary.Goblin.exports.(i).name = symbol) then
-      binary.Goblin.exports.(i)
-    else
-      loop (i + 1)
-  in loop 0    
-
-(* 
-let find_import_symbol symbol binary =
-  Mach.Imports.find symbol binary.imports
- *)
 
