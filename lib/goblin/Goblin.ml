@@ -144,7 +144,6 @@ module Mach = struct
      exports; nexports; imports; nimports; code}
 end
 
-(* TODO: add Elf for consistency *)
 module Elf = struct
   include GoblinElf
   exception Unimplemented

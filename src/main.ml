@@ -101,82 +101,36 @@ let set_anon_argument string =
   anonarg := string
 	       
 let analyze config binary =
-  match binary with
-  | Rdr.Object.Mach bytes ->
-    let binary = ReadMach.analyze config bytes in     
-    if (config.search) then
-      try
-        ReadMach.find_export
-	  config.search_term binary
-	|> Goblin.Export.print
-             (* TODO: add find import symbol *)
-      with Not_found ->
-        Printf.printf "";
-    else 
+  let goblin = match binary with
+    | Rdr.Object.Mach bytes ->
+       ReadMach.analyze config bytes
+    | Rdr.Object.Elf bytes ->
+       ReadElf.analyze config bytes
+    | Rdr.Object.PE32 bytes ->
+       ReadPE.analyze config bytes
+    | Rdr.Object.Unknown (string, filename) ->
+       failwith (Printf.sprintf "%s: %s" string filename)
+  in
+  if (config.search) then
+    try
+      let symbol =
+        Goblin.get_export
+          config.search_term goblin.Goblin.exports
+      in
+      Goblin.Export.print symbol;
+      if (config.disassemble) then
+        Command.disassemble
+          config.name
+          symbol.Goblin.Export.offset
+          symbol.Goblin.Export.size
+    with Not_found ->
+      Printf.printf "";
+  else 
     if (config.graph) then
       Graph.graph_goblin 
 	~draw_imports:true
-	~draw_libs:true binary
-      @@ Filename.basename config.filename;
-
-    (* 
-         if (config.use_goblin) then
-           begin
-             let goblin = ReadMach.to_goblin binary in
-             Graph.graph_goblin
-~draw_imports:true
-~draw_libs:true goblin
-@@ Filename.basename config.filename;
-           end
-         else
-   *)
-    (* 
-Graph.graph_mach_binary 
-             ~draw_imports:true 
-             ~draw_libs:true 
-             binary 
-             (Filename.basename config.filename);
-   *)
-    (* ===================== *)
-    (* ELF *)
-    (* ===================== *)
-  | Rdr.Object.Elf binary ->
-    (* analyze the binary and print program headers, etc. *)
-    let binary = ReadElf.analyze config binary in
-    if (config.search) then
-      try
-       let symbol = ReadElf.find_export_symbol
-	  config.search_term
-	  binary
-       in
-       Goblin.Export.print symbol;
-       if (config.disassemble) then
-           Command.disassemble
-             config.name
-             symbol.Goblin.Export.offset
-             symbol.Goblin.Export.size
-      with Not_found ->
-        Printf.printf "";
-    else
-    if (config.graph) then
-      Graph.graph_goblin binary
-      @@ Filename.basename config.filename;
-
-  | Rdr.Object.PE32 binary ->
-    let binary = ReadPE.analyze config binary in
-    if (config.search) then
-      try
-        Goblin.get_export
-          config.search_term binary.Goblin.exports
-        |> Goblin.Export.print
-      with Not_found ->
-        Printf.printf "";
-    else
-    if (config.graph) then
-      Graph.graph_goblin binary
-      @@ Filename.basename config.filename;
-  | Rdr.Object.Unknown (string, filename) ->
-     failwith (Printf.sprintf "%s: %s" string filename)
+	~draw_libs:true goblin
+      @@ Filename.basename config.filename    
 
 let main =
   let speclist =

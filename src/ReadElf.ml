@@ -1,7 +1,5 @@
 open Config
-open RdrUtils
-
-(* TODO: add coverage printer *)
+open Rdr.Utils
 
 let debug = false
 
@@ -96,7 +94,9 @@ let create_goblin_binary soname install_name libraries islib goblin_exports gobl
 let analyze config binary =
   let elf = Elf.get ~meta_only:true binary in
   (* for consistency and display, goblin makes everything have names *)
-  let soname = if (elf.Elf.soname = "") then config.name else elf.Elf.soname in
+  let soname = if (elf.Elf.soname = "") then
+                 config.name else elf.Elf.soname
+  in
   let goblin_symbols =
     symbols_to_goblin
       ~use_tol:config.use_tol
@@ -179,5 +179,3 @@ let analyze config binary =
     elf.Elf.is_lib
     goblin_exports
     goblin_imports
-
-let find_export_symbol symbol binary = Goblin.get_export symbol binary.Goblin.exports
