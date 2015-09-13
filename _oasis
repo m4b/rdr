@@ -44,7 +44,9 @@ Library "utils"
     Leb128,
     ByteCoverage,
     Generics,
-    RdrPrinter
+    RdrPrinter,
+    RdrCommand,
+    RdrStorage
 
 Library "mach"
   Path: lib/mach
@@ -135,7 +137,9 @@ Library "rdr"
   CompiledObject: best
   Modules:
     Rdr,
-    RdrObject
+    RdrObject,
+    SymbolMap,
+    ToL
   BuildDepends:
    rdr.goblin,
    rdr.utils,
@@ -150,14 +154,10 @@ Library "rdrutils"
   CompiledObject: best  
   Modules:
     Config,
-    Command,
     Graph,
-    Storage,
-    SymbolMap,
     ReadMach,
     ReadElf,
-    ReadPE, 
-    ToL
+    ReadPE
   BuildDepends:
     rdr.pe,  
     rdr.elf,

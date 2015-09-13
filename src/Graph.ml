@@ -12,7 +12,7 @@ for testing
 #load "InputUtils.cmo";;
 #load "Version.cmo";;
 #load "Nlist.cmo";;
-#load "LoadCommand.cmo";;
+#load "LoadRdr.Utils.Command.cmo";;
 #load "BindOpcodes.cmo";;
 #load "Leb128.cmo";;
 #load "Imports.cmo";;
@@ -48,7 +48,7 @@ let from_dot_name =
 (* end helper *)
 
 let graph_with_dot file =
-  if (Command.program_in_path "dot") then
+  if (Rdr.Utils.Command.program_in_path "dot") then
     let output = (Filename.chop_suffix file ".gv") ^ ".png" in
     Sys.command
     @@ Printf.sprintf "dot -o %s -n -Tpng %s" output file
@@ -261,8 +261,8 @@ let graph_lib_dependencies ?use_dot_storage:(use_dot_storage=false) lib_deps =
     | [] ->
       Buffer.add_string b lib_footer;
       let path =
-	Storage.get_graph_path
-	  ~graph_name:Storage.graph_name
+	Rdr.Utils.Storage.get_graph_path
+	  ~graph_name:Rdr.Utils.Storage.graph_name
 	  ~use_dot_storage:use_dot_storage
       in
       let oc = open_out path in
@@ -342,15 +342,15 @@ node [shape=plaintext]\n";
   Buffer.contents b
 
 let graph_library_dependencies ~use_sfdp:use_sfdp ~use_dot_storage:use_dot_storage =
-  if (Command.program_in_path "dot") then
+  if (Rdr.Utils.Command.program_in_path "dot") then
     let input =
-      Storage.get_graph_path
-	~graph_name:Storage.graph_name
+      Rdr.Utils.Storage.get_graph_path
+	~graph_name:Rdr.Utils.Storage.graph_name
 	~use_dot_storage:true
     in
     let output_tmp =
-	Storage.get_graph_path
-	  ~graph_name:Storage.graph_name
+	Rdr.Utils.Storage.get_graph_path
+	  ~graph_name:Rdr.Utils.Storage.graph_name
 	  ~use_dot_storage:use_dot_storage
     in
     let output =

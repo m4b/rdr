@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: c3c6ae6148c48f16faf731da705d7193)
+# DO NOT EDIT (digest: c77cf2298105fcea4da190994dc74aba)
 RdrUtils
 Binary
 Input
@@ -7,4 +7,6 @@ Leb128
 ByteCoverage
 Generics
 RdrPrinter
+RdrCommand
+RdrStorage
 # OASIS_STOP

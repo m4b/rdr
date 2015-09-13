@@ -18,11 +18,11 @@
 (* tol#find import.lib -> AbstractBinary.t *)
 (* (ab#get_import name).idx *)
 
+module StringMap = Map.Make(String)
+
 module Symbol = GoblinSymbol
 module Import = GoblinImport
 module Export = GoblinExport
-
-module StringMap = Map.Make(String)
 
 type t =
   {
@@ -214,3 +214,4 @@ module PE = struct
       code = Bytes.empty;
     }
 end
+

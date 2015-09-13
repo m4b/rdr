@@ -70,7 +70,7 @@ let print_map map =
 exception Not_built
 
 let get () =
-  let f = Storage.get_path "tol" in
+  let f = RdrStorage.get_path "tol" in
   if (Sys.file_exists f) then
     if (is_empty !singleton) then
       begin

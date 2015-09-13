@@ -1,7 +1,7 @@
 (* TODO: 
    (0) add a symbol like --map-all to run `rdr -b -d /usr/lib /System /Libraries -r`
        which would essentially build a map of the entire system, or something like that
-*)
+ *)
 
 let version = "3.0"
 
@@ -78,15 +78,15 @@ let get_config () =
     search_term = !search_term_string;
     use_goblin = !use_goblin;
   } 
-		      
+    
 let set_base_symbol_map_directories dir_string = 
   (* Printf.printf "%s\n" dir_string; *)
   let dirs = Str.split (Str.regexp "[ :]+") dir_string |> List.map String.trim in
   match dirs with
   | [] -> raise @@ Arg.Bad "Invalid argument: directories must be separated by spaces or :, -d /usr/local/lib, /some/other/path"
   | _ -> 
-    (* Printf.printf "setting dirs: %s\n" @@ Generics.list_to_string dirs; *)
-    base_symbol_map_directories := dirs
+     (* Printf.printf "setting dirs: %s\n" @@ Generics.list_to_string dirs; *)
+     base_symbol_map_directories := dirs
 
 let set_framework_directories dir_string =
   (* Printf.printf "Framework directories: %s\n" dir_string; *)
@@ -94,8 +94,8 @@ let set_framework_directories dir_string =
   match dirs with
   | [] -> ()
   | _ ->
-    (* Printf.printf "setting framework dirs: %s\n" @@ Generics.list_to_string dirs; *)
-    framework_directories := dirs
+     (* Printf.printf "setting framework dirs: %s\n" @@ Generics.list_to_string dirs; *)
+     framework_directories := dirs
 
 let set_anon_argument string =
   anonarg := string
@@ -119,7 +119,7 @@ let analyze config binary =
       in
       Goblin.Export.print symbol;
       if (config.disassemble) then
-        Command.disassemble
+        Rdr.Utils.Command.disassemble
           config.name
           symbol.Goblin.Export.offset
           symbol.Goblin.Export.size
@@ -131,6 +131,101 @@ let analyze config binary =
 	~draw_imports:true
 	~draw_libs:true goblin
       @@ Filename.basename config.filename    
+
+let use_symbol_map config =
+  let symbol = config.search_term in
+  try
+    let map = ToL.get () in
+    (* =================== *)
+    (* SEARCHING *)
+    (* =================== *)
+    if (config.search) then
+      (* rdr -m -f <symbol_name> *)
+      begin
+        let recursive_message = if (config.recursive) then 
+				  " (recursively)" 
+				else ""
+        in
+        Printf.printf "searching %s%s for %s:\n"
+		      (Generics.list_to_string 
+			 ~omit_singleton_braces:true 
+			 config.base_symbol_map_directories)
+		      recursive_message
+		      symbol; flush Pervasives.stdout;
+        try
+          ToL.find_symbol symbol map
+          |> List.iter 
+	       (fun data ->
+		Goblin.Symbol.print_symbol_data ~with_lib:true data;
+		if (config.disassemble) then
+		  begin
+
+		    let lib = Goblin.Symbol.find_symbol_lib data |> snd in
+		    let startsym = Goblin.Symbol.find_symbol_offset data in
+		    let size = Goblin.Symbol.find_symbol_size data in
+                    Rdr.Utils.Command.disassemble lib startsym size
+		  end
+	       );
+        with Not_found ->
+	  Printf.printf "not found\n"; ()
+      end
+    else
+      if (config.graph) then
+	Graph.graph_library_dependencies ~use_sfdp:(Rdr.Utils.Command.is_linux()) ~use_dot_storage:false
+      else
+        (* rdr -m -w *)
+        let export_list = Rdr.Map.flatten map
+                          |> Goblin.Symbol.sort_symbols ~compare_libs:true
+        in
+        let export_list_string = Rdr.Map.polymorphic_list_to_string export_list in
+        if (config.write_symbols) then
+          begin
+            let f = Rdr.Utils.Storage.get_path "symbols" in (* write to our .rdr *)
+            let oc = open_out f in
+            Printf.fprintf oc "%s" export_list_string;
+            close_out oc;
+          end
+        else
+	  (* TODO: print stats here instead of dumping the whole shitshow, require verbose to do that *)
+	  (* rdr -m*)
+          if (config.verbose) then
+	    Printf.printf "%s\n" export_list_string
+  with ToL.Not_built ->
+    Printf.eprintf "Searching without a marshalled system map is very slow (on older systems) and a waste of energy; run `rdr -b` first (it will build a marshalled system map, $HOME/.rdr/tol, for fast lookups), then search with `rdr -m -f <symbol_name>`... Have a nice day!\n";
+    flush Pervasives.stdout;
+    exit 1
+
+let build_symbol_map config =
+  Printf.printf "Building system map... This can take a while, please be patient... "; flush Pervasives.stdout;
+  let libs =
+    let dirs = config.base_symbol_map_directories in
+    let framework_dirs = config.framework_directories in
+    let recursive = config.recursive in
+    let verbose = config.verbose in
+    if (Rdr.Utils.Command.is_osx ()) then
+      Rdr.Map.build_lib_stack
+        ~recursive:recursive
+        ~verbose:verbose
+        ~dirs:dirs
+      |> Rdr.Map.read_framework_dirs
+           ~verbose:verbose
+           ~frameworks:framework_dirs
+    else
+      Rdr.Map.build_lib_stack
+        ~recursive:recursive
+        ~verbose:verbose
+        ~dirs:dirs
+  in
+  let map = Rdr.Map.build
+              ~verbose:config.verbose
+              ~graph:config.graph
+              ~libs:libs
+  in
+  let f = Rdr.Utils.Storage.get_path "tol" in
+  let oc = open_out_bin f in
+  Marshal.to_channel oc map [];
+  close_out oc;
+  Printf.printf "Done!\n"
 
 let main =
   let speclist =
@@ -163,8 +258,8 @@ let main =
       exit 0
     end
   else
-  (* BEGIN program init *)  
-  Storage.create_dot_directory (); (* make our .rdr/ if we haven't already *)
+    (* BEGIN program init *)  
+    Rdr.Utils.Storage.create_dot_directory (); (* make our .rdr/ if we haven't already *)
   let config = get_config () in
   if (config.analyze && config.filename = "") then
     if (config.verbose) then
@@ -181,10 +276,10 @@ let main =
       end;
   if (config.use_map) then
     (* -m *)
-    SymbolMap.use_symbol_map config
+    use_symbol_map config
   else if (config.marshal_symbols) then
     (* -b build a marshalled symbol map*)
-    SymbolMap.build_symbol_map config
+    build_symbol_map config
   else
     (* analyzing a binary using anon arg *)
     Rdr.Object.get config.filename |> analyze config
