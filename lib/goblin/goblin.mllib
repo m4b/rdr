@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 6c6326e2bf0f352306ffe61a3fbf0b22)
+# DO NOT EDIT (digest: 041f56458a2f1e559354589599cdabdf)
 Goblin
 GoblinSymbol
 GoblinExport
@@ -7,5 +7,4 @@ GoblinImport
 GoblinMach
 GoblinElf
 GoblinTree
-ToL
 # OASIS_STOP

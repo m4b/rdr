@@ -142,6 +142,13 @@ let symbol_to_string symbol =
    symbol.st_size
    symbol.st_shndx
 
+let print (entries:t) =
+  Printf.printf "Symbol Table (%d):\n" @@ List.length entries;
+  List.iter
+    (fun elem ->
+     Printf.printf "%s\n" @@ symbol_to_string elem)
+    entries
+
 let get_symbol_entry bytes offset =
     let name = "" in
     let st_name = Binary.u32 bytes offset in
@@ -203,10 +210,6 @@ let amend_symbol_table binary offset size symbol_table =
 	      sym.name <- Binary.string binary (offset + sym.st_name);
 	     ) symbol_table;
   symbol_table
-	  
-let print_symbol_table entries =
-  Printf.printf "Symbol Table (%d):\n" @@ List.length entries;
-  List.iteri (fun i elem -> Printf.printf "(%d) %s\n" i @@ symbol_to_string elem) entries
 
 let get_symbol_table binary section_headers =
   match get_sections ElfSectionHeader.kSHT_SYMTAB section_headers with
@@ -224,3 +227,11 @@ let get_symbol_table_adjusted binary masks offset size strtab_offset strtab_size
   get_symtab_adjusted binary masks offset size
   |> amend_symbol_table binary strtab_offset strtab_size
   |> List.rev (* otherwise relocs backwards *)
+
+let sort symbols =
+  List.sort
+    (fun a b ->
+     Pervasives.compare
+       a.st_value
+       b.st_value
+    ) symbols

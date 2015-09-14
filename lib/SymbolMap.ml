@@ -51,7 +51,7 @@ for testing
 
 #load "Rdr.Object.cmo";;
 #load "Graph.cmo";;
-*)
+ *)
 open Unix
 
 (* also implement .a i guess
@@ -168,47 +168,94 @@ let output_stats tbl =
 	       ) tbl;
   close_out oc
 
-(* flattens symbol -> [libs] map to [goblin symbols] *)
-let flatten map =  
-  ToL.SystemSymbolMap.fold
-    (fun key values acc ->
-     (* list.fold acc in different arg pos than map.fold arg wtf *)
-     List.fold_left
-       (fun acc data ->
-        data::acc) acc values
-    ) map []
-
-let polymorphic_list_to_string list =
-  let b = Buffer.create ((List.length list) * 15) in
-  let rec loop =
-    function
-    | [] -> Buffer.contents b
-    | export::exports ->
-       Buffer.add_string b
-       (* need to not use mach export to string? *)
-       @@ Goblin.Mach.Exports.mach_export_data_to_string
-	    ~use_flags:false export;
-       Buffer.add_string b "\n";
-       loop exports
-  in loop list
-
 (* =================== *)
 (* BUILDING *)
 (* =================== *)
-(* rdr -b *)
+let build ~verbose:verbose ~graph:graph ~libs:libstack =
+  let tbl = Hashtbl.create ((Stack.length libstack) * 100) in
+  (* 
+      if (verbose) then Printf.printf "Building map...\n";
+      if (verbose) then 
+        begin
+          Printf.printf "Total libs: %d\n" (Stack.length libstack);
+          Printf.printf "... Done\n";
+        end
+   *)
+  let rec loop map lib_deps =
+    if (Stack.is_empty libstack) then
+      begin
+        output_stats tbl; map
+      end
+    (* 
+          begin
 
+            Graph.graph_lib_dependencies ~use_dot_storage:true lib_deps;
+	    if (graph) then
+	      Graph.graph_library_dependencies ~use_sfdp:(Command.is_linux()) ~use_dot_storage:true;
+          end
+     *)
+    else
+      let library = Stack.pop libstack in
+      let bytes = RdrObject.get ~verbose:verbose library in
+      let binary = 
+        match bytes with
+        | RdrObject.Mach binary ->
+           let mach = Mach.get binary in
+           Some (Goblin.Mach.to_goblin mach library)
+        | RdrObject.Elf binary ->
+           (* hurr durr iman elf *)
+           Some (Elf.get binary |> Goblin.Elf.from library)
+        | RdrObject.PE32 binary ->
+           Some (PE.get binary |> Goblin.PE.from library)
+        | RdrObject.Unknown (lib,error) ->
+           None
+      in
+      match binary with
+      | None ->
+         loop map lib_deps
+      | Some goblin ->
+         let imports = goblin.Goblin.imports in
+         Array.iter
+	   (fun import ->
+	    let symbol = import.Goblin.Import.name in
+	    if (Hashtbl.mem tbl symbol) then
+	      let count = Hashtbl.find tbl symbol in
+	      Hashtbl.replace tbl symbol (count + 1)
+	    else
+	      Hashtbl.add tbl symbol 1
+	   ) imports;
+         let exports = goblin.Goblin.exports in
+         let map' =
+	   Array.fold_left
+	     (fun acc export -> 
+	      let name = export.Goblin.Export.name in
+	      try 
+	        let branches = Goblin.Tree.find name acc in
+	        Goblin.Tree.add
+                  name
+                  ({Goblin.Tree.library; export}::branches)
+                  acc
+	      with
+	      | Not_found ->
+	         Goblin.Tree.add
+                   name
+                   [{Goblin.Tree.library; export}]
+                   acc
+	     ) map exports in
+         loop map' ((goblin.Goblin.name, goblin.Goblin.libs)::lib_deps)
+  in loop Goblin.Tree.empty []
 
-(* unit testing *)
-(*  
+          (* unit testing *)
+          (*  
 let findf libs elem = 
   let lib = Goblin.Symbol.find_symbol_lib elem |> fst in
   List.mem lib libs
 
 let sort = Goblin.Symbol.sort_symbols
 
-let map = ToL.get ()
+let map = Goblin.Tree.get ()
 let flat = flatten_polymorphic_map_to_list map
 let sflat = Goblin.Symbol.sort_symbols flat
 let small = List.find_all  (findf ["/usr/lib/libz.1.dylib"; "/usr/lib/libobjc.A.dylib"]) flat
-*)
+           *)
 

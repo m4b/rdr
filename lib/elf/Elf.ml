@@ -61,7 +61,10 @@ let get ?meta_only:(meta_only=false) binary =
   if (debug) then Printf.printf "size: 0x%x\n" size;
   let is_lib = (Header.is_lib header) in
   if (debug) then Printf.printf "is_lib: %b\n" is_lib;
-  let symbol_table = SymbolTable.get_symbol_table binary section_headers in
+  let symbol_table =
+    SymbolTable.get_symbol_table binary section_headers
+    |> SymbolTable.sort
+  in
   (*   if (debug) then SymbolTable.print_symbol_table symbol_table; *)
   let _dynamic = Dynamic.get_dynamic binary program_headers in
   (*   if (debug) then Dynamic.print_dynamic _dynamic; *)
@@ -84,6 +87,7 @@ let get ?meta_only:(meta_only=false) binary =
       symtab_offset
       strtab_offset
       strtab_size
+    |> SymbolTable.sort
   in
   let soname =
     try
@@ -127,7 +131,7 @@ let print elf =
   ProgramHeader.print_program_headers elf.program_headers;
   SectionHeader.print_section_headers elf.section_headers;
   Dynamic.print_dynamic elf._dynamic;
-  SymbolTable.print_symbol_table elf.dynamic_symbols;
-  SymbolTable.print_symbol_table elf.symbol_table;
+  SymbolTable.print elf.dynamic_symbols;
+  SymbolTable.print elf.symbol_table;
   Reloc.print_relocs64 elf.relocations;
   ByteCoverage.print elf.byte_coverage

@@ -27,6 +27,8 @@ let analyze config binary =
             Printf.printf "Interpreter: %s\n" elf.Elf.interpreter
 	end;
       if (config.verbose || config.print_nlist) then
+        Elf.SymbolTable.print elf.Elf.symbol_table;
+                              (* 
 	Goblin.Elf.symbols_to_goblin
           ~use_tol:config.use_tol
           ~libs:elf.Elf.libraries
@@ -36,23 +38,30 @@ let analyze config binary =
 	|> Goblin.Symbol.sort_symbols
 	|> List.iter
 	  (Goblin.Symbol.print_symbol_data ~like_nlist:true);
+ *)
       if (config.verbose || config.print_libraries) then
 	begin
-	  if (elf.Elf.is_lib) then Printf.printf "Soname: %s\n" soname;
-	  Printf.printf "Libraries (%d)\n" (List.length elf.Elf.libraries);
+	  if (elf.Elf.is_lib) then
+            Printf.printf "Soname: %s\n" soname;
+	  Printf.printf
+            "Libraries (%d)\n"
+            (List.length elf.Elf.libraries);
 	  List.iter (Printf.printf "\t%s\n") elf.Elf.libraries
 	end;
       if (config.verbose || config.print_exports) then
 	begin
-	  Printf.printf "Exports (%d)\n" (Array.length goblin.Goblin.exports);
-          (* 	  Array.iter (Goblin.Symbol.print_symbol_data) goblin_exports *)
+	  Printf.printf
+            "Exports (%d)\n"
+            (Array.length goblin.Goblin.exports);
+          Goblin.print_exports goblin.Goblin.exports
 	end;
       if (config.verbose || config.print_imports) then
 	begin
-          (* 
-	  Printf.printf "Imports (%d)\n" (List.length goblin_imports);
-	  List.iter (Goblin.Symbol.print_symbol_data ~with_lib:true) goblin_imports
- *)
+
+	  Printf.printf
+            "Imports (%d)\n"
+            (Array.length goblin.Goblin.imports);
+          Goblin.print_imports goblin.Goblin.imports
         end;
       if (config.verbose || config.print_coverage) then
         ByteCoverage.print elf.Elf.byte_coverage

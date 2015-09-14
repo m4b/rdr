@@ -3,14 +3,29 @@
 
 module SymbolMap = Map.Make(String)
 
+open GoblinExport
+
 type branch = {
     library: string;
     export: GoblinExport.t
   }
 
+let pp_branch ppf branch =
+  Format.fprintf ppf "@[%a -> %s@]"
+                 GoblinExport.pp branch.export
+                 branch.library
+
+let show_branch branch =
+  pp_branch Format.str_formatter branch; Format.flush_str_formatter()
+
+let print_branch branch =
+  pp_branch Format.std_formatter branch; Format.print_newline()
+
 type t = branch list SymbolMap.t
 
 let num_symbols map = SymbolMap.cardinal map
+
+let fold = SymbolMap.fold
 
 let find = SymbolMap.find
 
@@ -22,6 +37,54 @@ let empty:t = SymbolMap.empty
 let is_empty = SymbolMap.is_empty
 
 let singleton: 't SymbolMap.t ref = ref empty
+
+let flatten map =  
+  fold
+    (fun key values acc ->
+     (* list.fold acc in different arg pos than map.fold arg wtf *)
+     List.fold_left
+       (fun acc data ->
+        data::acc) acc values
+    ) map []
+
+let show_flat list =
+  let b = Buffer.create ((List.length list) * 15) in
+  let rec loop =
+    function
+    | [] -> Buffer.contents b
+    | branch::branches ->
+       Buffer.add_string b
+       @@ show_branch branch;
+       Buffer.add_string b "\n";
+       loop branches
+  in loop list
+
+let sort_symbols
+      ?compare_libs:(compare_libs=false)
+      list =
+  List.sort (fun a b ->
+	 (* first compare libs, export must have a lib *)
+	 (* yea... but not just for exports anymore, so either need to return empty lib or check for Not_found... *)
+	 let l1 = a.library in
+	 let l2 = b.library in
+	 let n1 = a.export.name in
+	 let n2 = b.export.name in
+	 if (not compare_libs || l1 = l2) then
+           try
+             let o1 = a.export.offset in
+             try
+               let o2 = b.export.offset in
+	       if (o1 = o2) then
+		 Pervasives.compare n1 n2
+	       else
+		 Pervasives.compare o1 o2
+             with Not_found ->
+               1
+           with Not_found ->
+             -1
+	 else
+           Pervasives.compare l1 l2
+	) list
 
 let get_libraries symbol map =
   try

@@ -6,6 +6,8 @@
 let version = "3.0"
 
 open Config (* because only has a record type *)
+open Goblin.Tree
+open Goblin.Export
 
 type os = Darwin | Linux | Other
 
@@ -135,7 +137,7 @@ let analyze config binary =
 let use_symbol_map config =
   let symbol = config.search_term in
   try
-    let map = ToL.get () in
+    let map = Goblin.Tree.get () in
     (* =================== *)
     (* SEARCHING *)
     (* =================== *)
@@ -153,17 +155,18 @@ let use_symbol_map config =
 		      recursive_message
 		      symbol; flush Pervasives.stdout;
         try
-          ToL.find_symbol symbol map
+          Goblin.Tree.find symbol map
           |> List.iter 
-	       (fun data ->
-		Goblin.Symbol.print_symbol_data ~with_lib:true data;
+	       (fun branch ->
+		Goblin.Tree.print_branch branch;
 		if (config.disassemble) then
 		  begin
-
-		    let lib = Goblin.Symbol.find_symbol_lib data |> snd in
-		    let startsym = Goblin.Symbol.find_symbol_offset data in
-		    let size = Goblin.Symbol.find_symbol_size data in
-                    Rdr.Utils.Command.disassemble lib startsym size
+		    let offset = branch.export.offset in
+		    let size = branch.export.size in
+                    Rdr.Utils.Command.disassemble
+                      branch.library
+                      offset
+                      size
 		  end
 	       );
         with Not_found ->
@@ -171,13 +174,17 @@ let use_symbol_map config =
       end
     else
       if (config.graph) then
-	Graph.graph_library_dependencies ~use_sfdp:(Rdr.Utils.Command.is_linux()) ~use_dot_storage:false
+	Graph.graph_library_dependencies
+          ~use_sfdp:(Rdr.Utils.Command.is_linux())
+          ~use_dot_storage:false
       else
         (* rdr -m -w *)
-        let export_list = Rdr.Map.flatten map
-                          |> Goblin.Symbol.sort_symbols ~compare_libs:true
+        let export_list =
+          Goblin.Tree.flatten map
+          |> Goblin.Tree.sort_symbols ~compare_libs:true
         in
-        let export_list_string = Rdr.Map.polymorphic_list_to_string export_list in
+        let export_list_string =
+          Goblin.Tree.show_flat export_list in
         if (config.write_symbols) then
           begin
             let f = Rdr.Utils.Storage.get_path "symbols" in (* write to our .rdr *)
@@ -190,8 +197,8 @@ let use_symbol_map config =
 	  (* rdr -m*)
           if (config.verbose) then
 	    Printf.printf "%s\n" export_list_string
-  with ToL.Not_built ->
-    Printf.eprintf "Searching without a marshalled system map is very slow (on older systems) and a waste of energy; run `rdr -b` first (it will build a marshalled system map, $HOME/.rdr/tol, for fast lookups), then search with `rdr -m -f <symbol_name>`... Have a nice day!\n";
+  with Goblin.Tree.Not_built ->
+    Printf.eprintf "Searching without a marshalled system map is very slow (on older systems) and a waste of energy; run `rdr -b` first (it will build a marshalled system map, $HOME/.rdr/gtree, for fast lookups), then search with `rdr -m -f <symbol_name>`... Have a nice day!\n";
     flush Pervasives.stdout;
     exit 1
 
@@ -221,7 +228,7 @@ let build_symbol_map config =
               ~graph:config.graph
               ~libs:libs
   in
-  let f = Rdr.Utils.Storage.get_path "tol" in
+  let f = Rdr.Utils.Storage.get_path "gtree" in
   let oc = open_out_bin f in
   Marshal.to_channel oc map [];
   close_out oc;

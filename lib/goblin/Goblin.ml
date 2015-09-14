@@ -92,7 +92,7 @@ let exports_to_string exports =
   Array.iter (fun export ->
       Buffer.add_string b @@ Export.to_string export) exports;
   Buffer.contents b
-*)
+ *)
 
 let print_exports =
   iter Export.print
@@ -137,13 +137,13 @@ module Mach = struct
       let imports =
         List.mapi
           (fun i import ->
-            let name = import.bi.symbol_name in
-            let lib = import.dylib in
-            let is_lazy = import.is_lazy in
-            let offset = import.offset in
-            let size = import.size in
-            {Import.name = name; lib; is_lazy;
-             idx = i; offset; size}
+           let name = import.bi.symbol_name in
+           let lib = import.dylib in
+           let is_lazy = import.is_lazy in
+           let offset = import.offset in
+           let size = import.size in
+           {Import.name = name; lib; is_lazy;
+            idx = i; offset; size}
           ) mach.Mach.imports
         |> Array.of_list
       in
@@ -156,12 +156,13 @@ module Mach = struct
 
 module Elf = struct
     include GoblinElf
+    open Elf
     (* hacky function to filter imports from exports, etc. *)
     (* todo use proper variants here ffs *)
-    let get_goblin_kind entry bind stype =
-      if (entry.Elf.SymbolTable.st_value = 0x0
-          && entry.Elf.SymbolTable.st_shndx = 0
-          && entry.Elf.SymbolTable.name <> "") (* ignore first \0 entry *)
+    let get_goblin_kind symbol bind stype =
+      if (symbol.Elf.SymbolTable.st_value = 0x0
+          && symbol.Elf.SymbolTable.st_shndx = 0
+          && symbol.Elf.SymbolTable.name <> "") (* ignore first \0 symbol *)
       then
         Symbol.Import
       else if (bind = "LOCAL") then
@@ -170,106 +171,59 @@ module Elf = struct
 	        || (bind = "WEAK" && (stype = "FUNC"
 				      || stype = "IFUNC"
 				      || stype = "OBJECT")))
-	       && entry.Elf.SymbolTable.st_value <> 0) then
+	       && symbol.Elf.SymbolTable.st_value <> 0) then
         Symbol.Export
       else Symbol.Other
 
-    let symbol_entry_to_goblin_symbol
-          ~tol:tol ~libs:libs ~relocs:relocs
-          (soname,install_name) index entry =
-      let bind   = (Elf.SymbolTable.get_bind entry.Elf.SymbolTable.st_info |> Elf.SymbolTable.symbol_bind_to_string) in
-      let stype  = (Elf.SymbolTable.get_type entry.Elf.SymbolTable.st_info |> Elf.SymbolTable.symbol_type_to_string) in
-      let name   = `Name entry.Elf.SymbolTable.name in
-      let offset =
-        `Offset (
-           if (entry.Elf.SymbolTable.st_value = 0) then
-	     (* this _could_ be relatively expensive *)
-	     Elf.Reloc.get_size index relocs
-           else
-	     entry.Elf.SymbolTable.st_value)
-      in
-      let size = `Size entry.Elf.SymbolTable.st_size in
-      let kind = `Kind (get_goblin_kind entry bind stype) in
-      let lib =
-        (* TODO: this is a complete disaster; *)
-        match kind with
-        | `Kind Symbol.Export ->
-           `Lib (soname,install_name)
-        | `Kind Symbol.Import ->
-           if (ToL.is_empty tol) then
-	     `Lib ("∅","∅")
-           else
-	     let l = (ToL.get_libraries ~bin_libs:libs entry.Elf.SymbolTable.name tol) in
-	     `Lib (l,l)
-        | _ ->
-           `Lib ("","")
-      in
-      let data = `PrintableData
-                  (Printf.sprintf
-	             "%s %s" bind stype) in
-      [name; lib; offset; size; kind; data]
-
-    let symbols_to_goblin ?use_tol:(use_tol=true) ~libs:libs soname dynsyms relocs =
-      let tol =
-        try
-          if (use_tol) then ToL.get () else ToL.empty
-        with ToL.Not_built ->
-          ToL.empty
-      in
-      List.mapi
-        (symbol_entry_to_goblin_symbol
-           ~tol:tol ~libs:libs ~relocs:relocs soname) dynsyms
+    let get_exports relocs symbols =
+      List.fold_left
+        (fun (acc,index) symbol ->
+         let bind =
+           Elf.SymbolTable.get_bind symbol.Elf.SymbolTable.st_info
+           |> Elf.SymbolTable.symbol_bind_to_string
+         in
+         let stype =
+           Elf.SymbolTable.get_type symbol.Elf.SymbolTable.st_info
+           |> Elf.SymbolTable.symbol_type_to_string
+         in
+         let kind = get_goblin_kind symbol bind stype in
+         match kind with
+         | Symbol.Export ->
+            let name = symbol.Elf.SymbolTable.name in
+            let offset =
+              if (symbol.Elf.SymbolTable.st_value = 0) then
+	        (* this _could_ be relatively expensive *)
+	        Elf.Reloc.get_size index relocs
+              else
+	        symbol.Elf.SymbolTable.st_value
+            in
+            let size = symbol.Elf.SymbolTable.st_size in
+            let export = {Export.name; offset; size} in
+            (export::acc),(index+1)
+         | _ ->
+            acc,index+1
+        ) ([],0) symbols |> fst
 
     let from ?use_tol:(use_tol=true) install_name elf =
-      let name = elf.Elf.soname in
-      let libs = Array.of_list (name::elf.Elf.libraries) in (* to be consistent... for graphing, etc. *)
+      let name = elf.soname in
+      let islib = elf.is_lib in
+      let libs = Array.of_list elf.libraries in
       let nlibs = Array.length libs in
-      let goblin_symbols =
-        symbols_to_goblin
-          ~use_tol:use_tol
-          ~libs:elf.Elf.libraries
-          (name,install_name)
-          elf.Elf.dynamic_symbols
-          elf.Elf.relocations
-        |> Symbol.sort_symbols
-        |> function | [] -> [] | syms -> List.tl syms
-      (* because the head (the first entry, after sorting)
-       is a null entry, and also _DYNAMIC can be empty *)
+      let exports,imports =
+        match elf.dynamic_symbols with
+        | [] ->
+           [||], [||]
+        | symbols ->
+           let exports = Array.of_list @@ get_exports elf.relocations symbols in
+           let imports = [||] in
+           exports,imports
       in
-      let goblin_imports =
-        List.filter
-          (fun symbol ->
-	   Symbol.find_symbol_kind symbol
-	   |> function
-	     | Symbol.Import -> true
-	     | _ -> false) goblin_symbols
-      in
-      let goblin_exports =
-        List.filter
-          (fun symbol ->
-	   Symbol.find_symbol_kind symbol
-	   |> function
-	     | Symbol.Export -> true
-	     | _ -> false) goblin_symbols
-      in
-      (* 
-  let exports =
-    Array.of_list
-    @@ List.map (Goblin.Symbol.to_goblin_export) exports
-  in
-  let nexports = Array.length exports in
-  let imports =
-    Array.of_list
-    @@ List.map (Goblin.Symbol.to_goblin_import) goblin_imports
-  in
-  let nimports = Array.length imports in
-  (* empty code *)
-  let code = Bytes.empty in
-  {Goblin.name;
-   install_name; islib; libs; nlibs; exports; nexports;
-   imports; nimports; code}
-       *)
-      failwith "Unimplemented"
+      let nexports = Array.length exports in
+      let nimports = Array.length imports in
+      let code = Bytes.empty in
+      {name;
+       install_name; islib; libs; nlibs; exports; nexports;
+       imports; nimports; code}
   end
 
 module PE = struct
