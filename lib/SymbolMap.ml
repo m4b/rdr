@@ -173,14 +173,12 @@ let output_stats tbl =
 (* =================== *)
 let build ~verbose:verbose ~graph:graph ~libs:libstack =
   let tbl = Hashtbl.create ((Stack.length libstack) * 100) in
-  (* 
-      if (verbose) then Printf.printf "Building map...\n";
-      if (verbose) then 
-        begin
-          Printf.printf "Total libs: %d\n" (Stack.length libstack);
-          Printf.printf "... Done\n";
-        end
-   *)
+  if (verbose) then Printf.printf "Building map...\n";
+  if (verbose) then 
+    begin
+      Printf.printf "Total libs: %d\n" (Stack.length libstack);
+      Printf.printf "... Done\n"
+    end;
   let rec loop map lib_deps =
     if (Stack.is_empty libstack) then
       begin
