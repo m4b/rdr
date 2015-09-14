@@ -144,15 +144,10 @@ let use_symbol_map config =
     if (config.search) then
       (* rdr -m -f <symbol_name> *)
       begin
-        let recursive_message = if (config.recursive) then 
-				  " (recursively)" 
-				else ""
-        in
-        Printf.printf "searching %s%s for %s:\n"
+        Printf.printf "searching %s for %s:\n"
 		      (Generics.list_to_string 
 			 ~omit_singleton_braces:true 
 			 config.base_symbol_map_directories)
-		      recursive_message
 		      symbol; flush Pervasives.stdout;
         try
           Goblin.Tree.find symbol map
