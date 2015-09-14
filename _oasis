@@ -124,6 +124,7 @@ Library "goblin"
     GoblinImport,
     GoblinMach,
     GoblinElf,
+    GoblinTree,
     ToL
   BuildDepends:
     rdr.utils,
