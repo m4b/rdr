@@ -1,5 +1,4 @@
 open Config
-open Rdr.Utils
 
 let debug = false
 

@@ -6,52 +6,6 @@
 (1) : add this offset/polymorphic sorting, etc., to macho binary analysis to infer the size of objects per library...!
  *)
 
-(*
-for testing
-
-#directory "../../_build/src/utils/";;
-#directory "../../_build/src/mach/";;
-#directory "../../_build/src/goblin/";;
-#directory "../../_build/src/elf/";;
-
-#load "Str.cma";;
-#load "Unix.cma";;
-#load "InputUtils.cmo";;
-#load "Binary.cmo";;
-#load "Leb128.cmo";;
-#load "Generics.cmo";;
-#load "Config.cmo";;
-#load "Command.cmo";;
-#load "RdrStorage.cmo";;
-
-#load "Goblin.Symbol.cmo";;
-#load "Goblin.cmo";;
-
-#load "Mach.Exports.cmo";;
-#load "Nlist.cmo";;
-#load "CpuTypes.cmo";;
-#load "BindOpcodes.cmo";;
-#load "Mach.Imports.cmo";;
-#load "MachHeader.cmo";;
-#load "Version.cmo";;
-#load "LoadCommand.cmo";;
-#load "Fat.cmo";;
-#load "ReadMach.cmo";;
-
-#load "ToL.cmo";;
-
-#load "ReadElf.cmo";;
-#load "ElfReloc.cmo";;
-#load "ElfHeader.cmo";;
-#load "ElfConstants.cmo";;
-#load "SymbolTable.cmo";;
-#load "Dynamic.cmo";;
-#load "SectionHeader.cmo";;
-#load "ProgramHeader.cmo";;
-
-#load "Rdr.Object.cmo";;
-#load "Graph.cmo";;
- *)
 open Unix
 
 (* also implement .a i guess
