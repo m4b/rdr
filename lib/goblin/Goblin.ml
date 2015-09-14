@@ -120,7 +120,11 @@ module Mach = struct
 
            [@@@invariant sorted, sizecomputed]
     let from install_name mach =
-      let name = mach.Mach.name in
+      let name =
+        match mach.Mach.name with
+        | "" -> Filename.basename install_name
+        | name -> name
+      in
       let install_name = install_name in
       let libs = mach.Mach.libraries in
       let nlibs = mach.Mach.nlibraries in
@@ -265,7 +269,11 @@ module Elf = struct
         ) ([],0) symbols |> fst |> List.rev
 
     let from ?use_tree:(use_tree=true) install_name elf =
-      let name = elf.soname in
+      let name =
+        match elf.soname with
+        | "" -> Filename.basename install_name
+        | name -> name
+      in
       let islib = elf.is_lib in
       let libs = Array.of_list elf.libraries in
       let nlibs = Array.length libs in
@@ -308,7 +316,7 @@ module PE = struct
     open GoblinImport
     open GoblinExport
 
-    let from name pe =
+    let from install_name pe =
       let goblin_imports :GoblinImport.t list =
         List.map
           (fun (symbol:PE.Import.synthetic_import) ->
@@ -328,8 +336,8 @@ module PE = struct
           pe.exports
       in
       {
-        name;
-        install_name = name;
+        name = Filename.basename install_name;
+        install_name;
         islib = pe.is_lib;
         libs = Array.of_list pe.libraries;
         nlibs = pe.nlibraries;
