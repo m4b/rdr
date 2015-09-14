@@ -9,7 +9,12 @@ let analyze config binary =
   let soname = if (elf.Elf.soname = "") then
                  config.name else elf.Elf.soname
   in
-  let goblin = Goblin.Elf.from soname elf in  
+  let goblin =
+    Goblin.Elf.from
+      ~use_tree:config.print_imports
+      soname
+      elf
+  in
   (* print switches *)
   if (not config.silent) then
     begin
@@ -28,17 +33,6 @@ let analyze config binary =
 	end;
       if (config.verbose || config.print_nlist) then
         Elf.SymbolTable.print elf.Elf.symbol_table;
-                              (* 
-	Goblin.Elf.symbols_to_goblin
-          ~use_tol:config.use_tol
-          ~libs:elf.Elf.libraries
-          (soname,config.install_name)
-          elf.Elf.symbol_table
-          elf.Elf.relocations
-	|> Goblin.Symbol.sort_symbols
-	|> List.iter
-	  (Goblin.Symbol.print_symbol_data ~like_nlist:true);
- *)
       if (config.verbose || config.print_libraries) then
 	begin
 	  if (elf.Elf.is_lib) then
@@ -57,7 +51,6 @@ let analyze config binary =
 	end;
       if (config.verbose || config.print_imports) then
 	begin
-
 	  Printf.printf
             "Imports (%d)\n"
             (Array.length goblin.Goblin.imports);

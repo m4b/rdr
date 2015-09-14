@@ -155,7 +155,6 @@ module Mach = struct
   end
 
 module Elf = struct
-    include GoblinElf
     open Elf
     (* hacky function to filter imports from exports, etc. *)
     (* todo use proper variants here ffs *)
@@ -174,6 +173,67 @@ module Elf = struct
 	       && symbol.Elf.SymbolTable.st_value <> 0) then
         Symbol.Export
       else Symbol.Other
+
+    let resolve_import (branches: Tree.branch list) libraries =
+      let rec loop acc branches =
+        match branches with
+        | [] ->
+           begin
+             match acc with
+             | [] -> "Unresolved Library"
+             | library::[] -> library
+             | library::libraries ->
+                Printf.sprintf
+                  "Multiple Libraries Resolved\nThis is extremely dangerous, have fun!\n%s"
+                @@ Generics.list_to_string acc
+           end
+        | branch::branches ->
+           if (List.mem branch.Tree.library libraries
+               || List.exists
+                    (fun alias -> List.mem alias libraries)
+                    branch.Tree.aliases
+              ) then
+             loop (branch.Tree.library::acc) branches
+           else
+             loop acc branches
+      in loop [] branches
+
+    let get_imports gtree libraries relocs symbols =
+      List.fold_left
+        (fun (acc,index) symbol ->
+         let bind =
+           Elf.SymbolTable.get_bind symbol.Elf.SymbolTable.st_info
+           |> Elf.SymbolTable.symbol_bind_to_string
+         in
+         let stype =
+           Elf.SymbolTable.get_type symbol.Elf.SymbolTable.st_info
+           |> Elf.SymbolTable.symbol_type_to_string
+         in
+         let kind = get_goblin_kind symbol bind stype in
+         match kind with
+         | Symbol.Import ->
+            let name = symbol.Elf.SymbolTable.name in
+            let offset =
+              if (symbol.Elf.SymbolTable.st_value = 0) then
+	        (* this _could_ be relatively expensive *)
+	        Elf.Reloc.get_size index relocs
+              else
+	        symbol.Elf.SymbolTable.st_value
+            in
+            let size = symbol.Elf.SymbolTable.st_size in
+            let lib =
+              try
+                let branches = Tree.find name gtree in
+                resolve_import branches libraries
+              with Not_found -> "Unknown"
+            in
+            let import =
+              {Import.name; lib;idx=0; is_lazy=true; offset; size}
+            in
+            (import::acc),(index+1)
+         | _ ->
+            acc,index+1
+        ) ([],0) symbols |> fst |> List.rev
 
     let get_exports relocs symbols =
       List.fold_left
@@ -202,9 +262,9 @@ module Elf = struct
             (export::acc),(index+1)
          | _ ->
             acc,index+1
-        ) ([],0) symbols |> fst
+        ) ([],0) symbols |> fst |> List.rev
 
-    let from ?use_tol:(use_tol=true) install_name elf =
+    let from ?use_tree:(use_tree=true) install_name elf =
       let name = elf.soname in
       let islib = elf.is_lib in
       let libs = Array.of_list elf.libraries in
@@ -214,8 +274,23 @@ module Elf = struct
         | [] ->
            [||], [||]
         | symbols ->
-           let exports = Array.of_list @@ get_exports elf.relocations symbols in
-           let imports = [||] in
+           let exports =
+             Array.of_list @@ get_exports elf.relocations symbols
+           in
+           let gtree =
+             if (use_tree) then
+               GoblinTree.get()
+             else
+               GoblinTree.empty
+           in
+           let imports =
+             Array.of_list
+             @@ get_imports
+                  gtree
+                  elf.libraries
+                  elf.relocations
+                  symbols
+           in
            exports,imports
       in
       let nexports = Array.length exports in

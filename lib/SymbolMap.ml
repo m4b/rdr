@@ -197,14 +197,14 @@ let build ~verbose:verbose ~graph:graph ~libs:libstack =
     else
       let library = Stack.pop libstack in
       let bytes = RdrObject.get ~verbose:verbose library in
-      let binary = 
+      let binary =
         match bytes with
         | RdrObject.Mach binary ->
            let mach = Mach.get binary in
            Some (Goblin.Mach.to_goblin mach library)
         | RdrObject.Elf binary ->
-           (* hurr durr iman elf *)
-           Some (Elf.get binary |> Goblin.Elf.from library)
+           let elf = Elf.get binary in           
+           Some (Goblin.Elf.from ~use_tree:false library elf)
         | RdrObject.PE32 binary ->
            Some (PE.get binary |> Goblin.PE.from library)
         | RdrObject.Unknown (lib,error) ->
@@ -233,13 +233,13 @@ let build ~verbose:verbose ~graph:graph ~libs:libstack =
 	        let branches = Goblin.Tree.find name acc in
 	        Goblin.Tree.add
                   name
-                  ({Goblin.Tree.library; export}::branches)
+                  ({Goblin.Tree.library; aliases=[goblin.Goblin.name]; export}::branches)
                   acc
 	      with
 	      | Not_found ->
 	         Goblin.Tree.add
                    name
-                   [{Goblin.Tree.library; export}]
+                   [{Goblin.Tree.library; aliases=[goblin.Goblin.name]; export}]
                    acc
 	     ) map exports in
          loop map' ((goblin.Goblin.name, goblin.Goblin.libs)::lib_deps)

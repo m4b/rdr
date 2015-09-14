@@ -7,13 +7,21 @@ open GoblinExport
 
 type branch = {
     library: string;
+    aliases: string list;
     export: GoblinExport.t
   }
 
 let pp_branch ppf branch =
-  Format.fprintf ppf "@[%a -> %s@]"
-                 GoblinExport.pp branch.export
-                 branch.library
+  RdrPrinter.pp_h
+    Format.str_formatter
+    ~brackets:true
+    RdrPrinter.pp_string branch.aliases;
+  let aliases = Format.flush_str_formatter() in
+  Format.fprintf
+    ppf "@[%a -> %s %s@]"
+    GoblinExport.pp branch.export
+    branch.library
+    aliases
 
 let show_branch branch =
   pp_branch Format.str_formatter branch; Format.flush_str_formatter()
