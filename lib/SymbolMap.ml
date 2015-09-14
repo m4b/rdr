@@ -200,8 +200,7 @@ let build ~verbose:verbose ~graph:graph ~libs:libstack =
       let binary =
         match bytes with
         | RdrObject.Mach binary ->
-           let mach = Mach.get binary in
-           Some (Goblin.Mach.to_goblin mach library)
+           Some (Mach.get binary |> Goblin.Mach.from library)
         | RdrObject.Elf binary ->
            let elf = Elf.get binary in           
            Some (Goblin.Elf.from ~use_tree:false library elf)

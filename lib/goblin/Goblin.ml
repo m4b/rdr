@@ -1,5 +1,6 @@
 (* TODO:
  * PE: implement is lazy, implement offset
+ * Re-implemented printers using pp
  *)
 
 (*
@@ -118,7 +119,7 @@ module Mach = struct
     open MachExports
 
            [@@@invariant sorted, sizecomputed]
-    let to_goblin mach install_name =
+    let from install_name mach =
       let name = mach.Mach.name in
       let install_name = install_name in
       let libs = mach.Mach.libraries in
@@ -156,7 +157,7 @@ module Mach = struct
 
 module Elf = struct
     open Elf
-    (* hacky function to filter imports from exports, etc. *)
+
     (* todo use proper variants here ffs *)
     let get_goblin_kind symbol bind stype =
       if (symbol.Elf.SymbolTable.st_value = 0x0
@@ -215,7 +216,6 @@ module Elf = struct
             let name = symbol.Elf.SymbolTable.name in
             let offset =
               if (symbol.Elf.SymbolTable.st_value = 0) then
-	        (* this _could_ be relatively expensive *)
 	        Elf.Reloc.get_size index relocs
               else
 	        symbol.Elf.SymbolTable.st_value

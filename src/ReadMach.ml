@@ -13,7 +13,7 @@ open Config
 
 let analyze config binary =
   let mach = Mach.get binary in
-  let goblin = Goblin.Mach.to_goblin mach config.install_name in
+  let goblin = Goblin.Mach.from config.install_name mach in
   if (not config.silent) then
     begin
       if (not config.search) then Mach.Header.print_header mach.Mach.header;     
