@@ -1,3 +1,11 @@
+let pp_strings iter ppf list =
+  iter (fun s ->
+             Format.fprintf ppf "%s@ " s) list
+
+let pp_slist ppf list =
+  List.iter (fun s ->
+             Format.fprintf ppf "%s@ " s) list
+
 let pp_seq ?brackets:(brackets=false) ppf pp list =
   if (brackets) then
     (* "@[[]@]","@[[%a]@]","@[[@]@[<v>%a@ ","%a@ ","@]@[]@]" *)

@@ -27,7 +27,7 @@ let print_libraries = ref false
 let print_exports = ref false
 let print_imports = ref false
 let print_coverage = ref false
-let use_goblin = ref false
+let print_goblin = ref false
 let recursive = ref false
 let write_symbols = ref false
 let marshal_symbols = ref false
@@ -78,7 +78,7 @@ let get_config () =
     graph = !graph;
     filename = !anonarg; 	(* TODO: this should be Filename.basename, but unchanged for now *)
     search_term = !search_term_string;
-    use_goblin = !use_goblin;
+    print_goblin = !print_goblin;
   } 
     
 let set_base_symbol_map_directories dir_string = 
@@ -113,7 +113,12 @@ let analyze config binary =
     | Rdr.Object.Unknown (string, filename) ->
        failwith (Printf.sprintf "%s: %s" string filename)
   in
-  if (config.search) then
+  if (config.print_goblin) then
+    begin
+      Goblin.print goblin
+    end
+  else
+    if (config.search) then
     try
       let symbol =
         Goblin.get_export
@@ -247,8 +252,8 @@ let main =
      ("-f", Arg.Set_string search_term_string, "Find symbol in binary");
      ("-b", Arg.Set marshal_symbols, "Build a symbol map and write to $(HOME)/.rdr/tol; default directory is /usr/lib, change with -d");
      ("-w", Arg.Set write_symbols, "Write out a flattened system map to $(HOME)/.rdr/symbols (good for grepping)");
-     ("-G", Arg.Set use_goblin, "Use the goblin binary format");
-     ("--goblin", Arg.Set use_goblin, "Use the goblin binary format");
+     ("-G", Arg.Set print_goblin, "Print using the goblin binary format");
+     ("--goblin", Arg.Set print_goblin, "Print using the goblin binary format");
      ("-D", Arg.Set disassemble, "Disassemble found symbol(s)");
      ("--dis", Arg.Set disassemble, "Disassemble found symbol(s)");
     ] in

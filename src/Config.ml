@@ -28,6 +28,6 @@ type t =
     graph: bool;		(* -g *)
     filename: string;		(* anonarg *)
     search_term: string; 	(* -f *)
-    use_goblin: bool		(* -G *)
+    print_goblin: bool		(* -G *)
   }
 

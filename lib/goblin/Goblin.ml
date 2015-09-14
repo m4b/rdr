@@ -73,47 +73,36 @@ let iter =
 
 let empty = [||]
 
-let libs_to_string libs =
-  let b = Buffer.create @@ Array.length libs in
-  Array.iteri
-    (fun i elem ->
-     Buffer.add_string b @@ Printf.sprintf "(%d) %s\n" i elem)
-    libs;
-  Buffer.contents b
-
-(* 
-let imports_to_string imports =
-  let b = Buffer.create @@ (Array.length imports) * 15 in (* just ballpark *)
-  Array.iter (fun import ->
-      Buffer.add_string b @@ Import.to_string import) imports;
-  Buffer.contents b
-
-let exports_to_string exports =
-  let b = Buffer.create @@ (Array.length exports) * 15 in (* just ballpark *)
-  Array.iter (fun export ->
-      Buffer.add_string b @@ Export.to_string export) exports;
-  Buffer.contents b
- *)
-
 let print_exports =
   iter Export.print
 
 let print_imports =
   iter Import.print
 
-(* 
-let to_string goblin = Printf.sprintf "%s (%s):\nLibs (%d):\n%s\nExports (%d):\n%s\nImports (%d):\n%s"
+let pp ppf goblin =
+  Format.fprintf
+    ppf "@[<v>%s (%s)@ Libs (%d)@ @[<v 2>@ "
     goblin.name goblin.install_name
-    goblin.nlibs
-    (libs_to_string goblin.libs)
-    goblin.nimports
-    (imports_to_string goblin.imports)
-    goblin.nexports
-    (exports_to_string goblin.exports)
+    goblin.nlibs;
+    RdrPrinter.pp_strings Array.iter ppf goblin.libs;
+    Format.fprintf ppf "@]@ ";
+    Format.fprintf ppf "Imports (%d)@ @[<v 2>@ " goblin.nimports;
+    iter (fun elem -> Import.pp ppf elem; Format.print_space())
+         goblin.imports;
+    Format.fprintf ppf "@]@ ";
+    Format.fprintf ppf "Exports (%d)@ @[<v 2>@ " goblin.nexports;
+    iter (fun elem -> Export.pp ppf elem; Format.print_space())
+         goblin.exports;
+    Format.fprintf ppf "@]@]@."
 
-let print goblin = Printf.printf "%s\n" @@ to_string goblin
- *)
+let show goblin =
+  pp Format.str_formatter goblin; Format.flush_str_formatter()
+
+let print goblin =
+  pp Format.std_formatter goblin; Format.print_newline()
+
 module Mach = struct
+    (* remove this monstrosity of a file *)
     include GoblinMach
     open MachImports
     open MachExports
