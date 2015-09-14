@@ -306,7 +306,7 @@ module PE = struct
     open GoblinExport
 
     let from install_name pe =
-      let goblin_imports :GoblinImport.t list =
+      let imports =
         List.map
           (fun (symbol:PE.Import.synthetic_import) ->
            {name = symbol.name; lib = symbol.dll;
@@ -314,15 +314,15 @@ module PE = struct
             is_lazy = false; idx = symbol.ordinal;
             offset = symbol.offset; size = symbol.size}
           )
-          pe.imports
+          pe.imports |> Array.of_list
       in
-      let goblin_exports =
+      let exports =
         List.map
           (fun (symbol:PE.Export.synthetic_export) ->
            {name = symbol.name; offset = symbol.offset;
             size = symbol.size}
           )
-          pe.exports
+          pe.exports |> Array.of_list
       in
       {
         name = Filename.basename install_name;
@@ -330,9 +330,9 @@ module PE = struct
         islib = pe.is_lib;
         libs = Array.of_list pe.libraries;
         nlibs = pe.nlibraries;
-        imports = Array.of_list goblin_imports;
+        imports;
         nimports = pe.nimports;
-        exports = Array.of_list goblin_exports;
+        exports;
         nexports = pe.nexports;
         code = Bytes.empty;
       }
