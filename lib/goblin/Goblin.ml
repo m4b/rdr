@@ -1,6 +1,5 @@
 (* TODO:
  * PE: implement is lazy, implement offset
- * Re-implemented printers using pp
  *)
 
 (*
