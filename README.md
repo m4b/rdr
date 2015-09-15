@@ -6,15 +6,15 @@ Welcome to the `rdr` project.
 
 **UPDATE**
 
-> `rdr` is now version 3.0, supporting tools like [bin2json](http://github.com/m4b/bin2json), which further supports tools like [the silicon element suite](http://github.com/SiliconElements).  Here are some features:
-
- * PE32 support
- * Unified export/import model using the Goblin binary format, a kind of IR for binaries
- * Disassemble symbols in a binary (as opposed to just symbols in the map) --- this is _still_ experimental and very much hacky, llvm-mc must be installed.  I'll figure out a better way soon, or write my own x86-64 and ARM64 disassembler, cause I'm crazy.
- * Print Goblin representation
- * A slightly better symbol tree
- * Import library resolution for ELF, which looks up the imported symbol for a binary using the symbol map/tree
- * Better byte-coverage printing in addition to more extensive coverage
+> `rdr` is now version 3.0, supporting tools like [bin2json](http://github.com/m4b/bin2json), which further supports tools like [the silicon element suite](http://github.com/SiliconElements).  Here are some (new) features:
+>
+> * PE32 support
+> * Unified export/import model using the Goblin binary format, a kind of IR for binaries
+> * Disassemble symbols in a binary (as opposed to just symbols in the map) --- this is _still_ experimental and very much hacky, llvm-mc must be installed.  I'll figure out a better way soon, or write my own x86-64 and ARM64 disassembler, cause I'm crazy.
+> * Print Goblin representation
+> * A slightly better symbol tree
+> * Import library resolution for ELF, which looks up the imported symbol for a binary using the symbol map/tree
+> * Better byte-coverage printing in addition to more extensive coverage
 
 `rdr` is an OCaml tool/library for doing cross-platform analysis of binaries.  I typically use it for looking up symbol names, finding the address offset, and then running `gdb` or `lldb` to mess around (you should be using both if you even know what you're doing).
 
