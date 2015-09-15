@@ -24,9 +24,17 @@ Basically it's the best, free, cross-platform reverse engineering tool out there
 
 See the [usage section](#usage) for a list of features.
 
-Currently, only 64-bit _ELF_,_mach-o_, and 32-bit _PE32_ binaries are supported (64-bit PE32, i.e. PE32+ coming soon).  But 32-bit binaries aren't cool anymore; stop publishing reverse engineering tutorials on them (in nix land, apparently Microsoft [still publishes generates 32-bit binaries](https://go.microsoft.com/fwlink/?LinkId=532606&clcid=0x409) for general consumption).
+Currently, only:
 
-Happily, the project has no dependencies (besides the standard libs and `unix` and `str`).  I have switched to an `oasis` build system however, and it's awesome, but does add some extra complexity.  See the [install section](#install) for more details.
+* 64-bit **ELF**
+* 64-bit **Mach-o** (also will suck out the first 64-bit binary found in a fat universal binary)
+* 32-bit _PE32_
+
+binaries are supported (64-bit PE32, i.e. PE32+ coming soon).
+
+Also, 32-bit binaries aren't cool anymore; stop publishing reverse engineering tutorials on them (in nix land at least: apparently Microsoft [still publishes 32-bit binaries](https://go.microsoft.com/fwlink/?LinkId=532606&clcid=0x409) for general consumption).
+
+Happily, the project has no dependencies (besides the standard libs and `unix` and `str`).  I have switched to an `oasis` build system however, and it's awesome, but does add some slight extra complexity (not really).  See the [install section](#install) for more details.
 
 `rdr` is under [active development](TODO.md) --- contributions welcome!
 
@@ -42,7 +50,7 @@ Install with OPAM: `opam install rdr`
 
 * You must have OCaml installed, at least version 4.02 (I use the `Bytes` module and ppx annotations).
 * You must run `make`, or execute `ocaml setup.ml -configure && ocaml setup.ml -build` (especially if on 64-bit windows) in the base project directory.
-* You may then `sudo make install` (or `sudo ocaml setup.ml -install`) to copy the `rdr` binary to your `/usr/local/bin`, in addition to installing the library with findlib.  Or you can just `mv` the generated binary, `main.native` wherever you want, with whatever name, if that's your fancy.
+* You may then `sudo make install` (or `sudo ocaml setup.ml -install`) to copy the `rdr` binary to your `/usr/local/bin`, in addition to installing the library with findlib.  Or you can just `mv` the generated binary, `main.native`, wherever you want, with whatever name, if that's your fancy.
 
 # Usage
 
