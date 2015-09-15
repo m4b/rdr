@@ -42,7 +42,7 @@ Install with OPAM: `opam install rdr`
 
 * You must have OCaml installed, at least version 4.02 (I use the `Bytes` module and ppx annotations).
 * You must run `make`, or execute `ocaml setup.ml -configure && ocaml setup.ml -build` (especially if on 64-bit windows) in the base project directory.
-* You may then `make install` (or `ocaml setup.ml -install`) to copy the `rdr` binary to your `/usr/bin`, in addition to installing the library with findlib.  Or you can just `mv` the generated binary, `main.native` wherever you want, with whatever name, if that's your fancy.
+* You may then `sudo make install` (or `sudo ocaml setup.ml -install`) to copy the `rdr` binary to your `/usr/local/bin`, in addition to installing the library with findlib.  Or you can just `mv` the generated binary, `main.native` wherever you want, with whatever name, if that's your fancy.
 
 # Usage
 
