@@ -1,29 +1,32 @@
-# Rdr 2.0 - Welcome
+# Rdr 3.0 - Welcome
 
 [![Floobits Status](https://floobits.com/m4b/rdr.svg)](https://floobits.com/m4b/rdr/redirect)
 
-**UPDATE**:
-
-> `rdr` is now version 2.0, which adds a new "byte coverage" algorithm for returning understood sections/segments with respect to a binary.  Check it out with `rdr -c <path to binary>`.
-> Moreover, `rdr` is now a binary _and_ a library, which you all can link against and use in your own projects, if you so desire.  [elf2json](http://github.com/m4b/elf2json) is a new program demonstrating this.
-
 Welcome to the `rdr` project.
+
+**UPDATE**
+
+> `rdr` is now version 3.0, supporting tools like [bin2json](http://github.com/m4b/bin2json), which further supports tools like [the silicon element suite](http://github.com/SiliconElements).  Here are some features:
+
+ * PE32 support
+ * Unified export/import model using the Goblin binary format, a kind of IR for binaries
+ * Disassemble symbols in a binary (as opposed to just symbols in the map) --- this is _still_ experimental and very much hacky, llvm-mc must be installed.  I'll figure out a better way soon, or write my own x86-64 and ARM64 disassembler, cause I'm crazy.
+ * Print Goblin representation
+ * A slightly better symbol tree
+ * Import library resolution for ELF, which looks up the imported symbol for a binary using the symbol map/tree
+ * Better byte-coverage printing in addition to more extensive coverage
 
 `rdr` is an OCaml tool/library for doing cross-platform analysis of binaries.  I typically use it for looking up symbol names, finding the address offset, and then running `gdb` or `lldb` to mess around (you should be using both if you even know what you're doing).
 
 I also find that it's useful for resolving linking errors if you're trying to build some project, especially some random, misconfigured XCode project, or what have you.
 
+Basically it's the best, free, cross-platform reverse engineering tool out there.
+
 See the [usage section](#usage) for a list of features.
 
-Currently, only 64-bit _ELF_ and _mach-o_ binaries are supported.  32-bit binaries aren't cool anymore; stop publishing reverse engineering tutorials on them.
+Currently, only 64-bit _ELF_,_mach-o_, and 32-bit _PE32_ binaries are supported (64-bit PE32, i.e. PE32+ coming soon).  But 32-bit binaries aren't cool anymore; stop publishing reverse engineering tutorials on them (in nix land, apparently Microsoft [still publishes generates 32-bit binaries](https://go.microsoft.com/fwlink/?LinkId=532606&clcid=0x409) for general consumption).
 
-It has no dependencies (besides the standard libs and `unix` and `str`) and can be built with the provided `build.sh` script, or simply with:
-
-````bash
-ocamlbuild.native -lib unix -lib str src/Rdr.native && mv Rdr.native rdr
-````
-
-It is also available via OPAM: `opam install rdr`.
+Happily, the project has no dependencies (besides the standard libs and `unix` and `str`).  I have switched to an `oasis` build system however, and it's awesome, but does add some extra complexity.  See the [install section](#install) for more details.
 
 `rdr` is under [active development](TODO.md) --- contributions welcome!
 
@@ -35,9 +38,11 @@ Install with OPAM: `opam install rdr`
 
 #### Slightly Less Easy (Manual)
 
-* You must have OCaml installed, at least version 4.02 (I use the `Bytes` module).
-* You must run `make`, or the `build.sh` script, or execute `ocamlbuild.native -lib unix -lib str src/Rdr.native && mv Rdr.native rdr` in the base project directory.
-* You may then `make install` to copy the binary to your `${HOME}/bin`, or you can copy or symlink the resulting `rdr` binary to anywhere that is exported in your `${PATH}` (or not do that, if that's your fancy).
+**NOTE** This will _not_ build on 32-bit systems.
+
+* You must have OCaml installed, at least version 4.02 (I use the `Bytes` module and ppx annotations).
+* You must run `make`, or execute `ocaml setup.ml -configure && ocaml setup.ml -build` (especially if on 64-bit windows) in the base project directory.
+* You may then `make install` (or `ocaml setup.ml -install`) to copy the `rdr` binary to your `/usr/bin`, in addition to installing the library with findlib.  Or you can just `mv` the generated binary, `main.native` wherever you want, with whatever name, if that's your fancy.
 
 # Usage
 
@@ -53,24 +58,26 @@ rdr /usr/lib/libc.so.6
 
 It should output something like: `ELF X86_64 DYN @ 0x20920`.  Which is boring.
 
-You can pass it various flags, `-e` for printing the exports found in the binary (see this post on [ELF exports](http://www.m4b.io/elf/export/binary/analysis/2015/05/25/what-is-an-elf-export.html#conclusion) for what I'm counting as an "export"), `-i` for imports, etc.  For mach-o binaries, exporthood and importhood are clearly defined, so blog posts detailing this aren't necessary (unless you want a [detailed analysis of the binary format](http://www.m4b.io/reverse/engineering/mach/binaries/2015/03/29/mach-binaries.html)).
+You can pass it various flags, `-e` for printing the exports found in the binary (see this post on [ELF exports](http://www.m4b.io/elf/export/binary/analysis/2015/05/25/what-is-an-elf-export.html#conclusion) for what I'm counting as an "export"), `-i` for imports, etc.  For mach-o and PE32 binaries, exporthood and importhood are clearly defined, so blog posts detailing this isn't necessary (unless you want a [detailed analysis of the mach binary format](http://www.m4b.io/reverse/engineering/mach/binaries/2015/03/29/mach-binaries.html)).
 
 Some examples:
 
+* `rdr -v` - prints the version
 * `rdr -h` - prints a help menu
-* `rdr -h /usr/lib/libc.so.6` - prints the program headers, bookkeeping data, and other beaurocratic aspects of binaries, just to confuse you.
+* `rdr -h /usr/lib/libc.so.6` - prints the program headers, bookkeeping data, and other beaurocratic aspects of binaries specific to the format your analyzing
 * `rdr -f printf /usr/lib/libc.so.6` - searches the `libc.so.6` binary for an exported symbol named _exactly_ "printf", and if found, prints its binary offset and size (in bytes).  _Watch out for_ `_` prefixed symbols in mach and compiler private symbols in ELF. Definitely watch out for funny (`$`) symbols, like in mach-o Objective C binaries; you'll need to quote the symbol name to escape them, otherwise bash gets mad.  Future: regexp multiple returns, and searching imports as well.
+* `rdr -D -f printf /usr/lib/libc.so.6` - disassembles the printf symbol if it's found.
 * `rdr -l /usr/lib/libc.so.6` - lists the dynamic libraries `libc.so.6` _explicitly_ depends on (I'm looking at _you_ `dlsym`).
-* `rdr -i /usr/lib/libc.so.6` - lists the imports the binary depends on.  **NOTE** when run on linux binaries, if a system map has been built, it will use that to lookup where the symbol could have come from for you.  Depending on your machine, can add a slight delay; sorry bout that.  On `mach-o` this delay caused by an extra lookup isn't necessary, since imports are required to state where they come from, because the format was built by sane people (more or less).
-* `rdr -g /usr/lib/libz.so.1.2.8` - graphs the libraries, imports, and exports of `libz.so.1.2.8`; run `dot -O -n -Tpng libz.so.1.2.8.gv` to make a pretty picture.  Does a simple, hackish check to see if `dot` is in your `${PATH}`, and if so, runs the above dot command for you - you should probably just install it before you run this.  [See the examples](#examples) for `rdr` output. Here is an example of the linux output
+* `rdr -i /usr/lib/libc.so.6` - lists the imports the binary depends on.  **NOTE** when run on linux ELF binaries, if a system map has been built, it will use that to resolve the import's library.  Depending on your machine, can add a slight delay; sorry bout that.  On mach-o and PE this delay caused by an extra lookup isn't necessary, since imports are required to state where they come from, because the format was built by sane people (more or less).
+* `rdr -g /usr/lib/libz.so.1.2.8` - graphs the libraries, imports, and exports of `libz.so.1.2.8`; run `dot -O -n -Tpng libz.so.1.2.8.gv` to make a pretty picture.  Does a simple, hackish check to see if `dot` is in your `${PATH}`, and if so, runs the above dot command for you - you should probably just install it before you run this.  [See the examples](#examples) for `rdr` output.
 * `rdr -s /usr/lib/libc.so.6` - print the nlist/strippable symbol table, if it exists.  Crappy programs like `nm` _only_ use the strippable symbol table, even for exports and imports.
-* `rdr -v /usr/lib/libc.so.6` - print everything.
+* `rdr -v /usr/lib/libc.so.6` - print everything; you have been warned.
 
 ## Symbol Map
 
-`rdr` can create a "symbol map" for you, in `${HOME}/.rdr/`.  What's that you ask?  It's a map from `exported symbol name -> list of symbol info`, where symbol information is offset, size, exporting library, etc.
+`rdr` can create a "symbol map" for you, in `${HOME}/.rdr/`.  What's that you ask?  It's a map from `exported symbol name -> list of exported symbols`, where symbol information is offset, size, exporting library, etc.  In the future I will add tags to the symbol; I'll explain what that means when the time comes.
 
-It is a map from keys of symbol names to _lists_ of symbol information, because symbol-to-symbol information is _not a function_.  To put that less technically: for any given symbol name, `malloc` for example, you can have multiple libraries which provide (export) that same exact symbol.  It is a one to many relationship.
+But in other words, this is a map from keys of symbol names to _lists_ of symbol information, because symbol-to-symbol information is _not a function_.  To put that less technically: for any given symbol name, `malloc` for example, you can have multiple libraries which provide (export) that same exact symbol.  It is a one to many relationship.
 
 Nevertheless, with such a map, we can perform a variety of useful activities, like looking up a symbol's offset in a library, its size, etc.
 
@@ -92,19 +99,21 @@ rdr -b -r -d "/usr/lib /usr/local/lib"
 
 Spaces or colons (':') in the `-d` string separate different directories; with `-r` set, it searches _each_ recursively.
 
-Be careful (patient); on slow machines, this can take some time.  On a recent MBP, it's so fast it can build the map in realtime, and then do a symbol lookup (I don't do that).
+Be careful (patient); on slow machines, this can take a whole bunch of time, especially on linux, where everything and their mother put their garbage in `/usr/lib` (I'm looking at _you_ node).  But on the brightside, if you're lucky enough to have one, on a recent MBP, it's so fast it can build the map in realtime, and then do a symbol lookup (I don't do that).
 
-After you've built the map, you can perform _exact_ symbol lookups, for example:
+Anyway, after you've built the map, you can perform _exact_ symbol lookups, for example:
 
 ````bash
 $ rdr -m -f printf
 searching /usr/lib/ for printf:
-           4f0a0 printf (161) -> /usr/lib/libc-2.21.so
+           30f90 printf (334) -> /usr/lib/libtsan.so.0.0.0 [libtsan.so.0]
+           4ed10 printf (161) -> /usr/lib/libc-2.22.so [libc.so.6]
+           60c00 printf (284) -> /usr/lib/libasan.so.2.0.0 [libasan.so.2]
 ````
 
-Where the output format for each symbol is `offset symbol_name (size) -> /path/to/exporting/library`.
+Where the output format for each symbol is `offset symbol_name (size) -> /path/to/exporting/library [alias]`.  The alias is important for ELF, as it allows import resolution in the analyzed binaries (basically what the dynamic linker does --- it's awesome).
 
-If you find a symbol you admire, you can disassemble it by adding the `-D` flag, using `llvm-mc`.  This is an experimental feature and subject to change (it'll definitely have to stay in, cause it's awesome).
+If you find a symbol you admire, you can disassemble it by adding the `-D` flag, using `llvm-mc`.  This is an experimental feature and subject to change (it'll definitely have to stay in though, cause it's awesome).
 
 Again, I do a simple, hackish check to see if `llvm-mc` is in your `${PATH}`, and if so, the program is run, otherwise an error message is printed.  However, to quote a C idiom: "this behavior is undefined" if `llvm-mc` isn't installed and in your `${PATH}`.
 
@@ -146,9 +155,9 @@ searching /usr/lib/ for printf:
 	retq
 ````
 
-If you don't like AT&T syntax, then you're out of luck for now (and in the meantime you should probably become a real hacker and learn to read and understand both).
+If you don't like AT&T syntax (FYI you should probably become a real hacker and learn to read and understand both syntax flavors), the lack of options, and a host of other issues w.r.t. disassembly, then you're out of luck for now.  Maybe make a pull request?
 
-You can also graph the library dependencies (the `.gv` file is generated _at build time_) with `rdr -m -g`.  Currently, it creates a `library_dependency.png` file; in the future, this will be named after the map it was generated from, once named maps become a thing.  Also, this `.png` will be enormous.
+~~You can also graph the library dependencies (the `.gv` file is generated _at build time_) with `rdr -m -g`.  Currently, it creates a `library_dependency.png` file; in the future, this will be named after the map it was generated from, once named maps become a thing.  Also, this `.png` will be enormous.~~ This feature disabled for now.
 
 Finally, and again at build time, a `stats` file is generated from the system map in `${HOME}/.rdr/`; this simply counts the number of times a symbol was _imported_ by every binary analyzed when the system map was built (so with a `-d` directory specified, the default is `/usr/lib/`, and so it counts every time some symbol `x` was imported in every binary found in `/usr/lib`).  Expect this file to change, or various other statistical files to be created in the `${HOME}/.rdr/` directory.
 
@@ -187,3 +196,4 @@ Because I just knew you were going to ask, I made this _sweet_ graphic, just for
 # Examples
 
 * `rdr -g /usr/lib/libz.so.1.2.8`: ![libz so hard](http://www.m4b.io/images/libz.so.1.2.8.gv.png)
+* See my [gallery](http://www.m4b.io/gallery) for more inspiring images of what you can do with `rdr`
