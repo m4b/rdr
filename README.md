@@ -48,7 +48,7 @@ Install with OPAM: `opam install rdr`
 
 **NOTE** This will _not_ build on 32-bit systems.
 
-* You must have OCaml installed, at least version 4.02 (I use the `Bytes` module and ppx annotations).
+* You must have OCaml and `findlib` installed, and OCaml must be at least version 4.02 (I use the `Bytes` module and ppx annotations).  You can install findlib through your package manager; on Arch it's currently `ocaml-findlib`.
 * You must run `make`, or execute `ocaml setup.ml -configure && ocaml setup.ml -build` (especially if on 64-bit windows) in the base project directory.
 * You may then `sudo make install` (or `sudo ocaml setup.ml -install`) to copy the `rdr` binary to your `/usr/local/bin`, in addition to installing the library with findlib.  Or you can just `mv` the generated binary, `main.native`, wherever you want, with whatever name, if that's your fancy.
 
