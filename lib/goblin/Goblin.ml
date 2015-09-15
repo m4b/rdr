@@ -106,7 +106,15 @@ module Mach = struct
     open MachImports
     open MachExports
 
-           [@@@invariant sorted, sizecomputed]
+    (* because we add the base binary
+       as the library because that was a great idea *)
+    let get_libs libraries =
+      if (Array.length libraries <= 1) then
+        [||]
+      else
+        Array.sub libraries 1 (Array.length libraries - 1)
+
+    [@@invariant sorted, sizecomputed]
     let from install_name mach =
       let name =
         match mach.Mach.name with
@@ -114,8 +122,8 @@ module Mach = struct
         | name -> name
       in
       let install_name = install_name in
-      let libs = mach.Mach.libraries in
-      let nlibs = mach.Mach.nlibraries in
+      let libs = get_libs mach.Mach.libraries in
+      let nlibs = Array.length libs in
       let exports =
         List.map
           (fun export ->
