@@ -72,6 +72,7 @@ Some examples:
 * `rdr -g /usr/lib/libz.so.1.2.8` - graphs the libraries, imports, and exports of `libz.so.1.2.8`; run `dot -O -n -Tpng libz.so.1.2.8.gv` to make a pretty picture.  Does a simple, hackish check to see if `dot` is in your `${PATH}`, and if so, runs the above dot command for you - you should probably just install it before you run this.  [See the examples](#examples) for `rdr` output.
 * `rdr -s /usr/lib/libc.so.6` - print the nlist/strippable symbol table, if it exists.  Crappy programs like `nm` _only_ use the strippable symbol table, even for exports and imports.
 * `rdr -v /usr/lib/libc.so.6` - print everything; you have been warned.
+* `rdr -c /usr/lib/libc.so.6` - prints the byte coverage `rdr` generated for the binary
 
 ## Symbol Map
 
