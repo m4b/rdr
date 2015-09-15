@@ -28,7 +28,7 @@ Currently, only:
 
 * 64-bit **ELF**
 * 64-bit **Mach-o** (also will suck out the first 64-bit binary found in a fat universal binary)
-* 32-bit _PE32_
+* 32-bit **PE32**
 
 binaries are supported (64-bit PE32, i.e. PE32+ coming soon).
 
