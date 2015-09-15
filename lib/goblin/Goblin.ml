@@ -117,11 +117,10 @@ module Mach = struct
     [@@invariant sorted, sizecomputed]
     let from install_name mach =
       let name =
-        match mach.Mach.name with
-        | "" -> Filename.basename install_name
-        | name -> name
+        if (mach.Mach.name = "") then
+          Filename.basename install_name
+        else mach.Mach.name
       in
-      let install_name = install_name in
       let libs = get_libs mach.Mach.libraries in
       let nlibs = Array.length libs in
       let exports =
@@ -157,7 +156,6 @@ module Mach = struct
 
 module Elf = struct
     open Elf
-
     (* todo use proper variants here ffs *)
     let get_goblin_kind symbol bind stype =
       if (symbol.Elf.SymbolTable.st_value = 0x0
@@ -266,9 +264,9 @@ module Elf = struct
 
     let from ?use_tree:(use_tree=true) install_name elf =
       let name =
-        match elf.soname with
-        | "" -> Filename.basename install_name
-        | name -> name
+        if (elf.soname = "") then
+        Filename.basename install_name
+        else elf.soname
       in
       let islib = elf.is_lib in
       let libs = Array.of_list elf.libraries in

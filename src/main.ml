@@ -136,7 +136,7 @@ let analyze config binary =
       Goblin.Export.print symbol;
       if (config.disassemble) then
         Rdr.Utils.Command.disassemble
-          config.name
+          goblin.Goblin.install_name
           symbol.Goblin.Export.offset
           symbol.Goblin.Export.size
     with Not_found ->

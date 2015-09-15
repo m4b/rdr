@@ -5,13 +5,10 @@ let debug = false
 let analyze config binary =
   let elf = Elf.get ~meta_only:true binary in
   (* for consistency and display, goblin makes everything have names *)
-  let soname = if (elf.Elf.soname = "") then
-                 config.name else elf.Elf.soname
-  in
   let goblin =
     Goblin.Elf.from
       ~use_tree:config.resolve_imports
-      soname
+      config.install_name
       elf
   in
   (* print switches *)
@@ -35,7 +32,7 @@ let analyze config binary =
       if (config.verbose || config.print_libraries) then
 	begin
 	  if (elf.Elf.is_lib) then
-            Printf.printf "Soname: %s\n" soname;
+            Printf.printf "Soname: %s\n" elf.Elf.soname;
 	  Printf.printf
             "Libraries (%d)\n"
             (List.length elf.Elf.libraries);
