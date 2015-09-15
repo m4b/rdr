@@ -44,8 +44,16 @@ let print_version = ref false
 let get_config () =
   let analyze = not (!use_map || !marshal_symbols) in
   let search = !search_term_string <> "" in
-  let silent = not analyze && not !verbose in (* so we respect verbosity if searching*)
-  let use_tol = !print_imports || !verbose || (!graph && analyze) in
+  let silent =
+    not analyze && not !verbose
+  in (* so we respect verbosity if searching*)
+  let use_tol =
+    !print_imports || !verbose || (!graph && analyze)
+  in
+  let resolve_imports =
+    !print_imports || !verbose || (!graph && analyze)
+    || !print_goblin
+  in
   let install_name =
     if (Filename.is_relative !anonarg) then
       (Sys.getcwd()) ^ Filename.dir_sep ^ !anonarg
@@ -60,6 +68,7 @@ let get_config () =
     silent;
     search;
     use_tol;
+    resolve_imports;
     consume_bytes = false;
     print_nlist = !print_nlist;
     verbose = !verbose;

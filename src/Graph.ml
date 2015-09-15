@@ -3,23 +3,6 @@ TODO:
 (1) create sorted output, by sending in a polymorphic list instead of a map, sorted by address, etc. this will be easy with arrays of exports/imports
  *)
 
-(*
-for testing
-
-#directory "/Users/matthewbarney/git/rdr/_build/src/utils/";;
-#directory "/Users/matthewbarney/git/rdr/_build/src/mach/";;
-#load "Binary.cmo";;
-#load "InputUtils.cmo";;
-#load "Version.cmo";;
-#load "Nlist.cmo";;
-#load "LoadRdr.Utils.Command.cmo";;
-#load "BindOpcodes.cmo";;
-#load "Leb128.cmo";;
-#load "Imports.cmo";;
-#load "Mach.Exports.cmo";;
-#load "Macho.cmo";;
-*)
-
 open Binary
 open Mach.Imports
 open Mach.Exports
@@ -82,7 +65,7 @@ let get_html_libs_header name fullname nlibs =
    <TR>
     <TD BGCOLOR=\"lightblue\">%s Libraries (%d)</TD>
    </TR>
-" name fullname (nlibs - 1)
+" name fullname nlibs
 
 let get_html_lib_row name index libname =
   Printf.sprintf "   <TR>
@@ -315,7 +298,7 @@ node [shape=plaintext]\n";
       let nodename = Printf.sprintf "%s_libs" name in
       Buffer.add_string b @@ Printf.sprintf "{ rank=same; 0->%s [style=invis]}" nodename;
       Buffer.add_string b @@ get_html_libs_header nodename binary.Goblin.name binary.Goblin.nlibs; (* goblin? *)
-      Array.iteri (fun i lib -> if (i <> 0) then Buffer.add_string b @@ get_html_lib_row name (i-1) lib) binary.Goblin.libs;
+      Array.iteri (fun i lib -> Buffer.add_string b @@ get_html_lib_row name i lib) binary.Goblin.libs;
       Buffer.add_string b html_footer;
     end;
   (* end libs *)

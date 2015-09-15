@@ -8,6 +8,7 @@ type t =
     use_tol: bool;
     name: string;
     install_name: string;
+    resolve_imports: bool;
     (* analysis *)
     verbose: bool;			      (* -v *)
     print_headers: bool;		      (* -h *)

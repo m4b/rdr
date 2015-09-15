@@ -8,10 +8,9 @@ let analyze config binary =
   let soname = if (elf.Elf.soname = "") then
                  config.name else elf.Elf.soname
   in
-  let resolve_imports = config.print_imports || config.print_goblin in  
   let goblin =
     Goblin.Elf.from
-      ~use_tree:resolve_imports
+      ~use_tree:config.resolve_imports
       soname
       elf
   in
