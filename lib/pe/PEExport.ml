@@ -317,15 +317,15 @@ let get_exports binary export_data sections :t =
   let ordinal_base = export_data.export_directory_table.ordinal_base in
   List.mapi (fun i ptr ->
       let name,offset,reexport =
+        (*         Printf.printf "i: %d ptr: 0x%x " i ptr; *)
         let name_offset = PEUtils.find_offset ptr sections in
         let name = Binary.string binary name_offset in
         let ordinal = List.nth ordinals i in
         let address_index = ordinal - ordinal_base in
-        (* this symbol in msvcrt.dll seems to have a -1 ordinal: ??0__non_rtti_object@@QAE@ABV0@@Z *)
-        (* Printf.printf "name: %s i: %d ordinal: %d address: %d rva: " name i ordinal address_index; *)
+        (*         Printf.eprintf "name_offset: 0x%x name: %s ordinal: %d address_index: %d\n" name_offset name ordinal address_index; *)
         if (address_index < 0 || (address_index >= List.length addresses)) then
           begin
-            (* Printf.eprintf "<PEExport.get_export> bad index for %s: %d %d %d\n" name i ordinal address_index; *)
+            Printf.eprintf "<PEExport.get_export> bad index for %s: %d %d %d len: %d\n" name i ordinal address_index (List.length addresses);
             name,0x0,None
           end
         else
