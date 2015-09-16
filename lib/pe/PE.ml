@@ -1,6 +1,7 @@
 open Binary
 
 module Header = PEHeader
+module SectionTable = PESectionTable
 module Import = PEImport
 module Export = PEExport
 module Characteristic = PECharacteristic
@@ -9,10 +10,12 @@ module Utils = PEUtils
 module Coverage = PEByteCoverage
 
 open Header
+open SectionTable
 
 type t =
   {
     header: Header.t;
+    sections: SectionTable.t;
     size: int;
     export_data: Export.export_data option;
     exports: Export.t;
@@ -22,6 +25,7 @@ type t =
     nimports: int;
     libraries: string list;
     nlibraries: int;
+    name: string;
     is_lib: bool;
     main_offset: int;
     byte_coverage: ByteCoverage.t;
@@ -49,6 +53,8 @@ let pp ppf t =
  *)
   Format.fprintf ppf "@ IsLib: %b" t.is_lib;
   Format.fprintf ppf "@ Main: 0x%x" t.main_offset;
+  Format.fprintf ppf "@ Sections@ ";
+  PESectionTable.pp ppf t.sections;
   Format.fprintf ppf "@]"
 
 let show t =
@@ -80,24 +86,25 @@ let print_header_stub t =
 let get ?coverage:(coverage=true) binary =
   let size = Bytes.length binary in
   let header = Header.get_header binary in
-  let section_tables = header.Header.section_tables in
+  let section_tables = SectionTable.get binary header in
   let is_lib =
     Characteristic.is_dll header.coff_header.characteristics
   in
-  let export_data, exports, import_data,
+  let export_data, name, exports, import_data,
       imports, libraries, main_offset =
     match header.Header.optional_header with
     | Some headers ->
-      let export_data,exports =
+      let export_data,name,exports =
         if (headers.data_directories.export_table = 0) then
-          None,[]
+          None,"",[]
         else
           let export_data = PEExport.get
               binary headers.data_directories
               section_tables
           in
           Some export_data,
-          (PEExport.get_exports export_data section_tables)
+          export_data.PEExport.name,
+          PEExport.get_exports binary export_data section_tables
       in
       let import_data, imports, libraries =
         if (headers.data_directories.import_table = 0) then
@@ -119,10 +126,10 @@ let get ?coverage:(coverage=true) binary =
             section_tables
         with Not_found -> 0x0
       in
-      export_data,exports,import_data,
+      export_data,name,exports,import_data,
       imports, libraries, main_offset
     | None ->
-      None,[],None,[],[],0x0
+      None,"",[],None,[],[],0x0
   in
   (* this is a performance bottleneck
      probably due to the symbol additions *)
@@ -138,6 +145,7 @@ let get ?coverage:(coverage=true) binary =
   in
   {
     header;
+    sections = section_tables;
     size;
     export_data;
     import_data;
@@ -148,6 +156,7 @@ let get ?coverage:(coverage=true) binary =
     libraries;
     nlibraries = List.length libraries;
     is_lib;
+    name;
     main_offset;
     byte_coverage;
   }

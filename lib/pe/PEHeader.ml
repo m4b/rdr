@@ -206,35 +206,6 @@ let pp_data_directories ppf dd =
     dd.clr_runtime_header
     dd.size_of_clr_runtime_header
 
-type section_table = {
-    name: string [@size 8];
-    virtual_size: int [@size 4];
-    virtual_address: int [@size 4];
-    size_of_raw_data: int [@size 4];
-    pointer_to_raw_data: int [@size 4];
-    pointer_to_relocations: int [@size 4];
-    pointer_to_linenumbers: int [@size 4];
-    number_of_relocations: int [@size 2];
-    number_of_linenumbers: int [@size 2];
-    characteristics: int [@size 4];
-  }
-
-let sizeof_section_table = 8 * 5
-
-let pp_section_table ppf section =
-  Format.fprintf ppf
-    "@[<v 2>%s@ VirtualSize: 0x%x@ VirtualAddress: 0x%x@ SizeOofRawData: 0x%x@ PointerToRawData: 0x%x@ PointerToRelocations: 0x%x@ PointerToLinenumbers: 0x%x@ NumberOfRelocations: 0x%x@ NumberOfLinenumbers: 0x%x@ Characteristics: 0x%x@]"
-    section.name
-    section.virtual_size
-    section.virtual_address
-    section.size_of_raw_data
-    section.pointer_to_raw_data
-    section.pointer_to_relocations
-    section.pointer_to_linenumbers
-    section.number_of_relocations
-    section.number_of_linenumbers
-    section.characteristics
-
 type optional_header =
   {
     standard_fields: standard_fields;
@@ -255,7 +226,6 @@ type t = {
     dos_header: dos_header;
     coff_header: coff_header;
     optional_header: optional_header option;
-    section_tables: section_table list;
   }
 
 let pp ppf t =
@@ -263,13 +233,13 @@ let pp ppf t =
   pp_dos_header ppf t.dos_header;
   Format.fprintf ppf "@ ";
   pp_coff_header ppf t.coff_header;
-  match t.optional_header with
-  | Some header ->
-    pp_optional_header ppf header;
-  | None ->
-    Format.fprintf ppf "@ **No Optional Headers**";
-  Format.fprintf ppf "@ @[<v 2>Section Tables@ ";
-  RdrPrinter.pp_seq ppf pp_section_table t.section_tables;
+  begin
+    match t.optional_header with
+    | Some header ->
+      pp_optional_header ppf header;
+    | None ->
+      Format.fprintf ppf "@ **No Optional Headers**"
+  end;
   Format.fprintf ppf "@]@]"
 
 let show t =
@@ -366,39 +336,10 @@ let get_data_directories binary offset :data_directories =
   let reserved = Binary.u64 binary o in
   {export_table;size_of_export_table;import_table;size_of_import_table;resource_table;size_of_resource_table;exception_table;size_of_exception_table;certificate_table;size_of_certificate_table;base_relocation_table;size_of_base_relocation_table;debug;size_of_debug;architecture;size_of_architecture;global_ptr;size_of_global_ptr;tls_table;size_of_tls_table;load_config_table;size_of_load_config_table;bound_import;size_of_bound_import;import_address_table;size_of_import_address_table;delay_import_descriptor;size_of_delay_import_descriptor;clr_runtime_header;size_of_clr_runtime_header;reserved;}
 
-let get_section_table binary offset :section_table =
-  let name,o = Binary.stringo binary offset ~num_bytes:8 in
-  let virtual_size,o = Binary.u32o binary o in
-  let virtual_address,o = Binary.u32o binary o in
-  let size_of_raw_data,o = Binary.u32o binary o in
-  let pointer_to_raw_data,o = Binary.u32o binary o in
-  let pointer_to_relocations,o = Binary.u32o binary o in
-  let pointer_to_linenumbers,o = Binary.u32o binary o in
-  let number_of_relocations,o = Binary.u16o binary o in
-  let number_of_linenumbers,o = Binary.u16o binary o in
-  let characteristics = Binary.u32 binary o in
-  {name;virtual_size;virtual_address;size_of_raw_data;pointer_to_raw_data;pointer_to_relocations;pointer_to_linenumbers;number_of_relocations;number_of_linenumbers;characteristics;}
-
-let get_section_tables binary offset nsections =
-  let rec loop acc count =
-    if (count >= nsections) then
-      List.rev acc
-    else
-      let o = offset + (count * sizeof_section_table) in
-      let st = get_section_table binary o in
-      loop (st::acc) (count+1)
-  in loop [] 0
-
 let get_header binary =
   let dos_header = get_dos_header binary 0 in
   let coff_header_offset = dos_header.pe_pointer in
   let coff_header = get_coff_header binary coff_header_offset in
-  let section_tables_offset =
-    coff_header_offset + sizeof_coff_header
-    + coff_header.size_of_optional_header
-  in
-  let section_tables =
-    get_section_tables binary section_tables_offset coff_header.number_of_sections in
   let optional_offset = sizeof_coff_header + coff_header_offset in
   let optional_header =
     if (coff_header.size_of_optional_header > 0) then
@@ -411,17 +352,7 @@ let get_header binary =
     else
       None
   in
-  {dos_header; coff_header;
-   optional_header; section_tables}
-
-let rec get_section name sections =
-  match sections with
-  | [] -> raise Not_found
-  | section::sections ->
-     if (section.name = name) then
-       section
-     else
-       get_section name sections
+  {dos_header; coff_header;optional_header;}
 
 (* this won't work, requires a constructed header
    but we don't know which header to construct yet *)

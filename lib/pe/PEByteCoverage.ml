@@ -8,6 +8,7 @@ TODO:
 
 open ByteCoverage
 open PEHeader
+open PESectionTable
 open PEExport
 open PEImport
 
@@ -111,38 +112,16 @@ let compute_export_data_coverage data_directory export_data (exports:PEExport.t)
          ~understood:true
       ) data
     in
-    let r1 = 
-      PEUtils.find_offset
-        export_data.export_directory_table.name_rva
-        sections
-    in
-    let r2 =
-      r1
-      + (List.fold_left (fun acc name ->
-          (String.length name) + acc
-        )
-          0 export_data.export_name_table)
-    in
-    let tag = StringTable in
-    let extra = "Name Table" in
-    let data = ByteCoverage.add
-      (create_data
-         ~tag:tag
-         ~r1:r1
-         ~r2:r2
-         ~extra:extra
-         ~understood:true
-      ) data
-    in
     let r1 =
       PEUtils.find_offset
         export_data.export_directory_table.name_pointer_rva
         sections
     in
+    (* TODO: fold through the name pointers getting strings and their size to add a StringTable section *)
     let r2 =
       r1
       (* TODO: verify pointer table size is 4 *)
-      + ((List.length export_data.name_pointer_table) * 4)
+      + ((List.length export_data.export_name_pointer_table) * 4)
       (* bytes *)
     in
     let tag = SymbolTable in
@@ -158,7 +137,7 @@ let compute_export_data_coverage data_directory export_data (exports:PEExport.t)
     in
     let r1 =
       PEUtils.find_offset
-        export_data.export_directory_table.name_pointer_rva
+        export_data.export_directory_table.ordinal_table_rva
         sections
     in
     let r2 =

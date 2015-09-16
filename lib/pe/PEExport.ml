@@ -1,23 +1,27 @@
+(* 
+ this symbol in msvcrt.dll seems to have a -1 ordinal: ??0__non_rtti_object@@QAE@ABV0@@Z
+*)
+
 open PEHeader
 
 type export_directory_table = {
-    export_flags: int [@size 4];
-    time_date_stamp: int [@size 4];
-    major_version: int [@size 2];
-    minor_version: int [@size 2];
-    name_rva: int [@size 4];
-    ordinal_base: int [@size 4];
-    address_table_entries: int [@size 4];
-    number_of_name_pointers: int [@size 4];
-    export_address_table_rva: int [@size 4];
-    name_pointer_rva: int [@size 4];
-    ordinal_table_rva: int [@size 4];
-  }
+  export_flags: int [@size 4];
+  time_date_stamp: int [@size 4];
+  major_version: int [@size 2];
+  minor_version: int [@size 2];
+  name_rva: int [@size 4];
+  ordinal_base: int [@size 4];
+  address_table_entries: int [@size 4];
+  number_of_name_pointers: int [@size 4];
+  export_address_table_rva: int [@size 4];
+  name_pointer_rva: int [@size 4];
+  ordinal_table_rva: int [@size 4];
+}
 
 let sizeof_export_directory_table = 40 (* bytes *)
 
 let pp_export_directory_table ppf table =
-  Format.fprintf ppf "ExportFlags: 0x%x@ TimeDateStamp: %d@ MajorVersion: %d@ MinorVersion: %d@ NameRVA: 0x%x@ OrdinalBase: 0x%x@ AddressTableEntries: %d@ NumberOfNamePointers: %d@ ExportAddressTableRVA: 0x%x@ NamePointerRVA: 0x%x@ OrdinalTableRVA: 0x%x"
+  Format.fprintf ppf "ExportFlags: 0x%x@ TimeDateStamp: %d@ MajorVersion: %d@ MinorVersion: %d@ NameRVA: 0x%x@ OrdinalBase: %d@ AddressTableEntries: %d@ NumberOfNamePointers: %d@ ExportAddressTableRVA: 0x%x@ NamePointerRVA: 0x%x@ OrdinalTableRVA: 0x%x"
     table.export_flags
     table.time_date_stamp
     table.major_version
@@ -66,23 +70,39 @@ type export_address_table = export_address_table_entry list
 let pp_export_address_table ppf table =
   RdrUtils.Printer.pp_seq ppf pp_export_address_table_entry table
 
-let get_export_address_table binary offset address_table_entries =
+let get_export_address_table binary offset export_begin size address_table_entries sections =
+  let export_end = export_begin + size in
   let rec loop acc count o =
     if (count >= address_table_entries) then
       List.rev acc
     else
-      let pointer,o = Binary.u32o binary o in
-      loop ((ExportRVA pointer)::acc) (count+1) o
+      let rva,o = Binary.u32o binary o in
+      (*  *)
+      (* 
+     let one = PEUtils.find_offset rva sections in
+      let two = PEUtils.find_offset export_begin sections in
+      let three = two + size in
+
+       Printf.printf "rva: 0x%x 0x%x - 0x%x\n" rva export_begin export_end;
+      Printf.printf "addr: 0x%x 0x%x - 0x%x\n" one two three;
+ *)
+      if (not @@ PEUtils.is_in_range rva export_begin export_end) then
+        loop ((ExportRVA rva)::acc) (count+1) o
+      else
+        begin
+          (*           Printf.printf "FOUND 0x%x\n" rva; *)
+          loop ((ForwarderRVA rva)::acc) (count+1) o
+        end
   in loop [] 0 offset
 
 (* array of rvas into the export name table; 
    export name is defined iff pointer table has pointer to the name*)
-type name_pointer_table = (int [@size 4]) list
+type export_name_pointer_table = (int [@size 4]) list
 
-let pp_name_pointer_table ppf table =
+let pp_export_name_pointer_table ppf table =
   RdrUtils.Printer.pp_h ppf RdrUtils.Printer.pp_hex table
 
-let get_name_pointer_table binary offset number_of_name_pointers =
+let get_export_name_pointer_table binary offset number_of_name_pointers =
   let rec loop acc count o =
     if (count >= number_of_name_pointers) then
       List.rev acc
@@ -108,27 +128,13 @@ let get_export_ordinal_table
       loop (idx::acc) (count+1) o
   in loop [] 0 offset
 
-type export_name_table = bytes list
-
-let pp_export_name_table ppf table =
-  RdrUtils.Printer.pp_h ppf RdrUtils.Printer.pp_string table
-
-let get_export_name_table binary nexports offset =
-  let rec loop acc count current =
-    let name,o = Binary.stringo binary current in
-    if (count >= nexports) then
-      List.rev acc
-    else
-      loop (name::acc) (count+1) o
-  in loop [] 0 offset
-
 type export_data =
   {
     export_directory_table: export_directory_table;
-    name_pointer_table: name_pointer_table;
+    export_name_pointer_table: export_name_pointer_table;
     export_ordinal_table: export_ordinal_table;
     export_address_table: export_address_table;
-    export_name_table: export_name_table;
+    name: string;
   }
 
 let pp_export_data ppf data =
@@ -138,7 +144,7 @@ let pp_export_data ppf data =
   Format.fprintf ppf "@]";
   Format.fprintf ppf "@ @[<v 2>Name Pointer Table";
   Format.fprintf ppf
-    "@ %a" pp_name_pointer_table data.name_pointer_table;
+    "@ %a" pp_export_name_pointer_table data.export_name_pointer_table;
   Format.fprintf ppf "@]";
   Format.fprintf ppf "@ @[<v 2>Export Ordinal Table";
   Format.fprintf ppf
@@ -147,10 +153,6 @@ let pp_export_data ppf data =
   Format.fprintf ppf "@ @[<v 2>Export Address Table";
   Format.fprintf ppf
     "@ %a" pp_export_address_table data.export_address_table;
-  Format.fprintf ppf "@]";
-  Format.fprintf ppf "@ @[<v 2>Export Name Table";
-  Format.fprintf ppf
-    "@ %a" pp_export_name_table data.export_name_table;
   Format.fprintf ppf "@]@]"
 
 let show_export_data data =
@@ -190,14 +192,13 @@ let get binary data_directories section_tables =
       export_directory_table.ordinal_table_rva
       section_tables
   in  
-  let export_name_table_offset =
+  let name_offset =
     PEUtils.find_offset
       export_directory_table.name_rva
       section_tables
   in
-  (*   Printf.printf "name table offset 0x%x\n" export_name_table_offset; *)
-  let name_pointer_table =
-    get_name_pointer_table
+  let export_name_pointer_table =
+    get_export_name_pointer_table
       binary
       name_pointer_table_offset
       number_of_name_pointers
@@ -212,31 +213,61 @@ let get binary data_directories section_tables =
     get_export_address_table
       binary
       export_address_table_offset
+      export_rva
+      data_directories.size_of_export_table
       address_table_entries
+      section_tables
   in
-  let export_name_table =
-    get_export_name_table
-      binary
-      number_of_name_pointers
-      export_name_table_offset
+  let name =
+    Binary.string binary name_offset
   in
   {
     export_directory_table;
-    name_pointer_table;
+    export_name_pointer_table;
     export_ordinal_table;
     export_address_table;
-    export_name_table;
+    name;
   }
+
+type reexport =
+  | DLLName of string * string
+  | DLLOrdinal of string * int
+
+let get_reexport string =
+  try
+    let i = String.index string '.' in
+    let dll = String.sub string 0 i in
+    let len = (String.length string) - i - 1 in
+    let rest = String.sub string (i+1) len in
+    match rest.[0] with
+    | '#' ->
+      let len = (String.length rest) - 1 in
+      let ordinal = int_of_string @@ String.sub rest 1 len in
+      DLLOrdinal (dll, ordinal)
+    | _ -> DLLName (dll, rest)
+  with _ -> DLLName ("<PEExport.reexport> bad reexport",string)
 
 type synthetic_export = {
   name: string;
   offset: int;
   size: int;
+  reexport: reexport option;
 }
 
 let pp_synthetic_export ppf export =
   Format.fprintf ppf "%16x %s (%d)"
-    export.offset export.name export.size
+    export.offset export.name export.size;
+  match export.reexport with
+  | None -> ()
+  | Some reexport ->
+    Format.fprintf ppf " => ";
+    begin
+      match reexport with
+      | DLLName (lib,name) ->
+        Format.fprintf ppf "@[<h 2>%s.%s@]" lib name
+      | DLLOrdinal (lib,ord) ->
+        Format.fprintf ppf "@[<h 2>%s[%d]@]" lib ord
+    end
 
 let show_synthetic_export export =
   pp_synthetic_export Format.str_formatter export;
@@ -261,11 +292,11 @@ let print t =
   Format.print_newline()
 
 let sort =
-  List.sort (fun ex1 ex2 -> 
+  List.sort (fun ex1 ex2 ->
       Pervasives.compare ex1.offset ex2.offset
-    ) 
+    )
 
-[@@@invariant sorted]
+    [@@@invariant sorted]
 let compute_size exports =
   let rec loop acc exports =
     match exports with
@@ -279,16 +310,39 @@ let compute_size exports =
         exports
   in loop [] exports
 
-let get_exports export_data sections :t =
-  let names = export_data.export_name_table in
+let get_exports binary export_data sections :t =
+  let pointers = export_data.export_name_pointer_table in
   let addresses = export_data.export_address_table in
-  List.mapi (fun i name ->
-      let offset = 
-        match (List.nth addresses i) with 
-        | ExportRVA rva ->
-          PEUtils.find_offset rva sections
-        | ForwarderRVA rva ->
-          rva
+  let ordinals = export_data.export_ordinal_table in
+  let ordinal_base = export_data.export_directory_table.ordinal_base in
+  List.mapi (fun i ptr ->
+      let name,offset,reexport =
+        let name_offset = PEUtils.find_offset ptr sections in
+        let name = Binary.string binary name_offset in
+        let ordinal = List.nth ordinals i in
+        let address_index = ordinal - ordinal_base in
+        (* this symbol in msvcrt.dll seems to have a -1 ordinal: ??0__non_rtti_object@@QAE@ABV0@@Z *)
+        (* Printf.printf "name: %s i: %d ordinal: %d address: %d rva: " name i ordinal address_index; *)
+        if (address_index < 0 || (address_index >= List.length addresses)) then
+          begin
+            (* Printf.eprintf "<PEExport.get_export> bad index for %s: %d %d %d\n" name i ordinal address_index; *)
+            name,0x0,None
+          end
+        else
+          begin
+            match (List.nth addresses address_index) with
+            | ExportRVA rva ->
+              (* Printf.printf "0x%x\n" rva; *)
+              (*              name,(PEUtils.find_offset rva sections),None  *)
+              (*               Printf.printf "0x%x\n" rva; *)
+              name,rva,None
+            | ForwarderRVA rva ->
+              let stroffset = PEUtils.find_offset rva sections in
+              (* Printf.printf "stroffset 0x%x\n" stroffset; *)
+              let string = Binary.string binary stroffset in
+              (* Printf.printf "string %s\n" string; *)
+              name,rva, Some (get_reexport string)
+          end
       in
-      {name; offset; size = 0}
-    ) names |> sort |> compute_size
+      {name; offset; reexport; size = 0}
+    ) pointers |> sort |> compute_size
