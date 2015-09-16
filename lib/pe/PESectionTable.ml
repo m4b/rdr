@@ -35,6 +35,13 @@ let pp ppf t =
   Format.fprintf ppf "@ @[<v 2>Section Tables@ ";
   RdrPrinter.pp_seq ppf pp_section_table t
 
+let show t =
+  pp Format.str_formatter t;
+  Format.flush_str_formatter()
+
+let print t =
+  pp Format.std_formatter t
+
 let rec get_section name sections =
   match sections with
   | [] -> raise Not_found

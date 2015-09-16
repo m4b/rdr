@@ -22,7 +22,8 @@ let analyze (config:Config.t) binary =
             ppf PE.Export.pp_export_data pe.PE.export_data;
           Rdr.Utils.Printer.pp_option
             ppf PE.Import.pp_import_data pe.PE.import_data;
-          Format.print_newline()
+          Format.print_newline();
+          PE.SectionTable.print pe.PE.sections;
         end;
       if (config.verbose || config.print_nlist) then
         (* NO-OP no debug symbols implemented yet *)
