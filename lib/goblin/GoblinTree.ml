@@ -104,6 +104,58 @@ let get_libraries symbol map =
   with Not_found ->
        "Unknown"
 
+(* aliases are case sensitive - PE will be case insensitive *)
+let resolve_import ~case_sensitive:sensitive (branches: branch list) libraries =
+  let libraries = if (sensitive) then
+      libraries else List.map String.lowercase libraries
+  in
+  let rec loop acc branches =
+    match branches with
+    | [] ->
+      begin
+        match acc with
+        | [] -> "Unresolved"
+        | library::[] -> library
+        | library::libraries ->
+          Printf.sprintf
+            "Multiple Libraries Resolved\nThis is extremely dangerous, have fun!\n%s"
+          @@ Generics.list_to_string acc
+      end
+    | branch::branches ->
+      let lib = if (sensitive) then
+          branch.library else String.lowercase branch.library
+      in
+      if (List.mem lib libraries
+          || List.exists
+            (fun alias ->
+               if (sensitive) then
+                 List.mem alias libraries
+               else
+                 List.mem (String.lowercase alias) libraries
+            )
+            branch.aliases
+         ) then
+        loop (branch.library::acc) branches
+      else
+        loop acc branches
+  in loop [] branches
+
+let resolve_library ~case_sensitive ~name ~libraries ~tree =
+  try
+    let branches = find name tree in
+    resolve_import ~case_sensitive branches libraries
+  with Not_found -> "Unknown"
+
+(* 
+let resolve_ordinal ~ordinal ~lib ~tree =
+  let bindings = SymbolMap.bindings in
+  let rec loop bindings =
+    match bindings with
+    | [] -> None
+    | (key, branches)::bindings ->
+      (* if lib = some branches.library && ordinal = some branches' exports' ordinal then that branches' exports' name *)
+ *)
+
 let print_map map =
   SymbolMap.iter (
       fun name branches ->

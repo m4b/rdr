@@ -14,6 +14,11 @@ let show_hint_name_table_entry h =
   pp_hint_name_table_entry Format.str_formatter h;
   Format.flush_str_formatter()
 
+let get_hint_name_table_entry binary offset :hint_name_table_entry =
+  let hint,o = Binary.u16o binary offset in
+  let name = Binary.string binary o in
+  {hint;name}
+
 type synthetic_import_lookup_table_entry =
   | OrdinalNumber of int [@size 16]
   | HintNameTableRVA of (int [@size 31] * hint_name_table_entry)
@@ -26,11 +31,6 @@ let pp_synthetic_import_lookup_table_entry ppf import =
 let show_synthetic_import_lookup_table_entry entry =
   pp_synthetic_import_lookup_table_entry Format.str_formatter entry;
   Format.flush_str_formatter()
-
-let get_hint_name_table_entry binary offset :hint_name_table_entry =
-  let hint,o = Binary.u16o binary offset in
-  let name = Binary.string binary o in
-  {hint;name}
 
 (* 32-bit *)
 type import_lookup_table_entry = {
@@ -61,6 +61,15 @@ let show_pp_import_lookup_table table =
   pp_import_lookup_table Format.str_formatter table;
   Format.flush_str_formatter()
 
+let kIMPORT_BY_ORDINAL_32 = 0x8000_0000l
+let kIMPORT_RVA_MASK_32 = 0x8fff_ffffl
+
+let import_by_ordinal_32 bitfield =
+  Int32.logand kIMPORT_BY_ORDINAL_32 (Int32.of_int bitfield) = kIMPORT_BY_ORDINAL_32
+
+let get_import_rva_32 bitfield =
+  Int32.logand kIMPORT_RVA_MASK_32 (Int32.of_int bitfield) |> Int32.to_int
+
 (* 32-bit *)
 let get_synthetic_import_lookup_table binary offset sections :import_lookup_table =
   let rec loop acc o =
@@ -71,11 +80,15 @@ let get_synthetic_import_lookup_table binary offset sections :import_lookup_tabl
         List.rev acc
       end
     else
-      let _synthetic = 
-        if (0x800000000 land bitfield = 1) then (* import by ordinal *)
-          OrdinalNumber (0xffff land bitfield)
+      let _synthetic =
+        if (import_by_ordinal_32 bitfield) then
+          begin
+            let ordinal = 0xffff land bitfield in
+            if (debug) then Printf.printf "importing by ordinal 0x%x " ordinal;
+            OrdinalNumber ordinal
+          end
         else
-          let rva = 0x8ffffffff land bitfield in
+          let rva = get_import_rva_32 bitfield in
           let hentry =
             begin
               if (debug) then Printf.printf "searching for RVA 0x%x " rva;
@@ -84,7 +97,7 @@ let get_synthetic_import_lookup_table binary offset sections :import_lookup_tabl
                 if (debug) then Printf.printf "offset 0x%x\n" offset;flush stdout;
                 get_hint_name_table_entry binary offset
               with Not_found ->
-                begin 
+                begin
                   if (debug) then Printf.printf "... NONE\n";
                   {hint = 0; name = ""}
                 end
@@ -96,7 +109,7 @@ let get_synthetic_import_lookup_table binary offset sections :import_lookup_tabl
         {bitfield; _synthetic;}
       in
       loop (entry::acc) o
-  in loop [] offset  
+  in loop [] offset
 
 (* 32-bit *)
 let get_import_lookup_table binary offset =
@@ -288,8 +301,9 @@ let show_pp_synthetic_import import =
   pp_synthetic_import Format.str_formatter import;
   Format.flush_str_formatter()
 
-let get_synthetic_import dll (entry:import_lookup_table_entry) =
+let get_synthetic_import dll import_base i (entry:import_lookup_table_entry) =
   (* let offset = try PEUtils.find_offset entry. *)
+  let offset = import_base + (i * sizeof_import_address_table_entry) in
   let name,ordinal = match entry._synthetic with
     | HintNameTableRVA (rva, hint_entry) ->
       let res = hint_entry.name,hint_entry.hint (* ordinal *) in
@@ -297,9 +311,10 @@ let get_synthetic_import dll (entry:import_lookup_table_entry) =
         Printf.eprintf "<PE.Import> warning hint/name table rva from %s without hint 0x%x\n" dll rva;
       res
     | OrdinalNumber ordinal ->
-      "",ordinal
+      let name = Printf.sprintf "ORDINAL %d" ordinal in
+      name,ordinal
   in
-  {name; ordinal; dll; size = 4; offset=0x0}
+  {name; ordinal; dll; size = 4; offset}
 
 type t = synthetic_import list
 
@@ -316,7 +331,7 @@ let get_imports import_data :t =
     | entry::entries' ->
       let dll = entry._name in
       if (debug) then Printf.printf "getting imports from %s\n" dll; flush stdout;
-      let imports = List.map (get_synthetic_import dll) entry._import_lookup_table in
+      let imports = List.mapi (get_synthetic_import dll entry.import_directory_entry.import_address_table_rva) entry._import_lookup_table in
       loop (imports::acc) entries'
   in loop [] import_data
 

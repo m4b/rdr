@@ -41,5 +41,5 @@ let analyze (config:Config.t) binary =
       if (config.verbose || config.print_coverage) then
         ByteCoverage.print pe.PE.byte_coverage
     end;
-  Goblin.PE.from config.name pe
+  Goblin.PE.from config.install_name pe
 

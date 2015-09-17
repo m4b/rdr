@@ -1,6 +1,7 @@
 (* TODO: 
    (0) add a symbol like --map-all to run `rdr -b -d /usr/lib /System /Libraries -r`
        which would essentially build a map of the entire system, or something like that
+   (1) mach static offsets for functions like printf in the standard lib needs to be slid by the offset of the 64-bit binary inside the fat binary, otherwise all wrong.
  *)
 
 let version = "3.0"
@@ -37,6 +38,7 @@ let framework_directories = ref []
 let anonarg = ref ""
 
 let disassemble = ref false
+let disassemble_offset = ref 0x0
 let search_term_string = ref ""
 
 let print_version = ref false
@@ -90,7 +92,7 @@ let get_config () =
     print_goblin = !print_goblin;
   } 
     
-let set_base_symbol_map_directories dir_string = 
+let set_base_symbol_map_directories dir_string =
   (* Printf.printf "%s\n" dir_string; *)
   let dirs = Str.split (Str.regexp "[ :]+") dir_string |> List.map String.trim in
   match dirs with
@@ -265,6 +267,7 @@ let main =
      ("--goblin", Arg.Set print_goblin, "Print using the goblin binary format");
      ("-D", Arg.Set disassemble, "Disassemble found symbol(s)");
      ("--dis", Arg.Set disassemble, "Disassemble found symbol(s)");
+     ("--do", Arg.Int (fun i -> disassemble_offset := i), "Disassemble at offset");
     ] in
   let usage_msg = "usage: rdr [-r] [-b] [-m] [-d] [-g] [-G --goblin] [-v | -l | -e | -i] [<path_to_binary>]\noptions:" in
   Arg.parse speclist set_anon_argument usage_msg;
@@ -277,6 +280,9 @@ let main =
     (* BEGIN program init *)  
     Rdr.Utils.Storage.create_dot_directory (); (* make our .rdr/ if we haven't already *)
   let config = get_config () in
+  if (!disassemble_offset <> 0) then
+    Rdr.Utils.Command.disassemble config.filename !disassemble_offset 100
+  else
   if (config.analyze && config.filename = "") then
     if (config.verbose) then
       begin

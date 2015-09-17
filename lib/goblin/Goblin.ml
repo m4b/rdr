@@ -173,30 +173,6 @@ module Elf = struct
         Symbol.Export
       else Symbol.Other
 
-    let resolve_import (branches: Tree.branch list) libraries =
-      let rec loop acc branches =
-        match branches with
-        | [] ->
-           begin
-             match acc with
-             | [] -> "Unresolved Library"
-             | library::[] -> library
-             | library::libraries ->
-                Printf.sprintf
-                  "Multiple Libraries Resolved\nThis is extremely dangerous, have fun!\n%s"
-                @@ Generics.list_to_string acc
-           end
-        | branch::branches ->
-           if (List.mem branch.Tree.library libraries
-               || List.exists
-                    (fun alias -> List.mem alias libraries)
-                    branch.Tree.aliases
-              ) then
-             loop (branch.Tree.library::acc) branches
-           else
-             loop acc branches
-      in loop [] branches
-
     let get_imports gtree libraries relocs symbols =
       List.fold_left
         (fun (acc,index) symbol ->
@@ -219,12 +195,7 @@ module Elf = struct
 	        symbol.Elf.SymbolTable.st_value
             in
             let size = symbol.Elf.SymbolTable.st_size in
-            let lib =
-              try
-                let branches = Tree.find name gtree in
-                resolve_import branches libraries
-              with Not_found -> "Unknown"
-            in
+            let lib = Tree.resolve_library ~case_sensitive:true ~name ~libraries ~tree:gtree in
             let import =
               {Import.name; lib;idx=0; is_lazy=true; offset; size}
             in
@@ -310,7 +281,12 @@ module PE = struct
     open GoblinImport
     open GoblinExport
 
-    let from install_name pe =
+    let from install_name (pe:PE.t) =
+      let name =
+        if (pe.name = "") then
+          Filename.basename install_name
+        else pe.name
+      in
       let imports =
         List.map
           (fun (symbol:PE.Import.synthetic_import) ->
@@ -330,7 +306,7 @@ module PE = struct
           pe.exports |> Array.of_list
       in
       {
-        name = Filename.basename install_name;
+        name;
         install_name;
         islib = pe.is_lib;
         libs = Array.of_list pe.libraries;
