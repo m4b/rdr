@@ -252,7 +252,8 @@ let build_symbol_map config =
 let to_bytes pattern =
   let len = String.length pattern in
   if (len mod 2 <> 0) then
-    failwith "Scan string does not have an even amount of chars"
+    failwith
+      (Printf.sprintf "Scan string \"%s\" does not have an even amount of chars" pattern)
   else
     let bytes = Bytes.create (len/2) in
     Bytes.iteri

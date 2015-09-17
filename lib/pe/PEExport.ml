@@ -1,4 +1,9 @@
 (* 
+
+scan string for beef_maximum from libbeef.dll: 5589e58b450839450c0f4d450c
+`beef_maximum` must have final computed offset of 0x510 in libbeef.dll, _NOT_ the current value of 0x51f.
+this is verified via `gdb /r beef_maximum` on compute stick with cygwin to get the bytes, and --scan on linux box showing the bytes location for that exact function/byte sequence.
+
  this symbol in msvcrt.dll seems to have a -1 ordinal: ??0__non_rtti_object@@QAE@ABV0@@Z
  atol -> ntdll.dll[2073]
  RtlCreateUserStack -> ntdll.dll[782] GOT 796
