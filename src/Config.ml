@@ -18,6 +18,7 @@ type t =
     print_imports: bool;		      (* -i *)
     print_coverage: bool;		      (* -c *)
     print_sections: bool;		      (* --sections *)
+    scan_bytes: string; 		      (* --scan *)
     disassemble: bool;			      (* -D *)
     (* building *)
     use_map: bool;			      (* -m *)

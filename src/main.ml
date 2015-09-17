@@ -30,6 +30,7 @@ let print_imports = ref false
 let print_coverage = ref false
 let print_sections = ref false
 let print_goblin = ref false
+let scan_bytes = ref ""
 let recursive = ref false
 let write_symbols = ref false
 let marshal_symbols = ref false
@@ -81,6 +82,7 @@ let get_config () =
     print_imports = !print_imports;
     print_coverage = !print_coverage;
     print_sections = !print_sections;
+    scan_bytes = !scan_bytes;
     disassemble = !disassemble;
     use_map = !use_map;
     recursive = !recursive;
@@ -247,6 +249,33 @@ let build_symbol_map config =
   close_out oc;
   Printf.printf "Done!\n"
 
+let to_bytes pattern =
+  let len = String.length pattern in
+  if (len mod 2 <> 0) then
+    failwith "Scan string does not have an even amount of chars"
+  else
+    let bytes = Bytes.create (len/2) in
+    Bytes.iteri
+      (fun i c ->
+       let s = String.sub pattern (i*2) 2 in
+       let hex = int_of_string @@ ("0x" ^ s)in
+       Bytes.set bytes i (Char.chr hex)
+      ) bytes;
+    Bytes.to_string bytes
+
+let find_byte_sequence scan_bytes name =
+  let ic = open_in_bin name in
+  let binary = really_input_string ic (in_channel_length ic) in
+  let regex = Str.regexp_string scan_bytes in
+  let len = String.length scan_bytes in
+  let rec loop acc pos =
+    try
+      let pos = Str.search_forward regex binary pos in
+      loop (pos::acc) (pos+len)
+    with Not_found ->
+      List.rev acc
+  in loop [] 0
+
 let main =
   let speclist =
     [("-m", Arg.Set use_map, "Use a pre-marshalled system symbol map; use this in conjunction with -f, -D, -g, or -w");
@@ -271,6 +300,7 @@ let main =
      ("--dis", Arg.Set disassemble, "Disassemble found symbol(s)");
      ("--do", Arg.Int (fun i -> disassemble_offset := i), "Disassemble at offset");
      ("--sections", Arg.Set print_sections, "Print the sections: sections headers for elf; segments for mach; section tables for PE");
+     ("--scan", Arg.String (fun s -> scan_bytes := s), "(Experimental) Scan the binary for a byte sequence.");     
     ] in
   let usage_msg = "usage: rdr [-r] [-b] [-m] [-d] [-g] [-G --goblin] [-v | -l | -e | -i] [<path_to_binary>]\noptions:" in
   Arg.parse speclist set_anon_argument usage_msg;
@@ -285,8 +315,17 @@ let main =
   let config = get_config () in
   if (!disassemble_offset <> 0) then
     Rdr.Utils.Command.disassemble config.filename !disassemble_offset 100
-  else
-  if (config.analyze && config.filename = "") then
+  else if (!scan_bytes <> "") then
+    begin
+      let bytes = to_bytes !scan_bytes in
+      let matches = find_byte_sequence bytes config.install_name in
+      let ppf = Format.std_formatter in
+      Format.fprintf ppf "@[<v 2>";
+      Rdr.Utils.Printer.pp_seq ppf Rdr.Utils.Printer.pp_hex matches;
+      Format.fprintf ppf "@]@.";
+      exit 0
+    end
+  else if (config.analyze && config.filename = "") then
     if (config.verbose) then
       begin
         (* hack to print version *)
