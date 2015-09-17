@@ -15,6 +15,9 @@ Welcome to the `rdr` project.
 > * A slightly better symbol tree
 > * Import library resolution for ELF, which looks up the imported symbol for a binary using the symbol map/tree
 > * Better byte-coverage printing in addition to more extensive coverage
+> * Scan the binary with a hexadecimal scan string - _no spaces or 0x_. `rdr --scan 5589e58b450839450c0f4d450c bin/pe/libbeef.dll` or `rdr --scan deadbeef bin/pe/libeef.dll`
+> * Disassemble at a particular offset (experimental): `rdr --do 0x51f bin/pe/libbeef.dll`
+> * Print the particular binaries version of a "section", section headers for ELF, segments for mach-o, and section tables for PE: `rdr --sections bin/elf/deadbeef.elf`
 
 `rdr` is an OCaml tool/library for doing cross-platform analysis of binaries.  I typically use it for looking up symbol names, finding the address offset, and then running `gdb` or `lldb` to mess around (you should be using both if you even know what you're doing).
 

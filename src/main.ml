@@ -299,7 +299,7 @@ let main =
      ("--goblin", Arg.Set print_goblin, "Print using the goblin binary format");
      ("-D", Arg.Set disassemble, "Disassemble found symbol(s)");
      ("--dis", Arg.Set disassemble, "Disassemble found symbol(s)");
-     ("--do", Arg.Int (fun i -> disassemble_offset := i), "Disassemble at offset");
+     ("--do", Arg.Int (fun i -> disassemble_offset := i), "(Experimental) Disassemble at offset");
      ("--sections", Arg.Set print_sections, "Print the sections: sections headers for elf; segments for mach; section tables for PE");
      ("--scan", Arg.String (fun s -> scan_bytes := s), "(Experimental) Scan the binary for a byte sequence.");     
     ] in
