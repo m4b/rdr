@@ -17,6 +17,7 @@ type t =
     print_exports: bool;		      (* -e *)
     print_imports: bool;		      (* -i *)
     print_coverage: bool;		      (* -c *)
+    print_sections: bool;		      (* --sections *)
     disassemble: bool;			      (* -D *)
     (* building *)
     use_map: bool;			      (* -m *)

@@ -22,17 +22,19 @@ let sections64_to_string sections =
     ) sections;
   Buffer.contents b
 
+let show_segment_64 lc =
+  Printf.sprintf "\n\t%s vmaddr: 0x%x vmsize: 0x%x\n\tfileoff: 0x%x filesize: 0x%x\n\tmaxprot: %d initprot: %d nsects: %d flags: 0x%x\n%s"
+                 lc.segname lc.vmaddr lc.vmsize
+                 lc.fileoff lc.filesize lc.maxprot
+                 lc.initprot lc.nsects lc.flags
+                 (sections64_to_string lc.sections)
+
 (* add implemented printing mechanisms here *)
 let load_command_to_string lc = 
   Printf.sprintf "%s (0x%x) %d %s" (cmd_to_string lc.cmd) (cmd_to_int lc.cmd) lc.cmdsize @@
   match lc.t with
   | LC_SEGMENT_64 lc ->
-    Printf.sprintf "\n\t%s vmaddr: 0x%x vmsize: 0x%x\n\tfileoff: 0x%x filesize: 0x%x\n\tmaxprot: %d initprot: %d nsects: %d flags: 0x%x\n%s"
-      lc.segname lc.vmaddr lc.vmsize
-      lc.fileoff lc.filesize lc.maxprot
-      lc.initprot lc.nsects lc.flags
-      (sections64_to_string lc.sections)
-
+     show_segment_64 lc
   | LC_SYMTAB lc ->
     Printf.sprintf "\n\tsymoff: 0x%x nsyms: %u stroff: 0x%x strsize: %u"
       lc.symoff 
@@ -105,6 +107,9 @@ let load_command_to_string lc =
 
   | lc ->
     ""
+
+let print_segments_64 segments =
+  List.iter (fun segment -> Printf.printf "%s\n" @@ show_segment_64 segment) segments
 
 let print_load_command lc = 
   Printf.printf "%s\n" (load_command_to_string lc)

@@ -22,11 +22,12 @@ let analyze config binary =
             ~verbose:(config.verbose || config.print_headers)
             elf.Elf.header;
 	  Elf.ProgramHeader.print_program_headers elf.Elf.program_headers;
-	  Elf.SectionHeader.print_section_headers elf.Elf.section_headers;
           Elf.Dynamic.print_dynamic elf.Elf._dynamic;
           if (elf.Elf.interpreter <> "") then 
             Printf.printf "Interpreter: %s\n" elf.Elf.interpreter
 	end;
+      if (config.verbose || config.print_sections) then
+        Elf.SectionHeader.print_section_headers elf.Elf.section_headers;
       if (config.verbose || config.print_nlist) then
         Elf.SymbolTable.print elf.Elf.symbol_table;
       if (config.verbose || config.print_libraries) then

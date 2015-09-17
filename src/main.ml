@@ -28,6 +28,7 @@ let print_libraries = ref false
 let print_exports = ref false
 let print_imports = ref false
 let print_coverage = ref false
+let print_sections = ref false
 let print_goblin = ref false
 let recursive = ref false
 let write_symbols = ref false
@@ -79,6 +80,7 @@ let get_config () =
     print_exports = !print_exports;
     print_imports = !print_imports;
     print_coverage = !print_coverage;
+    print_sections = !print_sections;
     disassemble = !disassemble;
     use_map = !use_map;
     recursive = !recursive;
@@ -268,6 +270,7 @@ let main =
      ("-D", Arg.Set disassemble, "Disassemble found symbol(s)");
      ("--dis", Arg.Set disassemble, "Disassemble found symbol(s)");
      ("--do", Arg.Int (fun i -> disassemble_offset := i), "Disassemble at offset");
+     ("--sections", Arg.Set print_sections, "Print the sections: sections headers for elf; segments for mach; section tables for PE");
     ] in
   let usage_msg = "usage: rdr [-r] [-b] [-m] [-d] [-g] [-G --goblin] [-v | -l | -e | -i] [<path_to_binary>]\noptions:" in
   Arg.parse speclist set_anon_argument usage_msg;
