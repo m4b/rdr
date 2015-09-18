@@ -281,7 +281,7 @@ let main =
   let speclist =
     [("-m", Arg.Set use_map, "Use a pre-marshalled system symbol map; use this in conjunction with -f, -D, -g, or -w");
      ("-g", Arg.Set graph, "Creates a graphviz file; generates lib dependencies if -b given");
-     ("-d", Arg.String (set_base_symbol_map_directories), "String of space separated directories to build symbol map from; default is /usr/lib");
+     ("-D", Arg.String (set_base_symbol_map_directories), "String of space separated directories to build symbol map from; default is /usr/lib");
      ("-F", Arg.String (set_framework_directories), "(OSX Only, Experimental) String of space or colon separated base framework directories to additionally search when building the symbol map");
      ("-r", Arg.Set recursive, "Recursively search directories for binaries; use with -b");
      ("-v", Arg.Set verbose, "Print all the things");
@@ -297,7 +297,7 @@ let main =
      ("-w", Arg.Set write_symbols, "Write out a flattened system map to $(HOME)/.rdr/symbols (good for grepping)");
      ("-G", Arg.Set print_goblin, "Print using the goblin binary format");
      ("--goblin", Arg.Set print_goblin, "Print using the goblin binary format");
-     ("-D", Arg.Set disassemble, "Disassemble found symbol(s)");
+     ("-d", Arg.Set disassemble, "Disassemble found symbol(s)");
      ("--dis", Arg.Set disassemble, "Disassemble found symbol(s)");
      ("--do", Arg.Int (fun i -> disassemble_offset := i), "(Experimental) Disassemble at offset");
      ("--sections", Arg.Set print_sections, "Print the sections: sections headers for elf; segments for mach; section tables for PE");

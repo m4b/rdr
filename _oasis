@@ -1,8 +1,8 @@
 OASISFormat: 0.4
 Plugins: META (0.4), DevFiles (0.4)
 Name:        rdr
-Version:     2.0.1
-Synopsis:    Lightweight, cross platform binary parsing and analysis library with no dependencies
+Version:     3.0.0
+Synopsis:    Lightweight, cross platform binary parsing and analysis library
 Authors:     m4b
 Homepage:    http://github.com/m4b/rdr
 Maintainers: <m4b.github.io@gmail.com>
@@ -110,7 +110,7 @@ Library "pe"
    PEByteCoverage,
    PEUtils
   BuildDepends:
-   rdr.utils,
+   rdr.utils
 
 Library "goblin"
   Path: lib/goblin
