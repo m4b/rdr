@@ -337,7 +337,7 @@ let get_exports binary export_data sections :t =
         let name_offset = PEUtils.find_offset ptr sections in
         let name = Binary.string binary name_offset in
         let ordinal = List.nth ordinals i in
-        let address_index = ordinal - ordinal_base in
+        let address_index = ordinal in
         if (debug) then
           Printf.printf "name: %s name_offset: 0x%x ordinal: %d address_index: %d "
             name name_offset ordinal address_index;
