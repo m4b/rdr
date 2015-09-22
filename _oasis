@@ -37,6 +37,7 @@ Library "utils"
   FindLibParent: rdr  
   FindLibName: utils
   CompiledObject: best
+  BuildDepends: unix
   Modules:
     RdrUtils,
     Binary,

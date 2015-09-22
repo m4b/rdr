@@ -24,11 +24,13 @@ type t = {
   libraries: string list;
   size: int;
   byte_coverage: ByteCoverage.t;
+  entry: int64;
   raw_code: bytes;              (* list *)
 }
 
 let get ?meta_only:(meta_only=false) binary =
   let header = Header.get_elf_header64 binary in
+  let entry = Int64.of_int header.Header.e_entry in
   let is_64 = Header.is_64bit header.Header.e_ident in
   if (debug) then Header.print_elf_header64 header;
   let program_headers =
@@ -123,6 +125,7 @@ let get ?meta_only:(meta_only=false) binary =
     interpreter;
     libraries;
     raw_code;
+    entry;
     byte_coverage;
   }
 

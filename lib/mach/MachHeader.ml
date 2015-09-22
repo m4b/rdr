@@ -213,8 +213,8 @@ let header_to_long_string header =
 let print_long_header header = 
   Printf.printf "0x%x %d %d 0x%x %d %d %d 0x%x %x\n" header.magic header.cputype header.cpusubtype header.caps header.filetype header.ncmds header.sizeofcmds header.flags header.reserved
 
-let print_header header = 
-  Printf.printf "Mach-O %s %s\n" (MachCpuTypes.cpu_type_to_string header.cputype) (filetype_to_string header.filetype) (*  (flags_to_string header.flags) *)
+let print_header header entry =
+  Printf.printf "Mach-O %s %s @ 0x%Lx\n" (MachCpuTypes.cpu_type_to_string header.cputype) (filetype_to_string header.filetype) entry (*  (flags_to_string header.flags) *)
 
 let get_mach_header binary = 
   let magic = Binary.u32 binary 0 in

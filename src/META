@@ -1,8 +1,8 @@
 # OASIS_START
-# DO NOT EDIT (digest: 98ab870481a98b10439f57a464aa113c)
-version = "2.0.1"
+# DO NOT EDIT (digest: 0f40f2daeab7f1483f33797198e013b4)
+version = "3.0.0"
 description =
-"Lightweight, cross platform binary parsing and analysis library with no dependencies"
+"Lightweight, cross platform binary parsing and analysis library"
 requires = "rdr.pe rdr.elf rdr.mach rdr.goblin rdr.utils rdr str unix"
 archive(byte) = "rdrutils.cma"
 archive(byte, plugin) = "rdrutils.cma"

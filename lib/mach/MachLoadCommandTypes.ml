@@ -1006,7 +1006,7 @@ type lc_t =
   | LC_TWOLEVEL_HINTS of twolevel_hints_command
   | LC_PREBIND_CKSUM of prebind_cksum_command
   | LC_LOAD_WEAK_DYLIB of dylib_command
-  | LC_SEGMENT_64	of segment_command_64
+  | LC_SEGMENT_64 of segment_command_64
   | LC_ROUTINES_64 of routines_command_64
   | LC_UUID of uuid_command
   | LC_RPATH of rpath_command
