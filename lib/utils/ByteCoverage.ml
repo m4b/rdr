@@ -190,6 +190,8 @@ let pick_with f dataset =
       else
         acc)
 
+let truncate d1 d2 = {d1 with range_end = d2.range_start}
+
 (* partitions data into largest covering ranges, and redundant data *)
 let normalize dataset =
   let norm,rest =
@@ -258,8 +260,12 @@ let rec zeroes_in_range r1 r2 binary =
 
 let zero_scan datalist binary =
   List.map (fun data ->
-      if (not data.understood && zeroes_in_range data.range_start data.range_end binary) then
-        {data with understood=true; tag=Zero; extra="Zeroes // Computed"}
+      if (not data.understood
+          && zeroes_in_range
+            data.range_start
+            data.range_end binary) then
+        {data with understood=true;
+                   tag=Zero; extra="Zeroes // Computed"}
       else
         data
     ) datalist
@@ -280,7 +286,12 @@ let compute_unknown dataset size binary =
           if (d.range_end >= size) then
             acc
           else
-            let data = create_data Unknown d.range_end size extra false in
+            let data =
+              create_data
+                Unknown
+                d.range_end
+                size extra false
+            in
             if (debug) then Printf.printf "END %s\n" (show_data data);
             data::acc
         | d1::(d2::rest as tail)->
@@ -290,11 +301,18 @@ let compute_unknown dataset size binary =
             (* if it's semantic, and the first's range end is
                greater than the second's start
                (it contains it, which is guaranteed by our sorting), we ignore it *)
-          if (d1.tag = Semantic && d1.range_end >= d2.range_start) then
+            (* HACK: not computing values with bad sizes for now due to issues with int conversions, etc. *)
+          if (d1.tag = Semantic || d1.range_end >= d2.range_start) then
             loop acc tail
           else
-            let data = create_data Unknown d1.range_end d2.range_start extra false in
-            if (debug) then Printf.printf "NEW %s\n" (show_data data);
+            let data = 
+              create_data
+                Unknown
+                d1.range_end
+                d2.range_start
+                extra false
+            in
+            if (debug) then Printf.printf "NEW %s\n\t%s\n\t%s\n" (show_data data) (show_data d1) (show_data d2);
             loop (data::acc) tail
       in loop [] bindings
   in
