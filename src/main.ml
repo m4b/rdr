@@ -279,8 +279,8 @@ let find_byte_sequence scan_bytes name =
 
 let main =
   let speclist =
-    [("-m", Arg.Set use_map, "Use a pre-marshalled system symbol map; use this in conjunction with -f, -D, -g, or -w");
-     ("-g", Arg.Set graph, "Creates a graphviz file; generates lib dependencies if -b given");
+    [("-m", Arg.Set use_map, "Use a pre-marshalled system symbol map; use this in conjunction with -f, -D, -G, or -w");
+     ("-G", Arg.Set graph, "Creates a graphviz file; generates lib dependencies if -b given");
      ("-D", Arg.String (set_base_symbol_map_directories), "String of space separated directories to build symbol map from; default is /usr/lib");
      ("-F", Arg.String (set_framework_directories), "(OSX Only, Experimental) String of space or colon separated base framework directories to additionally search when building the symbol map");
      ("-r", Arg.Set recursive, "Recursively search directories for binaries; use with -b");
@@ -295,7 +295,7 @@ let main =
      ("-f", Arg.Set_string search_term_string, "Find symbol in binary");
      ("-b", Arg.Set marshal_symbols, "Build a symbol map and write to $(HOME)/.rdr/tol; default directory is /usr/lib, change with -d");
      ("-w", Arg.Set write_symbols, "Write out a flattened system map to $(HOME)/.rdr/symbols (good for grepping)");
-     ("-G", Arg.Set print_goblin, "Print using the goblin binary format");
+     ("-g", Arg.Set print_goblin, "Print using the goblin binary format");
      ("--goblin", Arg.Set print_goblin, "Print using the goblin binary format");
      ("-d", Arg.Set disassemble, "Disassemble found symbol(s)");
      ("--dis", Arg.Set disassemble, "Disassemble found symbol(s)");
@@ -303,7 +303,7 @@ let main =
      ("--sections", Arg.Set print_sections, "Print the sections: sections headers for elf; segments for mach; section tables for PE");
      ("--scan", Arg.String (fun s -> scan_bytes := s), "(Experimental) Scan the binary for a byte sequence.");     
     ] in
-  let usage_msg = "usage: rdr [-r] [-b] [-m] [-d] [-g] [-G --goblin] [-v | -l | -e | -i] [<path_to_binary>]\noptions:" in
+  let usage_msg = "usage: rdr [-r] [-b] [-m] [-d] [-G] [-g --goblin] [-v | -l | -e | -i] [<path_to_binary>]\noptions:" in
   Arg.parse speclist set_anon_argument usage_msg;
   if (!print_version) then
     begin

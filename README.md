@@ -11,7 +11,7 @@ Welcome to the `rdr` project.
 > * PE32 support
 > * Unified export/import model using the Goblin binary format, a kind of IR for binaries
 > * Disassemble symbols in a binary (as opposed to just symbols in the map) --- this is _still_ experimental and very much hacky, llvm-mc must be installed.  I'll figure out a better way soon, or write my own x86-64 and ARM64 disassembler, cause I'm crazy.
-> * Print Goblin representation
+> * Print Goblin representation `rdr -g`
 > * A slightly better symbol tree
 > * Import library resolution for ELF, which looks up the imported symbol for a binary using the symbol map/tree
 > * Better byte-coverage printing in addition to more extensive coverage
@@ -80,7 +80,7 @@ Some examples:
 * `rdr -D -f printf /usr/lib/libc.so.6` - disassembles the printf symbol if it's found.
 * `rdr -l /usr/lib/libc.so.6` - lists the dynamic libraries `libc.so.6` _explicitly_ depends on (I'm looking at _you_ `dlsym`).
 * `rdr -i /usr/lib/libc.so.6` - lists the imports the binary depends on.  **NOTE** when run on linux ELF binaries, if a system map has been built, it will use that to resolve the import's library.  Depending on your machine, can add a slight delay; sorry bout that.  On mach-o and PE this delay caused by an extra lookup isn't necessary, since imports are required to state where they come from, because the format was built by sane people (more or less).
-* `rdr -g /usr/lib/libz.so.1.2.8` - graphs the libraries, imports, and exports of `libz.so.1.2.8`; run `dot -O -n -Tpng libz.so.1.2.8.gv` to make a pretty picture.  Does a simple, hackish check to see if `dot` is in your `${PATH}`, and if so, runs the above dot command for you - you should probably just install it before you run this.  [See the examples](#examples) for `rdr` output.
+* `rdr -G /usr/lib/libz.so.1.2.8` - graphs the libraries, imports, and exports of `libz.so.1.2.8`; run `dot -O -n -Tpng libz.so.1.2.8.gv` to make a pretty picture.  Does a simple, hackish check to see if `dot` is in your `${PATH}`, and if so, runs the above dot command for you - you should probably just install it before you run this.  [See the examples](#examples) for `rdr` output.
 * `rdr -s /usr/lib/libc.so.6` - print the nlist/strippable symbol table, if it exists.  Crappy programs like `nm` _only_ use the strippable symbol table, even for exports and imports.
 * `rdr -v /usr/lib/libc.so.6` - print everything; you have been warned.
 * `rdr -c /usr/lib/libc.so.6` - prints the byte coverage `rdr` generated for the binary
@@ -169,7 +169,9 @@ searching /usr/lib/ for printf:
 
 If you don't like AT&T syntax (FYI you should probably become a real hacker and learn to read and understand both syntax flavors), the lack of options, and a host of other issues w.r.t. disassembly, then you're out of luck for now.  Maybe make a pull request?
 
-~~You can also graph the library dependencies (the `.gv` file is generated _at build time_) with `rdr -m -g`.  Currently, it creates a `library_dependency.png` file; in the future, this will be named after the map it was generated from, once named maps become a thing.  Also, this `.png` will be enormous.~~ This feature disabled for now.
+You can also graph the library dependencies (the `.gv` file is generated _at build time_ in `${HOME}/.rdr/`) with `rdr -m -G`.  Currently, it creates a `library_dependency.png` file; in the future, this will be named after the map it was generated from, once named maps become a thing.  Also, this `.png` will be probably be enormous.
+
+This can be useful, if for example, you collate a series of binaries and shared libraries into a directory, and then have `rdr` build a map from that directory, and want to graph their interrelated dependencies.  If you want it to lookup the correct `/usr/lib` deps, then the full command might be something like: `rdr -b -G -D "$(pwd):/usr/lib/"`, and that map's dependency graph will be in `${HOME}/.rdr/lib_dependency_graph.png`.
 
 Finally, and again at build time, a `stats` file is generated from the system map in `${HOME}/.rdr/`; this simply counts the number of times a symbol was _imported_ by every binary analyzed when the system map was built (so with a `-d` directory specified, the default is `/usr/lib/`, and so it counts every time some symbol `x` was imported in every binary found in `/usr/lib`).  Expect this file to change, or various other statistical files to be created in the `${HOME}/.rdr/` directory.
 
@@ -207,5 +209,5 @@ Because I just knew you were going to ask, I made this _sweet_ graphic, just for
 
 # Examples
 
-* `rdr -g /usr/lib/libz.so.1.2.8`: ![libz so hard](http://www.m4b.io/images/libz.so.1.2.8.gv.png)
+* `rdr -G /usr/lib/libz.so.1.2.8`: ![libz so hard](http://www.m4b.io/images/libz.so.1.2.8.gv.png)
 * See my [gallery](http://www.m4b.io/gallery) for more inspiring images of what you can do with `rdr`
