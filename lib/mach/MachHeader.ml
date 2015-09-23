@@ -219,13 +219,16 @@ let print_header header entry =
 let get_mach_header binary = 
   let magic = Binary.u32 binary 0 in
   let cputype = Binary.u32 binary 4 in
-  let cpusubtype = Binary.i8 binary 8 in
+  let cpusubtype = Binary.u8 binary 8 in
   (*  discard_2_bytes *)
-  let caps = Binary.i8 binary 11 in
+  let caps = Binary.u8 binary 11 in
   let filetype = Binary.u32 binary 12 in
   let ncmds = Binary.u32 binary 16 in
   let sizeofcmds = Binary.u32 binary 20 in
   let flags = Binary.u32 binary 24 in 
   let reserved = Binary.u32 binary 28 in
-  let header = {magic = magic; cputype = cputype; cpusubtype = cpusubtype; caps = caps; filetype = filetype; ncmds = ncmds; sizeofcmds = sizeofcmds; flags = flags ; reserved = reserved} in
+  let header =
+    {magic; cputype; cpusubtype; caps; filetype;
+     ncmds; sizeofcmds; flags ; reserved}
+  in
   header
