@@ -21,7 +21,7 @@ let get_hint_name_table_entry binary offset :hint_name_table_entry =
 
 type synthetic_import_lookup_table_entry =
   | OrdinalNumber of int [@size 16]
-  | HintNameTableRVA of (int [@size 31] * hint_name_table_entry)
+  | HintNameTableRVA of ((int [@size 31]) * hint_name_table_entry)
 
 let pp_synthetic_import_lookup_table_entry ppf import =
   match import with
