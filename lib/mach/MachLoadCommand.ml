@@ -173,6 +173,19 @@ let rec get_dyld_info lcs =
     | _ ->
       get_dyld_info lcs
 
+let rec get_entry (lcs:Types.lc list) =
+  match lcs with
+  | [] -> 0x0
+  | lc::lcs ->
+    if (lc.cmd = LC_MAIN) then
+      match lc.t with
+      | LC_MAIN t ->
+        t.entryoff
+      | _ ->
+        get_entry lcs
+    else
+      get_entry lcs
+
 let rec get_lib_name lcs =
   match lcs with
   | [] -> ""

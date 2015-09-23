@@ -27,7 +27,7 @@ type t =
     nlibraries: int;
     name: string;
     is_lib: bool;
-    main_offset: int;
+    entry: int64;
     byte_coverage: ByteCoverage.t;
   }
 
@@ -52,7 +52,7 @@ let pp ppf t =
   Format.fprintf ppf "@]";
  *)
   Format.fprintf ppf "@ IsLib: %b" t.is_lib;
-  Format.fprintf ppf "@ Main: 0x%x" t.main_offset;
+  Format.fprintf ppf "@ Main: 0x%Lx" t.entry;
   Format.fprintf ppf "@ Sections@ ";
   PESectionTable.pp ppf t.sections;
   Format.fprintf ppf "@]"
@@ -77,11 +77,11 @@ let print t =
   Format.print_newline()
 
 let print_header_stub t =
-  Format.printf "@[<h>PE32 %s %s@ %s@ 0x%x@]@."
+  Format.printf "@[<h>PE32 %s %s@ %s@ 0x%Lx@]@."
     (PEMachineType.show_machine t.header.coff_header.machine)
     (PECharacteristic.show_type t.header.coff_header.characteristics)
     "@"
-    t.main_offset
+    t.entry
 
 let get ?coverage:(coverage=true) binary =
   let size = Bytes.length binary in
@@ -91,7 +91,7 @@ let get ?coverage:(coverage=true) binary =
     Characteristic.is_dll header.coff_header.characteristics
   in
   let export_data, name, exports, import_data,
-      imports, libraries, main_offset =
+      imports, libraries, entry =
     match header.Header.optional_header with
     | Some headers ->
       let export_data,name,exports =
@@ -124,12 +124,13 @@ let get ?coverage:(coverage=true) binary =
           PEUtils.find_offset
             headers.standard_fields.address_of_entry_point
             section_tables
-        with Not_found -> 0x0
+          |> Int64.of_int
+        with Not_found -> 0x0L
       in
       export_data,name,exports,import_data,
       imports, libraries, main_offset
     | None ->
-      None,"",[],None,[],[],0x0
+      None,"",[],None,[],[],0x0L
   in
   (* this is a performance bottleneck
      probably due to the symbol additions *)
@@ -157,6 +158,6 @@ let get ?coverage:(coverage=true) binary =
     nlibraries = List.length libraries;
     is_lib;
     name;
-    main_offset;
+    entry;
     byte_coverage;
   }

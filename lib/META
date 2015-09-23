@@ -1,8 +1,8 @@
 # OASIS_START
-# DO NOT EDIT (digest: a0c4c91cd8368b711f5a66bae6a10edc)
-version = "2.0.1"
+# DO NOT EDIT (digest: aa2626bcb6c68a46ca94ec8f72308dcf)
+version = "3.0.0"
 description =
-"Lightweight, cross platform binary parsing and analysis library with no dependencies"
+"Lightweight, cross platform binary parsing and analysis library"
 requires = "rdr.goblin rdr.utils rdr.mach rdr.elf rdr.pe"
 archive(byte) = "rdr.cma"
 archive(byte, plugin) = "rdr.cma"
@@ -10,9 +10,10 @@ archive(native) = "rdr.cmxa"
 archive(native, plugin) = "rdr.cmxs"
 exists_if = "rdr.cma"
 package "utils" (
- version = "2.0.1"
+ version = "3.0.0"
  description =
- "Lightweight, cross platform binary parsing and analysis library with no dependencies"
+ "Lightweight, cross platform binary parsing and analysis library"
+ requires = "unix"
  archive(byte) = "utils.cma"
  archive(byte, plugin) = "utils.cma"
  archive(native) = "utils.cmxa"
@@ -21,10 +22,10 @@ package "utils" (
 )
 
 package "pe" (
- version = "2.0.1"
+ version = "3.0.0"
  description =
- "Lightweight, cross platform binary parsing and analysis library with no dependencies"
- requires = "rdr.utils "
+ "Lightweight, cross platform binary parsing and analysis library"
+ requires = "rdr.utils"
  archive(byte) = "pe.cma"
  archive(byte, plugin) = "pe.cma"
  archive(native) = "pe.cmxa"
@@ -33,9 +34,9 @@ package "pe" (
 )
 
 package "mach" (
- version = "2.0.1"
+ version = "3.0.0"
  description =
- "Lightweight, cross platform binary parsing and analysis library with no dependencies"
+ "Lightweight, cross platform binary parsing and analysis library"
  requires = "rdr.utils"
  archive(byte) = "mach.cma"
  archive(byte, plugin) = "mach.cma"
@@ -45,9 +46,9 @@ package "mach" (
 )
 
 package "goblin" (
- version = "2.0.1"
+ version = "3.0.0"
  description =
- "Lightweight, cross platform binary parsing and analysis library with no dependencies"
+ "Lightweight, cross platform binary parsing and analysis library"
  requires = "rdr.utils rdr.mach rdr.elf rdr.pe"
  archive(byte) = "goblin.cma"
  archive(byte, plugin) = "goblin.cma"
@@ -57,9 +58,9 @@ package "goblin" (
 )
 
 package "elf" (
- version = "2.0.1"
+ version = "3.0.0"
  description =
- "Lightweight, cross platform binary parsing and analysis library with no dependencies"
+ "Lightweight, cross platform binary parsing and analysis library"
  requires = "rdr.utils"
  archive(byte) = "elf.cma"
  archive(byte, plugin) = "elf.cma"

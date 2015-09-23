@@ -1,5 +1,3 @@
-(* TODO: add bytecoverage computer *)
-
 module BindOpcodes = MachBindOpcodes
 module CpuTypes = MachCpuTypes
 module Fat = MachFat
@@ -34,6 +32,7 @@ type t = {
   nlibraries: int;
   size: int;
   raw_code: bytes;
+  entry: int64;
   byte_coverage: ByteCoverage.t;
 }
 
@@ -58,6 +57,7 @@ let get binary =
       header.Header.ncmds
       header.Header.sizeofcmds
   in
+  let entry = LoadCommand.get_entry load_commands |> Int64.of_int in
   let name = LoadCommand.get_lib_name load_commands (* if "" we're not a dylib *)
   in
   let segments = LoadCommand.get_segments load_commands in
@@ -99,4 +99,5 @@ let get binary =
     imports; nimports; exports; nexports;
     is_lib; libraries; nlibraries; raw_code; size;
     byte_coverage = Coverage.compute header load_commands size binary;
+    entry;
   }
