@@ -136,30 +136,28 @@ let build ~verbose:verbose ~graph:graph ~libs:libstack =
   let rec loop map lib_deps =
     if (Stack.is_empty libstack) then
       begin
-        output_stats tbl; map
+        output_stats tbl;
+        RdrGraph.graph_lib_dependencies ~use_dot_storage:true lib_deps;
+	if (graph) then
+	  RdrGraph.graph_library_dependencies
+            ~use_sfdp:(RdrCommand.is_linux()) ~use_dot_storage:true
       end
-    (* 
-          begin
-
-            Graph.graph_lib_dependencies ~use_dot_storage:true lib_deps;
-	    if (graph) then
-	      Graph.graph_library_dependencies ~use_sfdp:(Command.is_linux()) ~use_dot_storage:true;
-          end
-     *)
     else
       let library = Stack.pop libstack in
-      let bytes = RdrObject.get ~verbose:verbose library in
       let binary =
-        match bytes with
-        | RdrObject.Mach binary ->
-           Some (Mach.get binary |> Goblin.Mach.from library)
-        | RdrObject.Elf binary ->
-           let elf = Elf.get binary in           
-           Some (Goblin.Elf.from ~use_tree:false library elf)
-        | RdrObject.PE32 binary ->
-           Some (PE.get binary |> Goblin.PE.from library)
-        | RdrObject.Unknown (lib,error) ->
-           None
+        try
+          match RdrObject.get ~verbose:verbose library with
+          | RdrObject.Mach binary ->
+             Some (Mach.get binary |> Goblin.Mach.from library)
+          | RdrObject.Elf binary ->
+             let elf = Elf.get binary in
+             Some (Goblin.Elf.from ~use_tree:false library elf)
+          | RdrObject.PE32 binary ->
+             Some (PE.get binary |> Goblin.PE.from library)
+          | RdrObject.Unknown (lib,error) ->
+             None
+        with _ ->
+          None
       in
       match binary with
       | None ->

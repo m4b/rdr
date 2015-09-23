@@ -4,3 +4,4 @@ module Goblin = Goblin
 module Utils = RdrUtils
 module Object = RdrObject
 module Map = SymbolMap
+module Graph = RdrGraph

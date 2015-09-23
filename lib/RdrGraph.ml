@@ -1,12 +1,7 @@
-(* 
-TODO:
-(1) create sorted output, by sending in a polymorphic list instead of a map, sorted by address, etc. this will be easy with arrays of exports/imports
- *)
-
 open Binary
-open Mach.Imports
-open Mach.Exports
-open ReadMach
+open MachImports
+open MachExports
+module Utils = RdrUtils
 
 (* 
 digraph structs { 
@@ -31,7 +26,7 @@ let from_dot_name =
 (* end helper *)
 
 let graph_with_dot file =
-  if (Rdr.Utils.Command.program_in_path "dot") then
+  if (Utils.Command.program_in_path "dot") then
     let output = (Filename.chop_suffix file ".gv") ^ ".png" in
     Sys.command
     @@ Printf.sprintf "dot -o %s -n -Tpng %s" output file
@@ -244,8 +239,8 @@ let graph_lib_dependencies ?use_dot_storage:(use_dot_storage=false) lib_deps =
     | [] ->
       Buffer.add_string b lib_footer;
       let path =
-	Rdr.Utils.Storage.get_graph_path
-	  ~graph_name:Rdr.Utils.Storage.graph_name
+	Utils.Storage.get_graph_path
+	  ~graph_name:Utils.Storage.graph_name
 	  ~use_dot_storage:use_dot_storage
       in
       let oc = open_out path in
@@ -325,15 +320,15 @@ node [shape=plaintext]\n";
   Buffer.contents b
 
 let graph_library_dependencies ~use_sfdp:use_sfdp ~use_dot_storage:use_dot_storage =
-  if (Rdr.Utils.Command.program_in_path "dot") then
+  if (Utils.Command.program_in_path "dot") then
     let input =
-      Rdr.Utils.Storage.get_graph_path
-	~graph_name:Rdr.Utils.Storage.graph_name
+      Utils.Storage.get_graph_path
+	~graph_name:Utils.Storage.graph_name
 	~use_dot_storage:true
     in
     let output_tmp =
-	Rdr.Utils.Storage.get_graph_path
-	  ~graph_name:Rdr.Utils.Storage.graph_name
+	Utils.Storage.get_graph_path
+	  ~graph_name:Utils.Storage.graph_name
 	  ~use_dot_storage:use_dot_storage
     in
     let output =

@@ -140,6 +140,7 @@ Library "rdr"
   Modules:
     Rdr,
     RdrObject,
+    RdrGraph,
     SymbolMap
   BuildDepends:
    rdr.goblin,
@@ -155,7 +156,6 @@ Library "rdrutils"
   CompiledObject: best  
   Modules:
     Config,
-    Graph,
     ReadMach,
     ReadElf,
     ReadPE

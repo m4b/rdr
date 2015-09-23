@@ -149,7 +149,7 @@ let analyze config binary =
       Printf.printf "";
   else 
     if (config.graph) then
-      Graph.graph_goblin 
+      Rdr.Graph.graph_goblin 
 	~draw_imports:true
 	~draw_libs:true goblin
       @@ Filename.basename config.filename    
@@ -189,7 +189,7 @@ let use_symbol_map config =
       end
     else
       if (config.graph) then
-	Graph.graph_library_dependencies
+	Rdr.Graph.graph_library_dependencies
           ~use_sfdp:(Rdr.Utils.Command.is_linux())
           ~use_dot_storage:false
       else
