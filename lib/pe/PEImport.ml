@@ -285,6 +285,7 @@ type synthetic_import = {
   dll: string;
   ordinal: int [@size 2];
   offset: int [@size 4];
+  rva: int [@size 4];
   size: int;
 } [@@deriving show]
 
@@ -299,17 +300,17 @@ let show_pp_synthetic_import import =
 let get_synthetic_import dll import_base i (entry:import_lookup_table_entry) =
   (* let offset = try PEUtils.find_offset entry. *)
   let offset = import_base + (i * sizeof_import_address_table_entry) in
-  let name,ordinal = match entry._synthetic with
+  let rva,name,ordinal = match entry._synthetic with
     | HintNameTableRVA (rva, hint_entry) ->
-      let res = hint_entry.name,hint_entry.hint (* ordinal *) in
+      let res = rva,hint_entry.name,hint_entry.hint (* ordinal *) in
       if (hint_entry.name = "" && hint_entry.hint = 0) then
         Printf.eprintf "<PE.Import> warning hint/name table rva from %s without hint 0x%x\n" dll rva;
       res
     | OrdinalNumber ordinal ->
       let name = Printf.sprintf "ORDINAL %d" ordinal in
-      name,ordinal
+      0x0,name,ordinal
   in
-  {name; ordinal; dll; size = 4; offset}
+  {name; ordinal; dll; size = 4; offset; rva}
 
 type t = synthetic_import list
 
