@@ -14,15 +14,16 @@ let analyze (config:Config.t) binary =
         PE.print_header_stub pe;
       if (config.verbose || config.print_headers) then
 	begin
-          (* TODO add section and optional header modules *)
           PE.Header.print pe.PE.header;
           let ppf = Format.std_formatter in
-          Format.fprintf ppf "@ @[<v 2>Export Data@ ";
+          Format.fprintf ppf "@[<v 2>Export Data@ ";
           Rdr.Utils.Printer.pp_option
             ppf PE.Export.pp_export_data pe.PE.export_data;
+          Format.fprintf ppf "@]";
+          Format.fprintf ppf "@ @[<v 2>Import Data@ ";
           Rdr.Utils.Printer.pp_option
             ppf PE.Import.pp_import_data pe.PE.import_data;
-          Format.print_newline();
+          Format.fprintf ppf "@]@.";
         end;
       if (config.verbose || config.print_sections) then
         PE.SectionTable.print pe.PE.sections;

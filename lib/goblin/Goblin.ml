@@ -67,8 +67,7 @@ let get_import import  =
 let get_export export =
   _find (fun symbol -> symbol.Export.name = export)
 
-let iter =
-  Array.iter
+let iter = Array.iter
 
 let empty = [||]
 

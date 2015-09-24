@@ -8,6 +8,7 @@ TODO:
 
 open ByteCoverage
 open PEHeader
+open PEDataDirectories
 open PESectionTable
 open PEExport
 open PEImport
@@ -65,11 +66,11 @@ let compute_import_entry_coverage sections acc entry =
       ) acc
   in List.fold_left (compute_import_lookup_coverage sections) acc entry._import_lookup_table
 
-let compute_import_data_coverage data_directory import_data imports sections data =
-  assert (data_directory.import_table <> 0);
+let compute_import_data_coverage (dd:PEDataDirectories.data_directory) import_data imports sections data =
+  assert (dd.virtual_address <> 0);
   try 
-    let size = data_directory.size_of_import_table in
-    let r1 = PEUtils.find_offset data_directory.import_table sections in
+    let size = dd.size in
+    let r1 = PEUtils.find_offset dd.virtual_address sections in
     let data =
     ByteCoverage.add
       (create_data
@@ -95,12 +96,12 @@ let compute_exports_data_coverage (exports:PEExport.t) data =
       ) acc
     ) data exports
 
-let compute_export_data_coverage data_directory export_data (exports:PEExport.t) sections data =
-  assert (data_directory.export_table <> 0);
-  let size = data_directory.size_of_export_table in
+let compute_export_data_coverage (dd:PEDataDirectories.data_directory) export_data (exports:PEExport.t) sections data =
+  assert (dd.virtual_address <> 0);
+  let size = dd.size in
   try
     let r1 = 
-      PEUtils.find_offset data_directory.export_table sections
+      PEUtils.find_offset dd.virtual_address sections
     in
     let r2 = r1 + size in
     let data = ByteCoverage.add
@@ -188,16 +189,28 @@ let compute_data_directory_coverage
   | None ->
     data
   | Some header ->
-    let dd = header.data_directories in
+    let dds = header.PEOptionalHeader.data_directories in
     let data =
       match export_data with
       | Some d ->
-        compute_export_data_coverage dd d exports sections data
+        begin
+        match PEDataDirectories.get_export_table dds with
+        | None ->
+          data
+        | Some dd ->
+          compute_export_data_coverage dd d exports sections data
+        end
       | _ -> data
     in
     match import_data with
     | Some d ->
-      compute_import_data_coverage dd d imports sections data
+      begin
+        match PEDataDirectories.get_import_table dds with
+        | None ->
+          data
+        | Some dd ->
+          compute_import_data_coverage dd d imports sections data
+      end
     | _ -> data
 
 module SectionMap = Map.Make(String)

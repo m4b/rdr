@@ -12,6 +12,7 @@ this is verified via `gdb /r beef_maximum` on compute stick with cygwin to get t
 *)
 
 open PEHeader
+open PEDataDirectories
 
 let debug = false
 
@@ -163,7 +164,7 @@ let pp_export_data ppf data =
   Format.fprintf ppf "@ @[<v 2>Export Address Table";
   Format.fprintf ppf
     "@ %a" pp_export_address_table data.export_address_table;
-  Format.fprintf ppf "@]@]"
+  Format.fprintf ppf "@]"
 
 let show_export_data data =
   pp_export_data Format.str_formatter data;
@@ -173,8 +174,8 @@ let print_export_data data =
   pp_export_data Format.std_formatter data;
   Format.print_newline()
 
-let get binary data_directories section_tables =
-  let export_rva = data_directories.export_table in
+let get binary dd section_tables =
+  let export_rva = dd.virtual_address in
   let export_offset =
     PEUtils.find_offset export_rva section_tables
   in
@@ -228,7 +229,7 @@ let get binary data_directories section_tables =
       export_address_table_offset
       export_directory_table.ordinal_base
       export_rva
-      data_directories.size_of_export_table
+      dd.size
       address_table_entries
       section_tables
   in
@@ -264,6 +265,7 @@ let get_reexport string =
 type synthetic_export = {
   name: string;
   offset: int;
+  rva: int;
   size: int;
   reexport: reexport option;
 }
@@ -330,7 +332,7 @@ let get_exports binary export_data sections :t =
   let ordinals = export_data.export_ordinal_table in
   let ordinal_base = export_data.export_directory_table.ordinal_base in
   List.mapi (fun i ptr ->
-      let name,offset,reexport =
+      let name,offset,rva,reexport =
         (* 
         Printf.printf "i: %d ptr: 0x%x \n" i ptr;
         *)
@@ -345,7 +347,7 @@ let get_exports binary export_data sections :t =
           begin
             Printf.eprintf "<PEExport.get_export> bad index for %s: %d %d %d len: %d\n"
               name (i+ordinal_base) ordinal address_index (List.length addresses);
-            name,0x0,None
+            name,0x0,0x0,None
           end
         else
           begin
@@ -353,15 +355,15 @@ let get_exports binary export_data sections :t =
             | ExportRVA rva ->
               let offset = PEUtils.find_offset rva sections in
               if (debug) then Printf.printf "0x%x\n" offset;
-              name,offset,None
+              name,offset,rva,None
 
             | ForwarderRVA rva ->
               let stroffset = PEUtils.find_offset rva sections in
               (* Printf.printf "stroffset 0x%x\n" stroffset; *)
               let string = Binary.string binary stroffset in
               (* Printf.printf "string %s\n" string; *)
-              name,rva, Some (get_reexport string)
+              name,rva,rva,Some(get_reexport string)
           end
       in
-      {name; offset; reexport; size = 0}
+      {name; offset; rva; reexport; size = 0}
      ) pointers |> sort |> compute_size

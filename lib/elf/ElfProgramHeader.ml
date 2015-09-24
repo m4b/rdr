@@ -1,33 +1,35 @@
-open Printf
+type program_header32 =
+  {
+    p_type: int [@size 4];
+    p_offset: int [@size 4];
+    p_vaddr: int [@size 4];
+    p_paddr: int [@size 4];
+    p_filesz: int [@size 4];
+    p_memsz: int [@size 4];
+    p_flags: int [@size 4];
+    p_align: int [@size 4];
+  }
 
-(*
-            typedef struct {
-               uint32_t   p_type;
-               uint32_t   p_flags;
-               Elf64_Off  p_offset;
-               Elf64_Addr p_vaddr;
-               Elf64_Addr p_paddr;
-               uint64_t   p_filesz;
-               uint64_t   p_memsz;
-               uint64_t   p_align;
-           } Elf64_Phdr;
- *)
+let sizeof_program_header32 = 8 * 4
 
 (* 64 bit *)
 type program_header =
   {
-    p_type: int;   (* 4 *)
-    p_flags: int;  (* 4 *)
-    p_offset: int; (* 8 *)
-    p_vaddr: int;  (* 8 *)
-    p_paddr: int;  (* 8 *)
-    p_filesz: int; (* 8 *)
-    p_memsz: int;  (* 8 *)
-    p_align: int;  (* 8 *)
+    p_type: int [@size 4];
+    p_flags: int [@size 4];
+    p_offset: int [@size 8];
+    p_vaddr: int [@size 8];
+    p_paddr: int [@size 8];
+    p_filesz: int [@size 8];
+    p_memsz: int [@size 8];
+    p_align: int [@size 8];
   }
 
-(* 64 bit; t32 will be for projected 32-bit binaries *)
+let sizeof_program_header = 56 	(* bytes *)
+
 type t = program_header list
+
+type t32 = program_header32 list
 
 (* p type *)
 let kPT_NULL =		0		(* Program header table entry unused *)
@@ -84,17 +86,35 @@ let kPT_IA_64_HP_OPT_ANOT = (kPT_LOOS + 0x12)
 let kPT_IA_64_HP_HSL_ANOT = (kPT_LOOS + 0x13)
 let kPT_IA_64_HP_STACK = (kPT_LOOS + 0x14)
 
-let sizeof_program_header = 56 	(* bytes *)
-			      
-let get_program_header binary offset =
+let get_program_header32 binary offset :program_header32 =
   let p_type,o = Binary.u32o binary offset in (* &i *)
+  let p_offset,o = Binary.u32o binary o in
+  let p_vaddr,o = Binary.u32o binary o in
+  let p_paddr,o = Binary.u32o binary o in
+  let p_filesz,o = Binary.u32o binary o in
+  let p_memsz,o = Binary.u32o binary o in
+  let p_flags,o = Binary.u32o binary o in
+  let p_align,_ = Binary.u32o binary o in
+  {
+    p_type;
+    p_offset;
+    p_vaddr;
+    p_paddr;
+    p_filesz;
+    p_memsz;
+    p_flags;
+    p_align;
+  }
+
+let get_program_header binary offset =
+  let p_type,o = Binary.u32o binary offset in
   let p_flags,o = Binary.u32o binary o in
   let p_offset,o = Binary.u64o binary o in
   let p_vaddr,o = Binary.u64o binary o in
   let p_paddr,o = Binary.u64o binary o in
   let p_filesz,o = Binary.u64o binary o in
   let p_memsz,o = Binary.u64o binary o in
-  let p_align,o = Binary.u64o binary o in
+  let p_align,_ = Binary.u64o binary o in
   {
     p_type;
     p_flags; (* 1=x 2=w 4=r *)
@@ -184,6 +204,15 @@ let print_program_headers phs =
   Printf.printf "Program Headers (%d):\n" @@ List.length phs;
   List.iteri (fun i ph -> Printf.printf "%s\n" @@ program_header_to_string ph) phs
 	    
+let get_program_headers32 binary phoff phentsize phnum :t32 =
+  let rec loop count offset acc =
+    if (count >= phnum) then
+      List.rev acc
+    else
+      let ph = get_program_header32 binary offset in
+      loop (count + 1) (offset + phentsize) (ph::acc)
+  in loop 0 phoff []
+
 let get_program_headers binary phoff phentsize phnum =
   let rec loop count offset acc =
     if (count >= phnum) then
@@ -192,6 +221,22 @@ let get_program_headers binary phoff phentsize phnum =
       let ph = get_program_header binary offset in
       loop (count + 1) (offset + phentsize) (ph::acc)
   in loop 0 phoff []
+
+let get_header32 (ph:int) (phs:t32) =
+  try Some (List.find (fun (elem:program_header32) -> (elem.p_type = ph)) phs)
+  with _ -> None
+
+let get_main_program_header32 phs = get_header32 kPT_PHDR phs
+
+let get_interpreter_header32 phs = get_header32 kPT_INTERP phs
+
+let get_dynamic_program_header32 phs = get_header32 kPT_DYNAMIC phs
+
+let get_interpreter32 binary phs =
+  match get_interpreter_header32 phs with
+  | Some ph ->
+    Binary.string binary ~max:ph.p_filesz ph.p_offset
+  | None -> ""
 
 let get_header ph phs =
   try Some (List.find (fun elem -> (elem.p_type = ph)) phs)
@@ -209,6 +254,7 @@ let get_interpreter binary phs =
     Binary.string binary ~max:ph.p_filesz ph.p_offset
   | None -> ""
 
+(* TODO: move this to separate module, or replace the PEUtils similar functionality with a simple find_offset function *)
 type slide_sector = {start_sector: int; end_sector: int; slide: int;}
 
 let is_in_sector offset sector =

@@ -103,7 +103,9 @@ Library "pe"
   Modules:
    PE,
    PEHeader,
+   PEOptionalHeader,
    PESectionTable,
+   PEDataDirectories,
    PEImport,
    PEExport,
    PEMachineType,

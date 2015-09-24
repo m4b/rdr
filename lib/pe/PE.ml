@@ -1,6 +1,8 @@
 open Binary
 
 module Header = PEHeader
+module OptionalHeader = PEOptionalHeader
+module DataDirectories = PEDataDirectories
 module SectionTable = PESectionTable
 module Import = PEImport
 module Export = PEExport
@@ -10,6 +12,7 @@ module Utils = PEUtils
 module Coverage = PEByteCoverage
 
 open Header
+open OptionalHeader
 open SectionTable
 
 type t =
@@ -61,17 +64,6 @@ let show t =
   pp Format.str_formatter t;
   Format.flush_str_formatter()
 
-(* place in RdrPrinter.pp_option *)
-let print_export_data export_data =
-  let ppf = Format.std_formatter in
-  Format.fprintf ppf "@ @[<v 2>Export Data@ ";
-  match export_data with
-  | Some data ->
-    Export.pp_export_data ppf data;
-  | None ->
-    Format.fprintf ppf "None";
-  Format.fprintf ppf "@]@."
-
 let print t =
   pp Format.std_formatter t;
   Format.print_newline()
@@ -95,11 +87,17 @@ let get ?coverage:(coverage=true) binary =
     match header.Header.optional_header with
     | Some headers ->
       let export_data,name,exports =
-        if (headers.data_directories.export_table = 0) then
+        match
+          PEDataDirectories.get_export_table
+            headers.data_directories
+        with
+        | None ->
           None,"",[]
-        else
-          let export_data = PEExport.get
-              binary headers.data_directories
+        | Some dd ->
+          let export_data =
+            PEExport.get
+              binary
+              dd
               section_tables
           in
           Some export_data,
@@ -107,12 +105,16 @@ let get ?coverage:(coverage=true) binary =
           PEExport.get_exports binary export_data section_tables
       in
       let import_data, imports, libraries =
-        if (headers.data_directories.import_table = 0) then
+        match
+          PEDataDirectories.get_import_table
+            headers.data_directories
+        with
+        | None ->
           None,[],[]
-        else
+        | Some dd ->
           let import_data = PEImport.get
               binary
-              headers.data_directories
+              dd
               section_tables
           in
           let imports = PEImport.get_imports import_data in

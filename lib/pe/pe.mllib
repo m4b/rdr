@@ -1,8 +1,10 @@
 # OASIS_START
-# DO NOT EDIT (digest: 435fa08c32e7f2177d7964c52bdfce15)
+# DO NOT EDIT (digest: 7ff4b22dd16587f4d0656ea5b8f2021a)
 PE
 PEHeader
+PEOptionalHeader
 PESectionTable
+PEDataDirectories
 PEImport
 PEExport
 PEMachineType

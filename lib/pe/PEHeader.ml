@@ -1,12 +1,4 @@
-(* 
-#directory "/home/m4b/projects/rdr/_build/lib/utils";;
-#load "Binary.cmo";;
-*)
 open Binary
-
-(* 
-[@printer fun fmt -> fprintf fmt "0x%x"];
- *)
        
 type dos_header =
   {
@@ -51,181 +43,10 @@ let pp_coff_header ppf coff =
     coff.size_of_optional_header
     coff.characteristics
 
-(* standard COFF fields *)
-type standard_fields =
-  {
-    magic: int [@size 2];
-    major_linker_version: int [@size 1];
-    minor_linker_version: int [@size 1];
-    size_of_code: int [@size 4];
-    size_of_initialized_data: int [@size 4];
-    size_of_uninitialized_data: int [@size 4];
-    address_of_entry_point: int [@size 4];
-    base_of_code: int [@size 4];
-    base_of_data: int [@size 4]; (* absent in 64-bit PE32+ *)
-  }
-
-let sizeof_standard_fields = (3 * 8) + 4
-
-let pp_standard_fields ppf standard =
-  Format.fprintf ppf
-    "@[<v 2>@[<h>Standard@ 0x%x@]@ MajorLinkerVersion: %d@ MinorLinkerVersion: %d@ SizeOfCode: 0x%x@ SizeOfInitializedData: 0x%x@ SizeOfUninitializedData: 0x%x@ AddressOfEntryPoint: 0x%x@ BaseOfCode: 0x%x@ BaseOfData: 0x%x@]"
-    standard.magic
-    standard.major_linker_version
-    standard.minor_linker_version
-    standard.size_of_code
-    standard.size_of_initialized_data
-    standard.size_of_uninitialized_data
-    standard.address_of_entry_point
-    standard.base_of_code
-    standard.base_of_data
-
-(* windows specific fields *)
-type windows_fields =
-  {
-    image_base: int [@size 4];  (* 8 in 64-bit *)
-    section_alignment: int [@size 4];
-    file_alignment: int [@size 4];
-    major_operating_system_version: int [@size 2];
-    minor_operating_system_version: int [@size 2];
-    major_image_version: int [@size 2];
-    minor_image_version: int [@size 2];
-    major_subsystem_version: int [@size 2];
-    minor_subsystem_version: int [@size 2];
-    win32_version_value: int [@size 4];
-    size_of_image: int [@size 4];
-    size_of_headers: int [@size 4];
-    check_sum: int [@size 4];
-    subsystem: int [@size 2];
-    dll_characteristics: int [@size 2];
-    size_of_stack_reserve: int [@size 4]; (* 8 64-bit *)
-    size_of_stack_commit: int [@size 4];  (* 8 *)
-    size_of_heap_reserve: int [@size 4];  (* 8 *)
-    size_of_heap_commit: int [@size 4];   (* 8 *)
-    loader_flags: int [@size 4];
-    number_of_rva_and_sizes: int [@size 4];
-  }
-
-let sizeof_windows_fields = (8 * 8) + 4
-
-let pp_windows_fields ppf windows =
-  Format.fprintf ppf
-    "@[<v 2>@[Windows@]@ ImageBase: 0x%x@ SectionAlignment: 0x%x@ FileAlignment: 0x%x@ MajorOperatingSystemVersion: %d@ MinorOperatingSystemVersion: %d@ MajorImageVersion: %d@ MinorImageVersion: %d@ MajorSubsystemVersion: %d@ MinorSubsystemVersion: %d@ Win32VersionValue: %d@ SizeOfImage: 0x%x@ SizeOfHeaders: 0x%x@ CheckSum: 0x%x@ Subsystem: 0x%x@ DLL_Characteristics: 0x%x@ SizeOfStackReserve: 0x%x@ SizeOfStackCommit: 0x%x@ SizeOfHeapReserve: 0x%x@ SizeOfHeapCommit: 0x%x@ LoaderFlags: 0x%x@ NumberOfRvaAndSizes: %d@]"
-    windows.image_base
-    windows.section_alignment
-    windows.file_alignment
-    windows.major_operating_system_version
-    windows.minor_operating_system_version
-    windows.major_image_version
-    windows.minor_image_version
-    windows.major_subsystem_version
-    windows.minor_subsystem_version
-    windows.win32_version_value
-    windows.size_of_image
-    windows.size_of_headers
-    windows.check_sum
-    windows.subsystem
-    windows.dll_characteristics
-    windows.size_of_stack_reserve
-    windows.size_of_stack_commit
-    windows.size_of_heap_reserve
-    windows.size_of_heap_commit
-    windows.loader_flags
-    windows.number_of_rva_and_sizes
-
-(* TODO: module DataDirectories *)
-(* these are variable width and only exist if number_of_rva_and_sizes allows them *)
-type data_directories =
-  {
-    export_table: int [@size 4];
-    size_of_export_table: int [@size 4];
-    import_table: int [@size 4];
-    size_of_import_table: int [@size 4];
-    resource_table: int [@size 4];
-    size_of_resource_table: int [@size 4];
-    exception_table: int [@size 4];
-    size_of_exception_table: int [@size 4];
-    certificate_table: int [@size 4];
-    size_of_certificate_table: int [@size 4];
-    base_relocation_table: int [@size 4];
-    size_of_base_relocation_table: int [@size 4];
-    debug: int [@size 4];
-    size_of_debug: int [@size 4];
-    architecture: int [@size 4];
-    size_of_architecture: int [@size 4];    
-    global_ptr: int [@size 4];
-    size_of_global_ptr: int [@size 4];
-    tls_table: int [@size 4];
-    size_of_tls_table: int [@size 4];
-    load_config_table: int [@size 4];
-    size_of_load_config_table: int [@size 4];
-    bound_import: int [@size 4];
-    size_of_bound_import: int [@size 4];
-    import_address_table: int [@size 4];
-    size_of_import_address_table: int [@size 4];
-    delay_import_descriptor: int [@size 4];
-    size_of_delay_import_descriptor: int [@size 4];
-    clr_runtime_header: int [@size 4];
-    size_of_clr_runtime_header: int [@size 4];
-    reserved: int [@size 8, padding];
-  }
-
-let sizeof_data_directories = 15 * 8
-
-let pp_data_directories ppf dd =
-  Format.fprintf ppf
-    "@[<v 2>@[Data Directories@]@ ExportTable: 0x%x@ SizeOfExportTable: 0x%x@ ImportTable: 0x%x@ SizeOfImportTable: 0x%x@ ResourceTable: 0x%x@ SizeOfResourceTable: 0x%x@ ExceptionTable: 0x%x@ SizeOfExceptionTable: 0x%x@ CertificateTable: 0x%x@ SizeOfCertificateTable: 0x%x@ BaseRelocationTable: 0x%x@ SizeOfBaseRelocationTable: 0x%x@ Debug: 0x%x@ SizeOfDebugTable: 0x%x@ Architecture: 0x%x@ SizeOfArchitecture: 0x%x@ GlobalPtr: 0x%x@ SizeOfGlobalPtr: 0x%x@ TlsTable: 0x%x@ SizeOfTlsTable: 0x%x@ LoadConfigTable: 0x%x@ SizeOfLoadConfigTable: 0x%x@ BoundImport: 0x%x@ SizeOfBoundImport: 0x%x@ ImportAddressTable: 0x%x@ SizeOfImportAddressTable: 0x%x@ DelayImportDescriptor: 0x%x@ SizeOfDelayImportDescriptor: 0x%x@ ClrRuntimeHeader: 0x%x@ SizeOfRuntimeHeader: 0x%x@]"
-    dd.export_table
-    dd.size_of_export_table
-    dd.import_table
-    dd.size_of_import_table
-    dd.resource_table
-    dd.size_of_resource_table
-    dd.exception_table
-    dd.size_of_exception_table
-    dd.certificate_table
-    dd.size_of_certificate_table
-    dd.base_relocation_table
-    dd.size_of_base_relocation_table
-    dd.debug
-    dd.size_of_debug
-    dd.architecture
-    dd.size_of_architecture
-    dd.global_ptr
-    dd.size_of_global_ptr
-    dd.tls_table
-    dd.size_of_tls_table
-    dd.load_config_table
-    dd.size_of_load_config_table
-    dd.bound_import
-    dd.size_of_bound_import
-    dd.import_address_table
-    dd.size_of_import_address_table
-    dd.delay_import_descriptor
-    dd.size_of_delay_import_descriptor
-    dd.clr_runtime_header
-    dd.size_of_clr_runtime_header
-
-type optional_header =
-  {
-    standard_fields: standard_fields;
-    windows_fields: windows_fields;
-    data_directories: data_directories;
-  }
-
-let pp_optional_header ppf header =
-  Format.fprintf ppf "@ ";
-  pp_standard_fields ppf header.standard_fields;
-  Format.fprintf ppf "@ ";
-  pp_windows_fields ppf header.windows_fields;
-  Format.fprintf ppf "@ ";
-  pp_data_directories ppf header.data_directories
-
-
 type t = {
     dos_header: dos_header;
     coff_header: coff_header;
-    optional_header: optional_header option;
+    optional_header: PEOptionalHeader.t option;
   }
 
 let pp ppf t =
@@ -236,11 +57,11 @@ let pp ppf t =
   begin
     match t.optional_header with
     | Some header ->
-      pp_optional_header ppf header;
+      PEOptionalHeader.pp ppf header;
     | None ->
       Format.fprintf ppf "@ **No Optional Headers**"
   end;
-  Format.fprintf ppf "@]@]"
+  Format.fprintf ppf "@]"
 
 let show t =
   pp Format.str_formatter t;
@@ -266,76 +87,6 @@ let get_coff_header binary offset :coff_header =
   let characteristics = Binary.u16 binary o in
   {signature;machine;number_of_sections;time_date_stamp;pointer_to_symbol_table;number_of_symbol_table;size_of_optional_header;characteristics;}
 
-let get_standard_fields binary offset :standard_fields =
-  let magic,o = Binary.u16o binary offset in
-  let major_linker_version,o = Binary.u8o binary o in
-  let minor_linker_version,o = Binary.u8o binary o in
-  let size_of_code,o = Binary.u32o binary o in
-  let size_of_initialized_data,o = Binary.u32o binary o in
-  let size_of_uninitialized_data,o = Binary.u32o binary o in
-  let address_of_entry_point,o = Binary.u32o binary o in
-  let base_of_code,o = Binary.u32o binary o in
-  let base_of_data = Binary.u32 binary o in
-  {magic;major_linker_version;minor_linker_version;size_of_code;size_of_initialized_data;size_of_uninitialized_data;address_of_entry_point;base_of_code;base_of_data;}
-
-let get_windows_fields binary offset :windows_fields =
-  let image_base,o = Binary.u32o binary offset in
-  let section_alignment,o = Binary.u32o binary o in
-  let file_alignment,o = Binary.u32o binary o in
-  let major_operating_system_version,o = Binary.u16o binary o in
-  let minor_operating_system_version,o = Binary.u16o binary o in
-  let major_image_version,o = Binary.u16o binary o in
-  let minor_image_version,o = Binary.u16o binary o in
-  let major_subsystem_version,o = Binary.u16o binary o in
-  let minor_subsystem_version,o = Binary.u16o binary o in
-  let win32_version_value,o = Binary.u32o binary o in
-  let size_of_image,o = Binary.u32o binary o in
-  let size_of_headers,o = Binary.u32o binary o in
-  let check_sum,o = Binary.u32o binary o in
-  let subsystem,o = Binary.u16o binary o in
-  let dll_characteristics,o = Binary.u16o binary o in
-  let size_of_stack_reserve,o = Binary.u32o binary o in
-  let size_of_stack_commit,o = Binary.u32o binary o in
-  let size_of_heap_reserve,o = Binary.u32o binary o in
-  let size_of_heap_commit,o = Binary.u32o binary o in
-  let loader_flags,o = Binary.u32o binary o in
-  let number_of_rva_and_sizes = Binary.u32 binary o in
-  {image_base;section_alignment;file_alignment;major_operating_system_version;minor_operating_system_version;major_image_version;minor_image_version;major_subsystem_version;minor_subsystem_version;win32_version_value;size_of_image;size_of_headers;check_sum;subsystem;dll_characteristics;size_of_stack_reserve;size_of_stack_commit;size_of_heap_reserve;size_of_heap_commit;loader_flags;number_of_rva_and_sizes;}
-
-let get_data_directories binary offset :data_directories =
-  let export_table,o = Binary.u32o binary offset in
-  let size_of_export_table,o = Binary.u32o binary o in
-  let import_table,o = Binary.u32o binary o in
-  let size_of_import_table,o = Binary.u32o binary o in
-  let resource_table,o = Binary.u32o binary o in
-  let size_of_resource_table,o = Binary.u32o binary o in
-  let exception_table,o = Binary.u32o binary o in
-  let size_of_exception_table,o = Binary.u32o binary o in
-  let certificate_table,o = Binary.u32o binary o in
-  let size_of_certificate_table,o = Binary.u32o binary o in
-  let base_relocation_table,o = Binary.u32o binary o in
-  let size_of_base_relocation_table,o = Binary.u32o binary o in
-  let debug,o = Binary.u32o binary o in
-  let size_of_debug,o = Binary.u32o binary o in
-  let architecture,o = Binary.u32o binary o in
-  let size_of_architecture,o = Binary.u32o binary o in
-  let global_ptr,o = Binary.u32o binary o in
-  let size_of_global_ptr,o = Binary.u32o binary o in
-  let tls_table,o = Binary.u32o binary o in
-  let size_of_tls_table,o = Binary.u32o binary o in
-  let load_config_table,o = Binary.u32o binary o in
-  let size_of_load_config_table,o = Binary.u32o binary o in
-  let bound_import,o = Binary.u32o binary o in
-  let size_of_bound_import,o = Binary.u32o binary o in
-  let import_address_table,o = Binary.u32o binary o in
-  let size_of_import_address_table,o = Binary.u32o binary o in
-  let delay_import_descriptor,o = Binary.u32o binary o in
-  let size_of_delay_import_descriptor,o = Binary.u32o binary o in
-  let clr_runtime_header,o = Binary.u32o binary o in
-  let size_of_clr_runtime_header,o = Binary.u32o binary o in
-  let reserved = Binary.u64 binary o in
-  {export_table;size_of_export_table;import_table;size_of_import_table;resource_table;size_of_resource_table;exception_table;size_of_exception_table;certificate_table;size_of_certificate_table;base_relocation_table;size_of_base_relocation_table;debug;size_of_debug;architecture;size_of_architecture;global_ptr;size_of_global_ptr;tls_table;size_of_tls_table;load_config_table;size_of_load_config_table;bound_import;size_of_bound_import;import_address_table;size_of_import_address_table;delay_import_descriptor;size_of_delay_import_descriptor;clr_runtime_header;size_of_clr_runtime_header;reserved;}
-
 let get_header binary =
   let dos_header = get_dos_header binary 0 in
   let coff_header_offset = dos_header.pe_pointer in
@@ -343,30 +94,11 @@ let get_header binary =
   let optional_offset = sizeof_coff_header + coff_header_offset in
   let optional_header =
     if (coff_header.size_of_optional_header > 0) then
-      let standard_fields = get_standard_fields binary optional_offset in
-      let wf_offset = optional_offset + sizeof_standard_fields in
-      let windows_fields = get_windows_fields binary wf_offset in
-      let dd_offset = wf_offset + sizeof_windows_fields in
-      let data_directories = get_data_directories binary dd_offset in
-      Some {standard_fields; windows_fields; data_directories;}
+      Some (PEOptionalHeader.get binary optional_offset)
     else
       None
   in
   {dos_header; coff_header;optional_header;}
-
-(* this won't work, requires a constructed header
-   but we don't know which header to construct yet *)
-let is_32 header =
-  match header.optional_header with
-  | Some header ->
-     header.standard_fields.magic = 0x10B
-  | None -> false
-
-let is_64 header =
-  match header.optional_header with
-  | Some header ->
-     header.standard_fields.magic = 0x20B
-  | None -> false
 
 let csrss_header = get_header @@ list_to_bytes [0x4d; 0x5a; 0x90; 0x00; 0x03; 0x00; 0x00; 0x00; 0x04; 0x00; 0x00; 0x00; 0xff; 0xff; 0x00; 0x00;
 0xb8; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x40; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00; 0x00;

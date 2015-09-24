@@ -1,4 +1,5 @@
 open PEHeader
+open PEDataDirectories
 
 let debug = false
 
@@ -171,8 +172,8 @@ type synthetic_import_directory_entry = {
   }
 
 let pp_synthetic_import_directory_entry ppf entry =
-  Format.fprintf ppf 
-    "@[@[<v>%s@ @]@[<v 2>@ %a@ lookup_table:@ @[%a@]@ address_table:@ @[%a@]@]@]"
+  Format.fprintf ppf
+    "@[@[<v>%s@ @]@[<v 2>@ %a@ lookup_table:@ @[%a@]@ address_table:@ @[%a@]@ @]@]"
     entry._name
     pp_import_directory_entry entry.import_directory_entry
     pp_import_lookup_table entry._import_lookup_table
@@ -183,14 +184,8 @@ let sizeof_import_directory_entry = 20 (* bytes *)
 type import_directory_table = synthetic_import_directory_entry list
 
 let pp_import_directory_table ppf table =
-  Format.fprintf ppf "Import Data:";
-  match table with
-  | [] -> Format.fprintf ppf "@[No Import Data@]"
-  | x::[] -> Format.fprintf ppf "@[<v 2>%a@]" pp_synthetic_import_directory_entry x
-  | x::xs ->
-    Format.fprintf ppf "@[<v 2>@, %a@ " pp_synthetic_import_directory_entry x;
-    List.iter (fun x -> Format.fprintf ppf "@, %a@ " pp_synthetic_import_directory_entry x) xs;
-    Format.fprintf ppf "@]"
+  RdrUtils.Printer.pp_seq 
+    ppf pp_synthetic_import_directory_entry table
 
 let get_import_directory_entry binary offset :import_directory_entry =
   let import_lookup_table_rva,o = Binary.u32o binary offset in
@@ -269,8 +264,8 @@ let print_import_data data =
   pp_import_data Format.std_formatter data;
   Format.print_newline()
 
-let get binary data_directories sections =
-  let import_directory_table_rva = data_directories.import_table in
+let get binary dd sections =
+  let import_directory_table_rva = dd.virtual_address in
   let import_directory_table_offset =
     try PEUtils.find_offset import_directory_table_rva sections with
     | Not_found -> 0
