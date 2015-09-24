@@ -1,9 +1,10 @@
 # OASIS_START
-# DO NOT EDIT (digest: e93d6fd95d53dfc93eab879f82f97465)
+# DO NOT EDIT (digest: ce24dc89c5ac84c2d6a3a945d434939d)
 Elf
 ElfHeader
 ElfProgramHeader
 ElfSectionHeader
+ElfVersion
 ElfConstants
 ElfDynamic
 ElfReloc

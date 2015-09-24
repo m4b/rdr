@@ -140,7 +140,8 @@ let build ~verbose:verbose ~graph:graph ~libs:libstack =
         RdrGraph.graph_lib_dependencies ~use_dot_storage:true lib_deps;
 	if (graph) then
 	  RdrGraph.graph_library_dependencies
-            ~use_sfdp:(RdrCommand.is_linux()) ~use_dot_storage:true
+            ~use_sfdp:(RdrCommand.is_linux()) ~use_dot_storage:true;
+        map
       end
     else
       let library = Stack.pop libstack in

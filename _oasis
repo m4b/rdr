@@ -86,6 +86,7 @@ Library "elf"
    ElfHeader,
    ElfProgramHeader,
    ElfSectionHeader,
+   ElfVersion,
    ElfConstants,
    ElfDynamic,
    ElfReloc,
