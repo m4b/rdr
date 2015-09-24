@@ -49,7 +49,7 @@ let print binary =
   Printf.printf "%s" @@ binary_to_string binary;
   ByteCoverage.print binary.byte_coverage
 
-let get binary =
+let get ?coverage:(coverage=true) binary =
   let size = Bytes.length binary in
   let header = Header.get_mach_header binary in
   let load_commands = LoadCommand.get_load_commands binary
@@ -93,11 +93,16 @@ let get binary =
   let nexports = List.length exports in
   let nlibraries = Array.length libraries in
   let raw_code = Bytes.empty in
-  (* TODO: add bytecoverage computer *)
+  let byte_coverage =
+    if (coverage) then
+      Coverage.compute header load_commands size binary
+    else
+      ByteCoverage.null
+  in
   {
     header; load_commands; name; nlist; nnlist;
     imports; nimports; exports; nexports;
     is_lib; libraries; nlibraries; raw_code; size;
-    byte_coverage = Coverage.compute header load_commands size binary;
+    byte_coverage;
     entry;
   }

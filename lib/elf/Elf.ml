@@ -28,7 +28,7 @@ type t = {
   raw_code: bytes;              (* list *)
 }
 
-let get ?meta_only:(meta_only=false) binary =
+let get ?coverage:(coverage=true) ?meta_only:(meta_only=false) binary =
   let header = Header.get_elf_header64 binary in
   let entry = Int64.of_int header.Header.e_entry in
   let is_64 = Header.is_64bit header.Header.e_ident in
@@ -103,7 +103,10 @@ let get ?meta_only:(meta_only=false) binary =
   in
   if (debug) then Reloc.print_relocs64 relocations;
   let byte_coverage =
+    if (coverage) then
       ElfCoverage.compute_byte_coverage header program_headers section_headers size binary
+    else
+      ByteCoverage.null
   in
   (* TODO: fix *)
   let raw_code = if (meta_only) then

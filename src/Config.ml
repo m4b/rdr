@@ -31,6 +31,8 @@ type t =
     graph: bool;		(* -g *)
     filename: string;		(* anonarg *)
     search_term: string; 	(* -f *)
-    print_goblin: bool		(* -G *)
+    print_goblin: bool;		(* -G *)
+    transitive_closure_filter: string list;		(* -t *)
+    compute_transitive_closure: bool;
   }
 

@@ -147,14 +147,14 @@ let build ~verbose:verbose ~graph:graph ~libs:libstack =
       let library = Stack.pop libstack in
       let binary =
         try
-          match RdrObject.get ~verbose:verbose library with
+          match RdrObject.get ~verbose:false library with
           | RdrObject.Mach binary ->
-             Some (Mach.get binary |> Goblin.Mach.from library)
+             Some (Mach.get ~coverage:false binary |> Goblin.Mach.from library)
           | RdrObject.Elf binary ->
-             let elf = Elf.get binary in
+             let elf = Elf.get ~coverage:false binary in
              Some (Goblin.Elf.from ~use_tree:false library elf)
           | RdrObject.PE32 binary ->
-             Some (PE.get binary |> Goblin.PE.from library)
+             Some (PE.get ~coverage:false binary |> Goblin.PE.from library)
           | RdrObject.Unknown (lib,error) ->
              None
         with _ ->

@@ -118,7 +118,7 @@ let resolve_import ~case_sensitive:sensitive (branches: branch list) libraries =
         | library::[] -> library
         | library::libraries ->
           Printf.sprintf
-            "Multiple Libraries Resolved\nThis is extremely dangerous, have fun!\n%s"
+            "Multiple Libraries Resolved\n%s"
           @@ Generics.list_to_string acc
       end
     | branch::branches ->

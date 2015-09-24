@@ -151,6 +151,9 @@ module Mach = struct
       let code = mach.Mach.raw_code in
       {name; install_name; islib; libs; nlibs;
        exports; nexports; imports; nimports; code}
+
+   let to_goblin ~coverage filename binary =
+      Mach.get ~coverage binary |> from filename
   end
 
 module Elf = struct
@@ -271,6 +274,10 @@ module Elf = struct
       {name;
        install_name; islib; libs; nlibs; exports; nexports;
        imports; nimports; code}
+
+    let to_goblin ~coverage ~use_tree filename binary =
+      Elf.get ~coverage binary |> from ~use_tree filename
+
   end
 
 module PE = struct
@@ -316,5 +323,8 @@ module PE = struct
         nexports = pe.nexports;
         code = Bytes.empty;
       }
+
+    let to_goblin ~coverage filename binary =
+      PE.get ~coverage binary |> from filename
   end
 

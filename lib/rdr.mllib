@@ -1,7 +1,8 @@
 # OASIS_START
-# DO NOT EDIT (digest: 1fef23d45c93f54f6b3b4791b6fbc2b1)
+# DO NOT EDIT (digest: 6c6005368c46496f7179297b41c075a2)
 Rdr
 RdrObject
 RdrGraph
 SymbolMap
+TransitiveClosure
 # OASIS_STOP

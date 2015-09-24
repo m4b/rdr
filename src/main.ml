@@ -35,6 +35,7 @@ let recursive = ref false
 let write_symbols = ref false
 let marshal_symbols = ref false
 let print_nlist = ref false
+let transitive_closure_filter = ref []
 let base_symbol_map_directories = ref ["/usr/lib/"]
 let framework_directories = ref []
 let anonarg = ref ""
@@ -65,6 +66,7 @@ let get_config () =
       !anonarg
   in
   let name = Filename.basename install_name in
+  let compute_transitive_closure = !transitive_closure_filter <> [] in
   {
     Config.analyze;
     name;
@@ -94,6 +96,8 @@ let get_config () =
     filename = !anonarg; 	(* TODO: this should be Filename.basename, but unchanged for now *)
     search_term = !search_term_string;
     print_goblin = !print_goblin;
+    transitive_closure_filter = !transitive_closure_filter;
+    compute_transitive_closure;
   } 
     
 let set_base_symbol_map_directories dir_string =
@@ -113,6 +117,12 @@ let set_framework_directories dir_string =
   | _ ->
      (* Printf.printf "setting framework dirs: %s\n" @@ Generics.list_to_string dirs; *)
      framework_directories := dirs
+
+let set_string_list slistref string =
+  let slist = Str.split (Str.regexp "[ :]+") string |> List.map String.trim in
+  match slist with
+  | [] -> ()
+  | _ -> slistref := slist
 
 let set_anon_argument string =
   anonarg := string
@@ -301,7 +311,8 @@ let main =
      ("--dis", Arg.Set disassemble, "Disassemble found symbol(s)");
      ("--do", Arg.Int (fun i -> disassemble_offset := i), "(Experimental) Disassemble at offset");
      ("--sections", Arg.Set print_sections, "Print the sections: sections headers for elf; segments for mach; section tables for PE");
-     ("--scan", Arg.String (fun s -> scan_bytes := s), "(Experimental) Scan the binary for a byte sequence.");     
+     ("--scan", Arg.String (fun s -> scan_bytes := s), "(Experimental) Scan the binary for a byte sequence.");
+     ("-t", Arg.String (set_string_list transitive_closure_filter), "(Experimental) Compute the transitive closure for the given target libraries.");
     ] in
   let usage_msg = "usage: rdr [-r] [-b] [-m] [-d] [-G] [-g --goblin] [-v | -l | -e | -i] [<path_to_binary>]\noptions:" in
   Arg.parse speclist set_anon_argument usage_msg;
@@ -314,13 +325,22 @@ let main =
     (* BEGIN program init *)  
     Rdr.Utils.Storage.create_dot_directory (); (* make our .rdr/ if we haven't already *)
   let config = get_config () in
+  let ppf = Format.std_formatter in
   if (!disassemble_offset <> 0) then
     Rdr.Utils.Command.disassemble config.filename !disassemble_offset 100
+  else if (config.compute_transitive_closure) then
+    begin
+      let solution =
+        Rdr.TransitiveClosure.compute
+          config.filename config.transitive_closure_filter
+      in
+      Rdr.TransitiveClosure.print solution;
+      exit 0
+    end
   else if (!scan_bytes <> "") then
     begin
       let bytes = to_bytes !scan_bytes in
       let matches = find_byte_sequence bytes config.install_name in
-      let ppf = Format.std_formatter in
       Format.fprintf ppf "@[<v 2>";
       Rdr.Utils.Printer.pp_seq ppf Rdr.Utils.Printer.pp_hex matches;
       Format.fprintf ppf "@]@.";

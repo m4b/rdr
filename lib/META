@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: aa2626bcb6c68a46ca94ec8f72308dcf)
+# DO NOT EDIT (digest: 127233ddbb59488f5dacd5adbca956b4)
 version = "3.0.0"
 description =
 "Lightweight, cross platform binary parsing and analysis library"
@@ -13,7 +13,7 @@ package "utils" (
  version = "3.0.0"
  description =
  "Lightweight, cross platform binary parsing and analysis library"
- requires = "unix"
+ requires = "unix str"
  archive(byte) = "utils.cma"
  archive(byte, plugin) = "utils.cma"
  archive(native) = "utils.cmxa"

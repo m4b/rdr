@@ -101,3 +101,14 @@ let get ?verbose:(verbose=false) filename =
 	  Printf.printf "ignoring binary: %s\n" filename;
 	Unknown (filename, (Printf.sprintf "unknown magic number 0x%x"  magic))
       end
+
+let try_goblin ~coverage filename =
+  match get filename with
+  | Elf binary ->
+    Goblin.Elf.to_goblin ~coverage ~use_tree:true filename binary
+  | Mach binary ->
+    Goblin.Mach.to_goblin ~coverage filename binary
+  | PE32 binary ->
+    Goblin.PE.to_goblin ~coverage filename binary
+  | Unknown (_,error) -> raise @@
+    Failure (Printf.sprintf "<Rdr.Object.try_goblin> %s failed with %s" filename error)

@@ -5,3 +5,4 @@ module Utils = RdrUtils
 module Object = RdrObject
 module Map = SymbolMap
 module Graph = RdrGraph
+module TransitiveClosure = TransitiveClosure

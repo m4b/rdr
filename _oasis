@@ -22,7 +22,7 @@ Description:`rdr` is an OCaml tool/library for doing cross-platform analysis of 
 
              Features:
 
-             * 64-bit Linux and Mach-o binary analysis
+             * 64-bit Linux, Mach-o, 32-bit PE binary analysis
              * Searchable symbol-map of all the symbols on your system, including binary
                offset, size, and exporting library
              * Print imports and exports of binaries
@@ -37,7 +37,7 @@ Library "utils"
   FindLibParent: rdr  
   FindLibName: utils
   CompiledObject: best
-  BuildDepends: unix
+  BuildDepends: unix, str
   Modules:
     RdrUtils,
     Binary,
@@ -144,7 +144,8 @@ Library "rdr"
     Rdr,
     RdrObject,
     RdrGraph,
-    SymbolMap
+    SymbolMap,
+    TransitiveClosure
   BuildDepends:
    rdr.goblin,
    rdr.utils,
