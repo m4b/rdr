@@ -2,6 +2,8 @@ open Goblin
 open Goblin.Import
 open RdrUtils.Printer
 
+let debug = false
+
 (* TODO:
  * add stats
  * add graphing ?
@@ -19,7 +21,7 @@ real	0m0.148s
 user	0m0.099s
 sys	0m0.044s
 *)
-let debug = false
+
 
 type transitive_symbol = {
   name: string;
@@ -126,6 +128,8 @@ let rec close_libraries set visited filter libs =
         | Some goblin ->
           let set = add_s set filter goblin.imports in
           if (debug) then begin
+              Format.fprintf Format.std_formatter "@ New Set(%d)@ " (S.cardinal set);
+              pp_set ppf set;
             Format.fprintf Format.std_formatter "@ Scanning %s's libaries:@ " (Filename.basename lib);
             Format.open_vbox 2;
             Format.print_space();
@@ -164,14 +168,15 @@ type t = {
 }
 
 let pp ppf t =
-  Format.fprintf ppf "@[@[<v 2>Transitive Closure filter@ ";
+  Format.fprintf ppf "@[<v>";
+  Format.fprintf ppf "@ @[<v 2>Transitive Closure filter@ ";
   pp_slist ppf t.filter;
   Format.fprintf ppf "@]";
-  Format.fprintf ppf "@[<v 2>Symbols@ ";
-  RdrUtils.Printer.pp_slist ppf t.symbols;
-  Format.fprintf ppf "@]";
-  Format.fprintf ppf "@[<v 2>Transitive Library Dependencies@ ";
+  Format.fprintf ppf "@ @[<v 2>Transitive Library Dependencies@ ";
   RdrUtils.Printer.pp_slist ppf t.transitive_library_dependencies;
+  Format.fprintf ppf "@]";
+  Format.fprintf ppf "@ @[<v 2>Symbols@ ";
+  RdrUtils.Printer.pp_slist ppf t.symbols;
   Format.fprintf ppf "@]@]@."
 
 let print t =
@@ -180,15 +185,17 @@ let print t =
 (* TODO: do not need to scan the goblin's libraries, just the set of libraries created from every import's exporting library *)
 let compute filename filter =
   let goblin = RdrObject.try_goblin ~coverage:false filename in
-  let set = Array.fold_left (fun acc import ->
-      if (List.mem import.lib filter) then
-        let name = import.name in
-        (*         let providers = [import.lib] in *)
-        S.add name acc
-        (*         S.add {name; providers} acc *)
-      else
-        acc
-    ) S.empty goblin.imports
+  let set =
+    Array.fold_left
+      (fun acc (import:Goblin.Import.t) ->
+       if (List.mem import.lib filter) then
+         let name = import.name in
+         (*         let providers = [import.lib] in *)
+         S.add name acc
+               (*         S.add {name; providers} acc *)
+       else
+         acc
+      ) S.empty goblin.imports
   in
   let symbols,transitive_library_dependencies =
     close_libraries set S.empty filter goblin.libs
