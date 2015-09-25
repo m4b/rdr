@@ -169,20 +169,20 @@ type t = {
 
 let pp ppf t =
   Format.fprintf ppf "@[<v>";
-  Format.fprintf ppf "@ @[<v 2>Transitive Closure filter@ ";
+  Format.fprintf ppf "@ @[<v 2>Transitive Closure Filter (%d)@ " (List.length t.filter);
   pp_slist ppf t.filter;
   Format.fprintf ppf "@]";
-  Format.fprintf ppf "@ @[<v 2>Transitive Library Dependencies@ ";
+  Format.fprintf ppf "@ @[<v 2>Transitive Library Dependencies (%d)@ " (List.length t.transitive_library_dependencies);
   RdrUtils.Printer.pp_slist ppf t.transitive_library_dependencies;
   Format.fprintf ppf "@]";
-  Format.fprintf ppf "@ @[<v 2>Symbols@ ";
+  Format.fprintf ppf "@ @[<v 2>Symbols (%d)@ " (List.length t.symbols);
   RdrUtils.Printer.pp_slist ppf t.symbols;
   Format.fprintf ppf "@]@]@."
 
 let print t =
   pp Format.std_formatter t
 
-(* TODO: do not need to scan the goblin's libraries, just the set of libraries created from every import's exporting library *)
+(* TODO: do not need to scan the goblin's libraries (in case they added libraries that aren't needed), just the set of libraries created from every import's exporting library *)
 let compute filename filter =
   let goblin = RdrObject.try_goblin ~coverage:false filename in
   let set =
