@@ -138,7 +138,9 @@ let pp ppf t =
               "@ ClrRuntimeHeader: 0x%x@ SizeOfClrRuntimeHeader: 0x%x@ " 
               dd.virtual_address dd.size
           | i when i = 15 ->
-            ()          
+            Format.fprintf ppf
+              "@ Reserved: 0x%x@ SizeOfReserved: 0x%x@ " 
+              dd.virtual_address dd.size
           | _ ->
             ()
         ) t;
