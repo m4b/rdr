@@ -176,6 +176,7 @@ let print_export_data data =
 
 let get binary dd section_tables =
   let export_rva = dd.virtual_address in
+  Printf.printf "0x%x \n" export_rva; flush stdout;
   let export_offset =
     PEUtils.find_offset export_rva section_tables
   in
@@ -327,6 +328,7 @@ let compute_size exports =
   in loop [] exports
 
 let get_exports binary export_data sections :t =
+
   let pointers = export_data.export_name_pointer_table in
   let addresses = export_data.export_address_table in
   let ordinals = export_data.export_ordinal_table in

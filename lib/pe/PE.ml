@@ -1,3 +1,5 @@
+let debug = true
+
 open Binary
 
 module Header = PEHeader
@@ -78,7 +80,9 @@ let print_header_stub t =
 let get ?coverage:(coverage=true) binary =
   let size = Bytes.length binary in
   let header = Header.get_header binary in
+  (*   Header.print header; flush stdout; *)
   let section_tables = SectionTable.get binary header in
+  (*   SectionTable.print section_tables; flush stdout; *)
   let is_lib =
     Characteristic.is_dll header.coff_header.characteristics
   in
@@ -92,6 +96,8 @@ let get ?coverage:(coverage=true) binary =
             headers.data_directories
         with
         | None ->
+          None,"",[]
+        | Some dd when dd.PEDataDirectories.virtual_address = 0x0 ->
           None,"",[]
         | Some dd ->
           let export_data =
@@ -110,6 +116,8 @@ let get ?coverage:(coverage=true) binary =
             headers.data_directories
         with
         | None ->
+          None,[],[]
+        | Some dd when dd.PEDataDirectories.virtual_address = 0x0 ->
           None,[],[]
         | Some dd ->
           let import_data = PEImport.get
