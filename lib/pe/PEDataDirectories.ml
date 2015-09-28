@@ -135,7 +135,7 @@ let pp ppf t =
               dd.virtual_address dd.size
           | i when i = 14 ->
             Format.fprintf ppf
-              "@ ClrRuntimeHeader: 0x%x@ SizeOfClrRuntimeHeader: 0x%x@ " 
+              "@ ClrRuntimeHeader: 0x%x@ SizeOfClrRuntimeHeader: 0x%x"
               dd.virtual_address dd.size
           | i when i = 15 ->
             Format.fprintf ppf
