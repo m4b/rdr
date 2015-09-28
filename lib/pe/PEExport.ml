@@ -176,7 +176,6 @@ let print_export_data data =
 
 let get binary dd section_tables =
   let export_rva = dd.virtual_address in
-  Printf.printf "0x%x \n" export_rva; flush stdout;
   let export_offset =
     PEUtils.find_offset export_rva section_tables
   in
