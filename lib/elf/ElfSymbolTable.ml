@@ -235,3 +235,22 @@ let sort symbols =
        a.st_value
        b.st_value
     ) symbols
+
+let is_local symbol =
+  (get_bind symbol.st_info) = 0 (* local *)
+
+let is_import symbol =
+  symbol.st_value = 0x0
+      && symbol.st_shndx = 0
+      && symbol.name <> "" (* ignore first \0 symbol *)
+
+let is_export symbol =
+  let bind = get_bind symbol.st_info in
+  let t = get_type symbol.st_info in
+  (bind = 1 (* global *) || (bind = 2 (* weak *) &&
+                (t = 1 (* func *)
+		 || t = 10 (* gnu_ifunc *)
+		 || t = 2 ))) (* object *)
+  && symbol.st_value <> 0
+
+let is_ifunc symbol = (get_bind symbol.st_info) = 10

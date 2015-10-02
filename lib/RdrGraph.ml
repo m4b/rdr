@@ -1,17 +1,5 @@
 open Binary
-open MachImports
-open MachExports
 module Utils = RdrUtils
-
-(* 
-digraph structs { 
-node [shape=plaintext] 
-struct1 [label=< 
-<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0"> 
-<TR>
-<TD>left</TD><TD PORT="f1">mid dle</TD><TD PORT="f2">right</TD>
-</TR> </TABLE>>]; struct2 [label=< <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0"> <TR><TD PORT="f0">one</TD><TD>two</TD></TR> </TABLE>>]; struct3 [label=< <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4"> <TR> <TD ROWSPAN="3">hello<BR/>world</TD> <TD COLSPAN="3">b</TD> <TD ROWSPAN="3">g</TD> <TD ROWSPAN="3">h</TD> </TR> <TR> <TD>c</TD><TD PORT="here">d</TD><TD>e</TD> </TR> <TR> <TD COLSPAN="3">f</TD> </TR> </TABLE>>]; struct1:f1 -> struct2:f0; struct1:f2 -> struct3:here; }
- *)
 
 (* helper functions to avoid syntax errors in dot *)
 let to_dot_name = 
@@ -51,7 +39,6 @@ let get_html_exports_header name fullname nexports =
 let html_footer = "  </TABLE>\n>];\n"
 
 (* libs *)
-
 let get_html_libs_header name fullname nlibs = 
   (* multiline strings whitespace significant *)
   Printf.sprintf "
@@ -81,17 +68,18 @@ let get_html_imports_header name fullname nimports =
    </TR>
 " name fullname nimports
 
+(* 
 let get_html_import_row name import = 
-  let is_lazy = Goblin.Mach.Imports.is_lazy import in
-  let name = Goblin.Mach.Imports.import_name import in
-  let lib = Goblin.Mach.Imports.import_lib import in
+  let is_lazy = Goblin.Import. import in
+  let name = Goblin.Imports.import_name import in
+  let lib = Goblin.Imports.import_lib import in
   let color = if (is_lazy) then "#e0ffda" else "#ffffff" in
   Printf.sprintf "   <TR>
     <TD BGCOLOR=\"%s\" PORT=\"%s\">%s</TD><TD BGCOLOR=\"%s\">%s</TD>
    </TR>
 " color name name color lib
 (* end *)
-
+ *)
 (*
 let get_html_export_row symbol_name export libraries =
   (*   let size = try Goblin.Symbol.find_symbol_size export |> Printf.sprintf "%d" with Not_found -> "" in *)
@@ -263,6 +251,7 @@ let add_brs libstring =
   (* first replace hack to ignore the first newline; this whole thing is a hack ;) *)
   Str.replace_first _newline_re "" libstring |> Str.global_replace _newline_re _sub
 
+(* TODO: check if reexport *)
 let get_goblin_html_export_row export =
     Printf.sprintf "   <TR>
     <TD PORT=\"%s\">%s</TD><TD>%d</TD><TD>0x%x</TD>

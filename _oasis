@@ -124,10 +124,8 @@ Library "goblin"
   CompiledObject: best
   Modules:
     Goblin,
-    GoblinSymbol,
     GoblinExport,
     GoblinImport,
-    GoblinMach,
     GoblinTree
   BuildDepends:
     rdr.utils,

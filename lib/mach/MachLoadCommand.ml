@@ -83,16 +83,12 @@ let load_command_to_string lc =
       lc.name.str
 
   | LC_ID_DYLIB lc
-  | LC_LOAD_UPWARD_DYLIB lc 
-  | LC_LAZY_LOAD_DYLIB lc 
+  | LC_LOAD_UPWARD_DYLIB lc
+  | LC_LAZY_LOAD_DYLIB lc
   | LC_LOAD_WEAK_DYLIB lc
   | LC_LOAD_DYLIB lc
-  | LC_REEXPORT_DYLIB lc -> 
-    (* short version
-       Printf.sprintf "\n\t%s"
-       lc.dylib.name.str
-    *)
-    Printf.sprintf "\n\tname: %s timestamp: %u current_version: %u compatibility_version: %u"
+  | LC_REEXPORT_DYLIB lc ->
+    Printf.sprintf "\n\tname: %s\n\ttimestamp: %u current_version: %u compatibility_version: %u"
       lc.dylib.name.str
       lc.dylib.timestamp
       lc.dylib.current_version
