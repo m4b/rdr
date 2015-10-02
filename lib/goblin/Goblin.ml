@@ -1,5 +1,6 @@
 (* TODO:
  * PE: implement is lazy, implement offset
+ * ELF: lookup the ifunc, or exclude from reexport
  *)
 
 (*
@@ -24,7 +25,6 @@
 
 module StringMap = Map.Make(String)
 
-module Symbol = GoblinSymbol
 module Import = GoblinImport
 module Export = GoblinExport
 module Tree = GoblinTree
@@ -100,8 +100,6 @@ let print goblin =
   pp Format.std_formatter goblin; Format.print_newline()
 
 module Mach = struct
-    (* remove this monstrosity of a file *)
-    include GoblinMach
     open MachImports
     open MachExports
 
@@ -112,6 +110,18 @@ module Mach = struct
         [||]
       else
         Array.sub libraries 1 (Array.length libraries - 1)
+
+    let get_reexport info =
+      match info with
+      | Regular _ | Stub _ -> None
+      | Reexport reex ->
+        begin
+          match reex.lib_symbol_name with
+          | Some rename ->
+            Some (GoblinExport.Rename (reex.lib,rename))
+          | None ->
+            Some (GoblinExport.From reex.lib)
+        end
 
     [@@invariant sorted, sizecomputed]
     let from install_name mach =
@@ -128,7 +138,8 @@ module Mach = struct
            let name = export.name in
            let size = export.size in
            let offset = export.offset in
-           {Export.name; size; offset}
+           let reexport = get_reexport export.info in
+           {Export.name; size; offset; reexport}
           ) mach.Mach.exports
         |> Array.of_list
       in
@@ -158,81 +169,52 @@ module Mach = struct
 
 module Elf = struct
     open Elf
-    (* todo use proper variants here ffs *)
-    let get_goblin_kind symbol bind stype =
-      if (symbol.Elf.SymbolTable.st_value = 0x0
-          && symbol.Elf.SymbolTable.st_shndx = 0
-          && symbol.Elf.SymbolTable.name <> "") (* ignore first \0 symbol *)
-      then
-        Symbol.Import
-      else if (bind = "LOCAL") then
-        Symbol.Local
-      else if ((bind = "GLOBAL"
-	        || (bind = "WEAK" && (stype = "FUNC"
-				      || stype = "IFUNC"
-				      || stype = "OBJECT")))
-	       && symbol.Elf.SymbolTable.st_value <> 0) then
-        Symbol.Export
-      else Symbol.Other
 
     let get_imports gtree libraries relocs symbols =
       List.fold_left
         (fun (acc,index) symbol ->
-         let bind =
-           Elf.SymbolTable.get_bind symbol.Elf.SymbolTable.st_info
-           |> Elf.SymbolTable.symbol_bind_to_string
-         in
-         let stype =
-           Elf.SymbolTable.get_type symbol.Elf.SymbolTable.st_info
-           |> Elf.SymbolTable.symbol_type_to_string
-         in
-         let kind = get_goblin_kind symbol bind stype in
-         match kind with
-         | Symbol.Import ->
-            let name = symbol.Elf.SymbolTable.name in
-            let offset =
-              if (symbol.Elf.SymbolTable.st_value = 0) then
-	        Elf.Reloc.get_size index relocs
-              else
-	        symbol.Elf.SymbolTable.st_value
-            in
-            let size = symbol.Elf.SymbolTable.st_size in
-            let lib = Tree.resolve_library ~case_sensitive:true ~name ~libraries ~tree:gtree in
-            let import =
-              {Import.name; lib;idx=0; is_lazy=true; offset; size}
-            in
-            (import::acc),(index+1)
-         | _ ->
-            acc,index+1
+           if (Elf.SymbolTable.is_import symbol) then
+             let name = symbol.Elf.SymbolTable.name in
+             let offset =
+               if (symbol.Elf.SymbolTable.st_value = 0) then
+	         Elf.Reloc.get_size index relocs
+               else
+	         symbol.Elf.SymbolTable.st_value
+             in
+             let size = symbol.Elf.SymbolTable.st_size in
+             let lib = Tree.resolve_library ~case_sensitive:true ~name ~libraries ~tree:gtree in
+             let import =
+               {Import.name; lib;idx=0; is_lazy=true; offset; size}
+             in
+             (import::acc),(index+1)
+           else
+             acc,index+1
         ) ([],0) symbols |> fst |> List.rev
 
-    let get_exports relocs symbols =
+    let get_reexport soname symbol =
+      if (Elf.SymbolTable.is_ifunc symbol) then
+        Some (GoblinExport.From soname)
+      else
+        None
+
+    let get_exports soname relocs symbols =
       List.fold_left
         (fun (acc,index) symbol ->
-         let bind =
-           Elf.SymbolTable.get_bind symbol.Elf.SymbolTable.st_info
-           |> Elf.SymbolTable.symbol_bind_to_string
-         in
-         let stype =
-           Elf.SymbolTable.get_type symbol.Elf.SymbolTable.st_info
-           |> Elf.SymbolTable.symbol_type_to_string
-         in
-         let kind = get_goblin_kind symbol bind stype in
-         match kind with
-         | Symbol.Export ->
-            let name = symbol.Elf.SymbolTable.name in
-            let offset =
-              if (symbol.Elf.SymbolTable.st_value = 0) then
-	        (* this _could_ be relatively expensive *)
-	        Elf.Reloc.get_size index relocs
-              else
-	        symbol.Elf.SymbolTable.st_value
-            in
-            let size = symbol.Elf.SymbolTable.st_size in
-            let export = {Export.name; offset; size} in
-            (export::acc),(index+1)
-         | _ ->
-            acc,index+1
+           if (Elf.SymbolTable.is_export symbol) then
+             let name = symbol.Elf.SymbolTable.name in
+             let offset =
+               if (symbol.Elf.SymbolTable.st_value = 0) then
+	         (* this _could_ be relatively expensive *)
+	         Elf.Reloc.get_size index relocs
+               else
+	         symbol.Elf.SymbolTable.st_value
+             in
+             let size = symbol.Elf.SymbolTable.st_size in
+             let reexport = get_reexport soname symbol in
+             let export = {Export.name; offset; size; reexport} in
+             (export::acc),(index+1)
+           else
+             acc,index+1
         ) ([],0) symbols |> fst |> List.rev
 
     let from ?use_tree:(use_tree=true) install_name elf =
@@ -250,7 +232,7 @@ module Elf = struct
            [||], [||]
         | symbols ->
            let exports =
-             Array.of_list @@ get_exports elf.relocations symbols
+             Array.of_list @@ get_exports name elf.relocations symbols
            in
            let gtree =
              if (use_tree) then
@@ -287,6 +269,22 @@ module PE = struct
     open GoblinImport
     open GoblinExport
 
+    let get_reexport name =
+      function
+      | Some reexport ->
+        begin
+          match reexport with
+          | DLLName (lib,rename) ->
+            if (rename = name) then
+              Some (GoblinExport.From lib)
+            else
+              Some (GoblinExport.Rename (lib,rename))
+          | DLLOrdinal (lib,ord) ->
+            let rename = Printf.sprintf "#%d" ord in
+            Some (GoblinExport.Rename (lib,rename))
+        end
+      | None -> None
+
     let from install_name (pe:PE.t) =
       let name =
         if (pe.name = "") then
@@ -306,8 +304,9 @@ module PE = struct
       let exports =
         List.map
           (fun (symbol:PE.Export.synthetic_export) ->
-           {name = symbol.name; offset = symbol.offset;
-            size = symbol.size}
+             let reexport = get_reexport symbol.name symbol.PE.Export.reexport in
+             {name = symbol.name; offset = symbol.offset;
+              size = symbol.size; reexport}
           )
           pe.exports |> Array.of_list
       in

@@ -6,6 +6,7 @@ let kDYLD_MACOSX_VERSION_10_7  = 0x000A0700
 let kDYLD_MACOSX_VERSION_10_8  = 0x000A0800
 let kDYLD_MACOSX_VERSION_10_9  = 0x000A0900
 let kDYLD_MACOSX_VERSION_10_10 = 0x000A0A00
+let kDYLD_MACOSX_VERSION_10_11 = 0x000A0B00
 
 let kDYLD_IOS_VERSION_2_0 =  0x00020000
 let kDYLD_IOS_VERSION_2_1 =  0x00020100
@@ -24,6 +25,7 @@ let kDYLD_IOS_VERSION_6_1 =  0x00060100
 let kDYLD_IOS_VERSION_7_0 =  0x00070000
 let kDYLD_IOS_VERSION_7_1 =  0x00070100
 let kDYLD_IOS_VERSION_8_0 =  0x00080000
+let kDYLD_IOS_VERSION_9_0 =  0x00090000
 
 let osx_version_to_string version = 
   match version with
@@ -34,6 +36,7 @@ let osx_version_to_string version =
   | 0x000A0800 -> "DYLD_MACOSX_VERSION_10_8"
   | 0x000A0900 -> "DYLD_MACOSX_VERSION_10_9"
   | 0x000A0A00 -> "DYLD_MACOSX_VERSION_10_10"
+  | 0x000A0B00 -> "DYLD_MACOSX_VERSION_10_11"
   | _ -> "UNKNOWN OSX VERSION"
 
 let ios_version_to_string version =
@@ -55,6 +58,7 @@ let ios_version_to_string version =
   | 0x00070000 -> "DYLD_IOS_VERSION_7_0"
   | 0x00070100 -> "DYLD_IOS_VERSION_7_1"
   | 0x00080000 -> "DYLD_IOS_VERSION_8_0"
+  | 0x00090000 -> "DYLD_IOS_VERSION_9_0"
   | _ -> "UNKNOWN IOS VERSION"
 
 (* LC_VERSION_MIN_MACOSX or LC_VERSION_MIN_IPHONEOS *)
@@ -68,6 +72,7 @@ let version_to_string version =
   | 0x000A0800 -> "OSX 10.8"
   | 0x000A0900 -> "OSX 10.9"
   | 0x000A0A00 -> "OSX 10.10"
+  | 0x000A0B00 -> "OSX 10.11"
   (* ios ... because numbers (smartly) don't conflict *)
   | 0x00020000 -> "iOS 2.0"
   | 0x00020100 -> "iOS 2.1"
@@ -86,4 +91,5 @@ let version_to_string version =
   | 0x00070000 -> "iOS 7.0"
   | 0x00070100 -> "iOS 7.1"
   | 0x00080000 -> "iOS 8.0"
+  | 0x00090000 -> "iOS 9.0"
   | _ -> "UNKNOWN VERSION"
