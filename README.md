@@ -75,7 +75,7 @@ Some examples:
 
 * `rdr -v` - prints the version
 * `rdr -h` - prints a help menu
-* `rdr -h /usr/lib/libc.so.6` - prints the program headers, bookkeeping data, and other beaurocratic aspects of binaries specific to the format your analyzing
+* `rdr -h /usr/lib/libc.so.6` - prints the program headers, bookkeeping data, and other bureaucratic aspects of binaries specific to the format your analyzing
 * `rdr -f printf /usr/lib/libc.so.6` - searches the `libc.so.6` binary for an exported symbol named _exactly_ "printf", and if found, prints its binary offset and size (in bytes).  _Watch out for_ `_` prefixed symbols in mach and compiler private symbols in ELF. Definitely watch out for funny (`$`) symbols, like in mach-o Objective C binaries; you'll need to quote the symbol name to escape them, otherwise bash gets mad.  Future: regexp multiple returns, and searching imports as well.
 * `rdr -D -f printf /usr/lib/libc.so.6` - disassembles the printf symbol if it's found.
 * `rdr -l /usr/lib/libc.so.6` - lists the dynamic libraries `libc.so.6` _explicitly_ depends on (I'm looking at _you_ `dlsym`).
