@@ -7,6 +7,7 @@ module Types = MachLoadCommandTypes
 
 open MachLoadCommandTypes
 open MachLoadCommandMacro
+open MachThread64
 
 type t = lc list
 
@@ -34,7 +35,7 @@ let load_command_to_string lc =
   Printf.sprintf "%s (0x%x) %d %s" (cmd_to_string lc.cmd) (cmd_to_int lc.cmd) lc.cmdsize @@
   match lc.t with
   | LC_SEGMENT_64 lc ->
-     show_segment_64 lc
+    show_segment_64 lc
   | LC_SYMTAB lc ->
     Printf.sprintf "\n\tsymoff: 0x%x nsyms: %u stroff: 0x%x strsize: %u"
       lc.symoff 
@@ -100,7 +101,16 @@ let load_command_to_string lc =
 
   | LC_MAIN lc ->
     Printf.sprintf "\n\toffset: 0x%x stacksize: 0x%x" lc.entryoff lc.stacksize
-
+  | LC_UNIXTHREAD lc | LC_THREAD lc ->
+    begin
+      match lc.thread_state with
+      | MachThread64.Unimplemented header ->
+        Printf.sprintf "\n\tflavor: %s count: %d" (MachThread64.show_flavor header.flavor) header.count
+      | MachThread64.X86_64 thread ->
+        Printf.sprintf "\n\tflavor: %s count: %d"
+          (MachThread64.show_flavor thread.header.flavor)
+          thread.header.count
+    end
   | lc ->
     ""
 
@@ -177,6 +187,18 @@ let rec get_entry (lcs:Types.lc list) =
       match lc.t with
       | LC_MAIN t ->
         t.entryoff
+      | _ ->
+        get_entry lcs
+    else if (lc.cmd = LC_THREAD || lc.cmd = LC_UNIXTHREAD) then
+      match lc.t with
+      | LC_THREAD t | LC_UNIXTHREAD t ->
+        begin
+          match t.thread_state with
+          | MachThread64.X86_64 thread ->
+            MachThread64.get_entry thread
+          | _ ->
+            get_entry lcs
+        end
       | _ ->
         get_entry lcs
     else

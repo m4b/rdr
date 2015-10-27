@@ -1,48 +1,48 @@
 let debug = false
 
 (* legacy, non-offset producing versions, eventually swap out when generating binary structs/records *)
-let u64 binary offset = 
+let u64 binary offset =
   let res = ref (Char.code @@ Bytes.get binary offset) in
   for i = 1 to 7 do
         res := !res lor (Char.code (Bytes.get binary (i + offset)) lsl (i * 8)); (* ugh-life *)
   done;
   !res
 
-let u32 binary offset = 
+let u32 binary offset =
   let res = ref (Char.code @@ Bytes.get binary offset) in
   for i = 1 to 3 do
         res := !res lor (Char.code (Bytes.get binary (i + offset)) lsl (i * 8)); (* ugh-life *)
   done;
   !res
 
-let u16 binary offset = 
+let u16 binary offset =
   let one = Char.code @@ Bytes.get binary offset in
   one lor (Char.code (Bytes.get binary (1 + offset)) lsl 8)
 
-let u8 binary offset = 
+let u8 binary offset =
   Char.code @@ Bytes.get binary offset
 
 (* TODO: SWAP THIS WITH ABOVE TO BREAK EVERYTHING AND FORCE OFFSET CODE MIGRATION *)
 (* offset producing version *)
-let u64o binary offset = 
+let u64o binary offset =
   let res = ref (Char.code @@ Bytes.get binary offset) in
   for i = 1 to 7 do
         res := !res lor (Char.code (Bytes.get binary (i + offset)) lsl (i * 8)); (* ugh-life *)
   done;
   !res,(8+offset)
 
-let u32o binary offset = 
+let u32o binary offset =
   let res = ref (Char.code @@ Bytes.get binary offset) in
   for i = 1 to 3 do
         res := !res lor (Char.code (Bytes.get binary (i + offset)) lsl (i * 8)); (* ugh-life *)
   done;
   !res,(offset+4)
 
-let u16o binary offset = 
+let u16o binary offset =
   let one = Char.code @@ Bytes.get binary offset in
   (one lor (Char.code (Bytes.get binary (1 + offset)) lsl 8)), (offset+2)
 
-let u8o binary offset = 
+let u8o binary offset =
   (Char.code @@ Bytes.get binary offset),(offset+1)
 
 (* strings and printing *)
@@ -83,11 +83,11 @@ let stringo binary ?num_bytes:(count=0) ?max:(max=0) offset =
     else
       str, (len + 1)
 
-let print_bytes binary = 
+let print_bytes binary =
   let () = Bytes.iter (fun b -> Printf.printf "%x" (Char.code b)) binary in
   Printf.printf "\n"
 
-let print_code binary = 
+let print_code binary =
   let () = Bytes.iter (fun b -> Printf.printf "0x%x " (Char.code b)) binary in
   Printf.printf "\n"
 
@@ -98,7 +98,7 @@ let to_hex_string code =
 						       
 (* big endian *)
 						       
-let u64be binary offset = 
+let u64be binary offset =
   let res = ref ((Char.code @@ Bytes.get binary offset) lsl 56) in
   let counter = ref 6 in (* derp whatever *)
   for i = 1 to 7 do
@@ -107,7 +107,7 @@ let u64be binary offset =
   done;
   !res
 
-let u32be binary offset = 
+let u32be binary offset =
   let res = ref ((Char.code @@ Bytes.get binary offset) lsl 24) in
   let counter = ref 2 in (* derp whatever *)
   for i = 1 to 3 do
@@ -116,7 +116,7 @@ let u32be binary offset =
   done;
   !res
 
-let u16be binary offset = 
+let u16be binary offset =
   let one = Char.code @@ Bytes.get binary offset in
   (one lsl 8) lor (Char.code (Bytes.get binary (1 + offset)))
 
@@ -173,7 +173,7 @@ let iL binary offset size =
  *)
 
 (* unsigned long longs, exact 64-bit *)
-let uL binary offset size = 
+let uL binary offset size =
   let res = ref ((Bytes.get binary offset) |> Char.code |> Int64.of_int)  in
   for i = 1 to size do
     let i64 = (Bytes.get binary (i + offset)) |> Char.code |> Int64.of_int in
@@ -199,7 +199,7 @@ let get_size i =
   else
     8
 
-let set_uint bytes integer size offset = 
+let set_uint bytes integer size offset =
   for i = 0 to (size - 1) do
     let byte = Char.chr @@ ((integer lsr (8 * i)) land 0xff) in
     Bytes.set bytes (i + offset) byte
@@ -221,7 +221,7 @@ let int_to_bytes integer =
   bytes
 
 (* big endian *)
-let set_uint_be bytes integer size offset = 
+let set_uint_be bytes integer size offset =
   for i = (size - 1) downto 0 do
     let shift = i * 8 in
     let byte = Char.chr @@ (integer lsr shift) land 0xff in
@@ -229,7 +229,7 @@ let set_uint_be bytes integer size offset =
   done;
   offset + size
 
-let uint_be_to_bytes integer size = 
+let uint_be_to_bytes integer size =
   let bytes = Bytes.create size in
   let _ = set_uint_be bytes integer size 0 in
   bytes
@@ -238,6 +238,15 @@ let list_to_bytes list =
   let b = Bytes.create (List.length list) in
   List.iteri (fun i byte -> Bytes.set b i (Char.chr byte)) list;
   b
+
+(* u64 *)
+let set_uint64 bytes integer size offset =
+  for i = 0 to (size - 1) do
+    let byte = Char.chr @@ Int64.to_int (Int64.logand (Int64.shift_left integer (8 * i)) (Int64.of_int 0xff)) in
+    Bytes.set bytes (i + offset) byte
+  done;
+  offset + size
+
 
     (* to bytes testing
 let elfk = 0x7f454c46

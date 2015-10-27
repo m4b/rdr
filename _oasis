@@ -60,6 +60,7 @@ Library "mach"
     MachBindOpcodes,
     MachCpuTypes,
     MachFat,
+    MachThread64,
     MachLoadCommand,
     MachLoadCommandTypes,
     MachConstants,

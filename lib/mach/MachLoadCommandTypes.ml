@@ -312,6 +312,7 @@ let sizeof_dylinker_command = 12
 type thread_command = {
   cmd: int [@size 4]; (* LC_THREAD or  LC_UNIXTHREAD *)
   cmdsize: int [@size 4]; (* total size of this command *)
+  thread_state: MachThread64.t;
 }
 
 (*

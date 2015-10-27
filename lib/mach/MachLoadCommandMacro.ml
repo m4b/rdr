@@ -169,8 +169,9 @@ let get_dylinker_command binary offset :dylinker_command =
 
 let get_thread_command binary offset :thread_command =
   let cmd,o = Binary.u32o binary offset in
-  let cmdsize = Binary.u32 binary o in
-  {cmd;cmdsize;}
+  let cmdsize,o = Binary.u32o binary o in
+  let thread_state = MachThread64.get_thread binary o in
+  {cmd;cmdsize;thread_state}
 
 let get_routines_command binary offset :routines_command =
   let cmd,o = Binary.u32o binary offset in

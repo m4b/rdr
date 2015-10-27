@@ -1,9 +1,10 @@
 # OASIS_START
-# DO NOT EDIT (digest: f564cdbce57aab570eaa64260e122d5f)
+# DO NOT EDIT (digest: 9cacfd9a76c06e0f8ae1b2e799958402)
 Mach
 MachBindOpcodes
 MachCpuTypes
 MachFat
+MachThread64
 MachLoadCommand
 MachLoadCommandTypes
 MachConstants
