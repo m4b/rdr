@@ -4,7 +4,11 @@
 
 Welcome to the `rdr` project.
 
-**UPDATE**
+**MAJOR UPDATE**
+
+This project is _completely_ finished, and as such, is no longer under active development.  Once I get some spare time, I will publish to opam this version, fix the mach threads hack (or wait until Rust no longer uses the unix threads load command), and probably call it a day!
+
+Of course, if anyone has any suggestions for improvement, pull requests can still be submitted and I'll probably merge it (but we know that's never going to happen) --- and I might add a feature every now and then, but, I consider `rdr` to be stable enough that I use it on a day to day basis, and that I just simply don't have the time to implement some of the nicer features.  But I hope you enjoy, and have fun with it!
 
 > `rdr` is now version 3.0, supporting tools like [bin2json](http://github.com/m4b/bin2json), which further supports tools like [the silicon element suite](http://github.com/SiliconElements).  Here are some (new) features:
 >
@@ -38,8 +42,6 @@ binaries are supported (64-bit PE32, i.e. PE32+ coming soon).
 Also, 32-bit binaries aren't cool anymore; stop publishing reverse engineering tutorials on them (in nix land at least: apparently Microsoft [still publishes 32-bit binaries](https://go.microsoft.com/fwlink/?LinkId=532606&clcid=0x409) for general consumption).
 
 Happily, the project has no dependencies (besides the standard libs and `unix` and `str`).  I have switched to an `oasis` build system however, and it's awesome, but does add some slight extra complexity (not really).  See the [install section](#install) for more details.
-
-`rdr` is under [active development](TODO.md) --- contributions welcome!
 
 # Install
 
