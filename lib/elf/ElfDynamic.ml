@@ -413,7 +413,7 @@ let get_libraries dynamic strtab =
      if (elem.d_tag = NEEDED) then
        (Binary.string strtab elem.d_un)::acc
      else
-       acc) [] dynamic		     
+       acc) [] dynamic |> List.rev
 
 let get_reloc_data dynamic slides =
   List.fold_left
