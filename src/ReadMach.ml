@@ -17,7 +17,7 @@ let analyze config binary =
   if (not config.silent) then
     begin
       if (not config.search) then
-        Mach.Header.print_header mach.Mach.header mach.Mach.entry;
+        Mach.Header.print_long_header mach.Mach.header;
       if (config.verbose || config.print_headers) then 
         Mach.LoadCommand.print_load_commands mach.Mach.load_commands;
       if (config.verbose || config.print_sections) then
