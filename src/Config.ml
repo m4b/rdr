@@ -1,4 +1,4 @@
-type basic_config =
+type t =
   {
     (* internal *)
     analyze: bool;
@@ -10,11 +10,12 @@ type basic_config =
     install_name: string;
     (* analysis *)
     verbose: bool;			      (* -v *)
-    print_headers: bool;		      (* -h *)    
+    print_headers: bool;		      (* -h *)
     print_nlist: bool;			      (* -s *)
-    print_libraries: bool;		      (* -l *)            
+    print_libraries: bool;		      (* -l *)
     print_exports: bool;		      (* -e *)
-    print_imports: bool;		      (* -i *)        
+    print_imports: bool;		      (* -i *)
+    print_coverage: bool;		      (* -c *)
     disassemble: bool;			      (* -D *)
     (* building *)
     use_map: bool;			      (* -m *)

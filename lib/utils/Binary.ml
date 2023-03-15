@@ -1,3 +1,5 @@
+let debug = false
+
 (* legacy, non-offset producing versions, eventually swap out when generating binary structs/records *)
 let u64 binary offset = 
   let res = ref (Char.code @@ Bytes.get binary offset) in
@@ -45,19 +47,41 @@ let u8o binary offset =
 
 (* strings and printing *)
 
-(* max len must be size + offset *)
-let string binary ?maxlen:(maxlen=0) offset =
-  let null_index = Bytes.index_from binary offset '\000' in
-  let len = if (null_index > maxlen && maxlen > 0) then maxlen else null_index in
-  if (len <= offset) then ""
-  else Bytes.sub_string binary offset (len - offset)
+let sub binary max offset =
+  let max_idx = max + offset in
+  let null_idx = Bytes.index_from binary offset '\000' in
+  let len = if (null_idx > max_idx && max > 0) then max_idx else null_idx in
+  if (len <= offset) then "",len
+  else Bytes.sub_string binary offset (len - offset),len
 
-let stringo binary ?maxlen:(maxlen=0) offset =
-  let null_index = Bytes.index_from binary offset '\000' in
-  let len = if (null_index > maxlen && maxlen > 0) then maxlen else null_index in
-  if (len <= offset) then "",offset+1
+let string binary ?max:(max=0) offset =
+  let str,_ = sub binary max offset in str
+
+let trim_null string =
+  let idx = 
+    try
+      Bytes.index string '\000'
+    with
+    | Not_found -> 0 
+  in
+  if (idx <> 0) then
+    Bytes.sub_string string 0 idx
   else
-    (Bytes.sub_string binary offset (len - offset)), (len + 1)
+    string
+
+let stringo binary ?num_bytes:(count=0) ?max:(max=0) offset =
+  if (count > 0) then
+    let o = offset+count in
+    let string = Bytes.sub_string binary offset count in
+    let trim = trim_null string in
+    if (debug) then Printf.printf "trim: %s\n" trim;
+    if (debug) then Printf.printf "string: %s\n" string;
+    trim, o
+  else
+    let str,len = sub binary max offset in
+    if (str = "") then "",offset+1
+    else
+      str, (len + 1)
 
 let print_bytes binary = 
   let () = Bytes.iter (fun b -> Printf.printf "%x" (Char.code b)) binary in

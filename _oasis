@@ -1,16 +1,42 @@
 OASISFormat: 0.4
 Plugins: META (0.4), DevFiles (0.4)
 Name:        rdr
-Version:     1.2
+Version:     2.0.1
 Synopsis:    Lightweight, cross platform binary parsing and analysis library with no dependencies
 Authors:     m4b
+Homepage:    http://github.com/m4b/rdr
+Maintainers: <m4b.github.io@gmail.com>
 License:     BSD-3-clause
+Description:`rdr` is an OCaml tool/library for doing cross-platform analysis of binaries,
+             by printing headers, locating entry points, showing import and export
+             symbols, their binary offsets and size, etc.
+
+             It also features a symbol map which allows fast lookups for arbitrary
+             symbols, and their associated data, on your system
+             (the default search location are binaries in /usr/lib).
+
+             The latest release also makes `rdr` a package which you can link against
+             and use in your own projects.
+
+             See the README at http://github.com/m4b/rdr for more details.
+
+             Features:
+
+             * 64-bit Linux and Mach-o binary analysis
+             * Searchable symbol-map of all the symbols on your system, including binary
+               offset, size, and exporting library
+             * Print imports and exports of binaries
+             * Make pretty graphs, at the binary or symbol map level
+             * Byte Coverage algorithm which marks byte sequences as understood (or not)
+               and provides other meta-data
+
 
 Library "utils"
   Path: lib/utils
   BuildTools: ocamlbuild
   FindLibParent: rdr  
   FindLibName: utils
+  CompiledObject: best
   Modules:
     RdrUtils,
     Binary,
@@ -19,47 +45,38 @@ Library "utils"
     ByteCoverage,
     Generics
 
-Library "goblin"
-  Path: lib/goblin
-  BuildTools: ocamlbuild
-  FindLibParent: rdr
-  FindLibName: goblin
-  Modules:
-    Goblin,
-    GoblinSymbol,
-    GoblinExport,
-    GoblinImport
-  BuildDepends:
-    rdr.utils
-
 Library "mach"
   Path: lib/mach
   BuildTools: ocamlbuild
   FindLibParent: rdr
   FindLibName: mach
+  CompiledObject: best
   Modules:
     Mach,
     MachBindOpcodes,
     MachCpuTypes,
     MachFat,
     MachLoadCommand,
+    MachLoadCommandTypes,
     MachConstants,
     MachExports,
     MachHeader,
     MachImports,
-    MachSegment64,
-    MachNlist,
+    MachSection,
+    MachSymbolTable,
     MachRebaseOpcodes,
-    MachVersion
+    MachVersion,
+    MachCoverage,
+    MachLoadCommandMacro
   BuildDepends:
-    rdr.utils,
-    rdr.goblin
+    rdr.utils
 
 Library "elf"
   Path: lib/elf
   FindLibParent: rdr  
   FindLibName: elf
   BuildTools: ocamlbuild
+  CompiledObject: best
   Modules:
    Elf,
    ElfHeader,
@@ -73,10 +90,29 @@ Library "elf"
   BuildDepends:
    rdr.utils
 
+Library "goblin"
+  Path: lib/goblin
+  BuildTools: ocamlbuild
+  FindLibParent: rdr
+  FindLibName: goblin
+  CompiledObject: best
+  Modules:
+    Goblin,
+    GoblinSymbol,
+    GoblinExport,
+    GoblinImport,
+    GoblinMach,
+    GoblinElf
+  BuildDepends:
+    rdr.utils,
+    rdr.mach,
+    rdr.elf
+
 Library "rdr"
   Path: lib
   FindLibName: rdr
   BuildTools: ocamlbuild
+  CompiledObject: best
   Modules:
     LibRdr
   BuildDepends:
@@ -89,6 +125,7 @@ Library "rdrutils"
   Path: src
   BuildTools: ocamlbuild
   Install: false
+  CompiledObject: best  
   Modules:
     Config,
     Command,

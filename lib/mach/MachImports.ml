@@ -1,7 +1,3 @@
-(* TODO:
-  (0): sort symbols by address, like exports
- *)
-
 open Binary
 open MachBindOpcodes
 open MachLoadCommand
@@ -11,6 +7,7 @@ open MachLoadCommand
    symbol flags are undocumented 
 *)
 
+(* TODO: move the special fields (if any) and match them with what's on disk/in c structs? *)
 type bind_information = {
   seg_index: int;
   seg_offset: int;
@@ -26,26 +23,30 @@ type import = {
   bi: bind_information;
   dylib: string;
   is_lazy: bool;
+  offset: int;
+  size: int;
 }
 
-type mach_import_data = 
-  [ 
-    | Goblin.Symbol.symbol_datum 
-    (* we extend with mach specific details: *)
-    | `Flags of int
-    | `IsLazy of bool (* this is getting too hacky *)
-  ] list
+type t = import list
+
+let empty = []
 
 let import_to_string import = 
   if (import.is_lazy) then
-    Printf.sprintf "%s ~> %s\n" import.bi.symbol_name import.dylib
+    Printf.sprintf "%s ~> %s" import.bi.symbol_name import.dylib
   else
-    Printf.sprintf "%s -> %s\n" import.bi.symbol_name import.dylib
+    Printf.sprintf "%s -> %s" import.bi.symbol_name import.dylib
+
+let print_import import =
+  Printf.printf "%s\n" @@ import_to_string import
 
 let imports_to_string imports = 
   List.fold_left (fun acc import -> 
       (Printf.sprintf "%s" @@ import_to_string import) ^ acc
     ) "" imports
+
+let print (imports:t) =
+  List.iter print_import imports
 
 (* TODO: dyld lazy binder sets bind type to initial record as MachBindOpcodes.kBIND_TYPE_POINTER *)
 let empty_bind_information  = { seg_index = 0; seg_offset = 0x0; bind_type = 0x0; special_dylib = 1; symbol_library_ordinal = 0; symbol_name = ""; symbol_flags = 0; addend = 0}
@@ -66,6 +67,21 @@ let bind_information_to_string bi =
 
 let print_bind_information bis =
   List.iteri (fun i bi -> Printf.printf "%s\n" (bind_information_to_string bi)) bis
+
+let sort =
+  List.sort (fun i1 i2 ->
+      if (i1.is_lazy) then
+        if (i2.is_lazy) then
+          compare i1.offset i2.offset
+        else
+          -1
+      else
+      if (i2.is_lazy) then
+        1
+      else
+        compare i1.offset i2.offset
+    )
+
 
 (* interpreter for BIND opcodes:
     runs on prebound (non lazy) symbols (usually dylib extern consts and extern variables),
@@ -199,90 +215,25 @@ let bind_interpreter bytes pos size is_lazy =
         done;
         let seg_offset = !addr in
         loop pos'' (bind_info::acc) {bind_info with seg_offset}
-
   in loop pos [] bind_info
 
-(* non-lazy: extern [const] <var_type> <var_name> or specially requested prebound symbols ? *)
+let bind_information_to_import libraries segments ~is_lazy:is_lazy bi =
+  let offset = (List.nth segments bi.seg_index).MachLoadCommand.Types.fileoff + bi.seg_offset in
+  let size = if (bi.bind_type == MachBindOpcodes.kBIND_TYPE_POINTER) then 8 else 0 in
+  let dylib = libraries.(bi.symbol_library_ordinal) in
+  {bi; dylib; is_lazy; offset; size}
 
-let mach_import_to_goblin libraries segments ~is_lazy:is_lazy (import:bind_information) =
-  let offset = (List.nth segments import.seg_index).fileoff + import.seg_offset in
-  let size = if (import.bind_type == MachBindOpcodes.kBIND_TYPE_POINTER) then 8 else 0 in
-  let libname = libraries.(import.symbol_library_ordinal) in
-  [
-    `Name import.symbol_name;
-    `Offset offset;
-    `Kind Goblin.Symbol.Import;
-    `Size size;
-    `Lib (libname, libname);
-    `Flags import.symbol_flags;
-    `IsLazy is_lazy
-  ]
-  	  
 let get_imports binary dyld_info libs segments =
-  let bind_off = dyld_info.MachLoadCommand.bind_off in
-  let bind_size = dyld_info.MachLoadCommand.bind_size in
-  let lazy_bind_off = dyld_info.MachLoadCommand.lazy_bind_off in
-  let lazy_bind_size = dyld_info.MachLoadCommand.lazy_bind_size in
+  let bind_off = dyld_info.MachLoadCommand.Types.bind_off in
+  let bind_size = dyld_info.MachLoadCommand.Types.bind_size in
+  let lazy_bind_off = dyld_info.MachLoadCommand.Types.lazy_bind_off in
+  let lazy_bind_size = dyld_info.MachLoadCommand.Types.lazy_bind_size in
   let non_lazy_bytes = Bytes.sub binary bind_off bind_size in
   let lazy_bytes = Bytes.sub binary lazy_bind_off lazy_bind_size in
-  let non_lazy_imports = bind_interpreter non_lazy_bytes 0 bind_size false in
-  let lazy_imports = bind_interpreter lazy_bytes 0 lazy_bind_size true in
-  let nl = List.map
-	     (mach_import_to_goblin libs segments ~is_lazy:false)
-	     non_lazy_imports |> Goblin.Symbol.sort_symbols in
-  let la = List.map
-	     (mach_import_to_goblin libs segments ~is_lazy:true)
-	     lazy_imports |> Goblin.Symbol.sort_symbols in
-  nl,la
+  let non_lazy_bi = bind_interpreter non_lazy_bytes 0 bind_size false in
+  let lazy_bi = bind_interpreter lazy_bytes 0 lazy_bind_size true in
+  let nli = List.map (bind_information_to_import libs segments ~is_lazy:false) non_lazy_bi in
+  let li = List.map (bind_information_to_import libs segments ~is_lazy:true) lazy_bi in
+  nli@li |> sort
 
-let mach_import_data_to_string (data:mach_import_data) =
-  Goblin.Symbol.symbol_data_to_string data
-
-let rec is_lazy = 
-  function
-  | [] -> raise Not_found
-  | `IsLazy islazy :: _ -> islazy
-  | _::remainder -> is_lazy remainder
-
-let import_name = Goblin.Symbol.find_symbol_name
-
-let import_lib import = Goblin.Symbol.find_symbol_lib import |> fst
-
-let print_imports (nlas,las) = 
-  let n1 = List.length nlas in
-  let n2 = List.length las in
-  Printf.printf "Imports (%d):\n" @@ (n1 + n2);
-  Printf.printf "  Non-lazy (%d):\n" n1;
-  List.iter
-    (fun data ->
-     Goblin.Symbol.print_symbol_data ~with_lib:true data) nlas;
-  Printf.printf "  Lazy (%d):\n" n2;
-  List.iter
-    (fun data ->
-     Goblin.Symbol.print_symbol_data ~with_lib:true data) las
-       
-let print_imports_deprecated (nlas, las) = 
-  let n1 = Array.length nlas in
-  let n2 = Array.length las in
-  Printf.printf "Imports (%d):\n" @@ (n1 + n2);
-  Printf.printf "Non-lazy (%d):\n" n1;
-  Array.iteri (fun i bi ->
-      Printf.printf "%s\n" @@ bind_information_to_string bi) nlas;
-  Printf.printf "Lazy (%d):\n" n2;
-  Array.iter (fun bi ->
-      Printf.printf "%s\n" @@ bind_information_to_string bi) las
-
-let empty = [],[]
-
-let find string array =
-  let len = Array.length array in
-  let rec loop i =
-    if (i >= len) then raise Not_found
-    else 
-      let symbol = import_name array.(i) in
-      if (string = symbol) then
-        array.(i)
-      else
-        loop (i + 1)
-  in loop 0    
-
+(* non-lazy: extern [const] <var_type> <var_name> or specially requested prebound symbols ? *)

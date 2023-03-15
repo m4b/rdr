@@ -1,0 +1,19 @@
+# OASIS_START
+# DO NOT EDIT (digest: f564cdbce57aab570eaa64260e122d5f)
+Mach
+MachBindOpcodes
+MachCpuTypes
+MachFat
+MachLoadCommand
+MachLoadCommandTypes
+MachConstants
+MachExports
+MachHeader
+MachImports
+MachSection
+MachSymbolTable
+MachRebaseOpcodes
+MachVersion
+MachCoverage
+MachLoadCommandMacro
+# OASIS_STOP

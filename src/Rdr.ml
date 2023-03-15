@@ -3,6 +3,8 @@
        which would essentially build a map of the entire system, or something like that
 *)
 
+let version = "2.0"
+
 open Config (* because only has a record type *)
 
 type os = Darwin | Linux | Other
@@ -22,6 +24,7 @@ let print_headers = ref false
 let print_libraries = ref false
 let print_exports = ref false
 let print_imports = ref false
+let print_coverage = ref false
 let use_goblin = ref false
 let recursive = ref false
 let write_symbols = ref false
@@ -33,6 +36,8 @@ let anonarg = ref ""
 
 let disassemble = ref false
 let search_term_string = ref ""
+
+let print_version = ref false
 
 let get_config () =
   let analyze = not (!use_map || !marshal_symbols) in
@@ -59,7 +64,8 @@ let get_config () =
     print_headers = !print_headers;      
     print_libraries = !print_libraries;
     print_exports = !print_exports;
-    print_imports = !print_imports;      
+    print_imports = !print_imports;
+    print_coverage = !print_coverage;
     disassemble = !disassemble;
     use_map = !use_map;
     recursive = !recursive;
@@ -68,7 +74,7 @@ let get_config () =
     base_symbol_map_directories = !base_symbol_map_directories;
     framework_directories = !framework_directories;
     graph = !graph;
-    filename = !anonarg; 	(* TODO: this should be Filname.basename, but unchanged for now *)
+    filename = !anonarg; 	(* TODO: this should be Filename.basename, but unchanged for now *)
     search_term = !search_term_string;
     use_goblin = !use_goblin;
   } 
@@ -102,10 +108,12 @@ let main =
      ("-F", Arg.String (set_framework_directories), "(OSX Only) String of space or colon separated base framework directories to additionally search when building the symbol map");
      ("-r", Arg.Set recursive, "Recursively search directories for binaries; use with -b");
      ("-v", Arg.Set verbose, "Print all the things");
+     ("--version", Arg.Set print_version, "Print the version and exit");
      ("-h", Arg.Set print_headers, "Print the header"); 
      ("-l", Arg.Set print_libraries, "Print the dynamic libraries");     
      ("-e", Arg.Set print_exports, "Print the exported symbols");
      ("-i", Arg.Set print_imports, "Print the imported symbols");
+     ("-c", Arg.Set print_coverage, "Print the byte coverage");
      ("-s", Arg.Set print_nlist, "Print the symbol table, if present");
      ("-f", Arg.Set_string search_term_string, "Find symbol in binary");
      ("-b", Arg.Set marshal_symbols, "Build a symbol map and write to $(HOME)/.rdr/tol; default directory is /usr/lib, change with -d");
@@ -115,17 +123,30 @@ let main =
      ("-D", Arg.Set disassemble, "Disassemble all found symbols");
      ("--dis", Arg.Set disassemble, "Disassemble all found symbols");
     ] in
-  let usage_msg = "usage: rdr [-r] [-b] [-m] [-d] [-g] [-G --goblin] [-v | -l | -e | -i] [<path_to_binary> | <symbol_name>]\noptions:" in
+  let usage_msg = "usage: rdr [-r] [-b] [-m] [-d] [-g] [-G --goblin] [-v | -l | -e | -i] [<path_to_binary>]\noptions:" in
   Arg.parse speclist set_anon_argument usage_msg;
+  if (!print_version) then
+    begin
+      Printf.printf "v%s\n" version;
+      exit 0
+    end
+  else
   (* BEGIN program init *)  
   Storage.create_dot_directory (); (* make our .rdr/ if we haven't already *)
   let config = get_config () in
   if (config.analyze && config.filename = "") then
-    begin
-      Printf.eprintf "Error: no path to binary given\n";
-      Arg.usage speclist usage_msg;
-      exit 1;
-    end;
+    if (config.verbose) then
+      begin
+        (* hack to print version *)
+        Printf.printf "v%s\n" version;
+        exit 0
+      end
+    else      
+      begin
+        Printf.eprintf "Error: no path to binary given\n";
+        Arg.usage speclist usage_msg;
+        exit 1;
+      end;
   if (config.use_map) then
     (* -m *)
     SymbolMap.use_symbol_map config

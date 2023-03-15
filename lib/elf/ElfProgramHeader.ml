@@ -1,6 +1,3 @@
-(* TODO:
-(1) Memory adjust function TOTALLY BROKEN; see this culprit for reason: /usr/lib/libqgsttools_p.so.1.0.0 *)
-
 open Printf
 
 (*
@@ -46,6 +43,7 @@ let kPT_LOOS =		0x60000000	(* Start of OS-specific *)
 let kPT_GNU_EH_FRAME =	0x6474e550	(* GCC .eh_frame_hdr segment *)
 let kPT_GNU_STACK    =  0x6474e551	(* Indicates stack executability *)
 let kPT_GNU_RELRO    =	0x6474e552	(* Read-only after relocation *)
+let kPT_PAX_FLAGS    =	0x65041580	(* pax security header, _not_ in ELF header *)
 let kPT_LOSUNW	= 0x6ffffffa
 let kPT_SUNWBSS	 = 0x6ffffffa	(* Sun Specific segment *)
 let kPT_SUNWSTACK = 0x6ffffffb	(* Stack segment *)
@@ -53,6 +51,38 @@ let kPT_HISUNW	= 0x6fffffff
 let kPT_HIOS	= 0x6fffffff	(* End of OS-specific *)
 let kPT_LOPROC	= 0x70000000	(* Start of processor-specific *)
 let kPT_HIPROC	= 0x7fffffff	(* End of processor-specific *)
+
+let kPT_MIPS_REGINFO = 0x70000000	(* Register usage information *)
+let kPT_MIPS_RTPROC =  0x70000001	(* Runtime procedure table. *)
+let kPT_MIPS_OPTIONS = 0x70000002
+let kPT_HP_TLS = (kPT_LOOS + 0x0)
+let kPT_HP_CORE_NONE =	(kPT_LOOS + 0x1)
+let kPT_HP_CORE_VERSION = (kPT_LOOS + 0x2)
+let kPT_HP_CORE_KERNEL = (kPT_LOOS + 0x3)
+let kPT_HP_CORE_COMM = 	(kPT_LOOS + 0x4)
+let kPT_HP_CORE_PROC = 	(kPT_LOOS + 0x5)
+let kPT_HP_CORE_LOADABLE = (kPT_LOOS + 0x6)
+let kPT_HP_CORE_STACK = (kPT_LOOS + 0x7)
+let kPT_HP_CORE_SHM = (kPT_LOOS + 0x8)
+let kPT_HP_CORE_MMF = (kPT_LOOS + 0x9)
+let kPT_HP_PARALLEL = (kPT_LOOS + 0x10)
+let kPT_HP_FASTBIND = (kPT_LOOS + 0x11)
+let kPT_HP_OPT_ANNOT = (kPT_LOOS + 0x12)
+let kPT_HP_HSL_ANNOT = (kPT_LOOS + 0x13)
+let kPT_HP_STACK = (kPT_LOOS + 0x14)
+(* we don't care about this, and it aliases anyway
+let kPT_PARISC_ARCHEXT = 0x70000000
+let kPT_PARISC_UNWIND =	0x70000001
+*)
+let kPPC64_OPT_TLS = 1
+let kPPC64_OPT_MULTI_TOC = 2
+
+let kPT_ARM_EXIDX = (kPT_LOPROC + 1)	(* ARM unwind segment.  *)
+let kPT_IA_64_ARCHEXT = (kPT_LOPROC + 0)	(* arch extension bits *)
+let kPT_IA_64_UNWIND = (kPT_LOPROC + 1)	(* ia64 unwind bits *)
+let kPT_IA_64_HP_OPT_ANOT = (kPT_LOOS + 0x12)
+let kPT_IA_64_HP_HSL_ANOT = (kPT_LOOS + 0x13)
+let kPT_IA_64_HP_STACK = (kPT_LOOS + 0x14)
 
 let sizeof_program_header = 56 	(* bytes *)
 			      
@@ -78,27 +108,53 @@ let get_program_header binary offset =
 
 let ptype_to_string ptype =
   match ptype with
-  | 0 -> "NULL"
-  | 1 -> "LOAD"
-  | 2 -> "DYNAMIC"
-  | 3 -> "INTERP"
-  | 4 -> "NOTE"
-  | 5 -> "SHLIB"
-  | 6 -> "PHDR"
-  | 7 -> "TLS"
-  | 8 -> "NUM"
-  | 0x60000000 -> "LOOS"
-  | 0x6474e550 -> "GNU_EH_FRAME"
-  | 0x6474e551 -> "GNU_STACK"
-  | 0x6474e552 -> "GNU_RELRO"
-  (*   | 0x6ffffffa -> "LOSUNW" *)
-  | 0x6ffffffa -> "SUNWBSS"
-  | 0x6ffffffb -> "SUNWSTACK"
-  | 0x6fffffff -> "HISUNW"
-  (*   | 0x6fffffff -> "HIOS" *)
-  | 0x70000000 -> "LOPROC"
-  | 0x7fffffff -> "HIPROC"
-  | _ -> "UNKNOWN"
+  | 0 -> "PT_NULL"
+  | 1 -> "PT_LOAD"
+  | 2 -> "PT_DYNAMIC"
+  | 3 -> "PT_INTERP"
+  | 4 -> "PT_NOTE"
+  | 5 -> "PT_SHLIB"
+  | 6 -> "PT_PHDR"
+  | 7 -> "PT_TLS"
+  | 8 -> "PT_NUM"
+  (*   | 0x60000000 -> "PT_LOOS" *)
+  | 0x6474e550 -> "PT_GNU_EH_FRAME"
+  | 0x6474e551 -> "PT_GNU_STACK"
+  | 0x6474e552 -> "PT_GNU_RELRO"
+  | 0x65041580 -> "PT_PAX_FLAGS"
+  (*   | 0x6ffffffa -> "PT_LOSUNW" *)
+  | 0x6ffffffa -> "PT_SUNWBSS"
+  | 0x6ffffffb -> "PT_SUNWSTACK"
+  (*   | 0x6fffffff -> "PT_HIOS" *)
+  | pt when pt = kPT_MIPS_REGINFO -> "PT_MIPS_REGINFO"
+  | pt when pt = kPT_MIPS_RTPROC -> "PT_MIPS_RTPROC"
+  | pt when pt = kPT_MIPS_OPTIONS -> "PT_MIPS_OPTIONS"
+  | pt when pt = kPT_HP_TLS -> "PT_HP_TLS"
+  | pt when pt = kPT_HP_CORE_NONE -> "PT_HP_CORE_NONE"
+  | pt when pt = kPT_HP_CORE_VERSION -> "PT_HP_CORE_VERSION"
+  | pt when pt = kPT_HP_CORE_KERNEL -> "PT_HP_CORE_KERNEL"
+  | pt when pt = kPT_HP_CORE_COMM -> "PT_HP_CORE_COMM"
+  | pt when pt = kPT_HP_CORE_PROC -> "PT_HP_CORE_PROC"
+  | pt when pt = kPT_HP_CORE_LOADABLE -> "PT_HP_CORE_LOADABLE"
+  | pt when pt = kPT_HP_CORE_STACK -> "PT_HP_CORE_STACK"
+  | pt when pt = kPT_HP_CORE_SHM -> "PT_HP_CORE_SHM"
+  | pt when pt = kPT_HP_CORE_MMF -> "PT_HP_CORE_MMF"
+  | pt when pt = kPT_HP_PARALLEL -> "PT_HP_PARALLEL"
+  | pt when pt = kPT_HP_FASTBIND -> "PT_HP_FASTBIND"
+  (* PT_LOOS + 0x12 *)
+  | pt when pt = kPT_IA_64_HP_OPT_ANOT -> "PT_IA_64_HP_OPT_ANOT"
+  | pt when pt = kPT_IA_64_HP_HSL_ANOT -> "PT_IA_64_HP_HSL_ANOT"
+  | pt when pt = kPT_IA_64_HP_STACK -> "PT_IA_64_HP_STACK"
+  (* PT_LOOS + 0x14 *)
+  | pt when pt = kPT_HP_OPT_ANNOT -> "PT_HP_OPT_ANNOT"
+  | pt when pt = kPT_HP_HSL_ANNOT -> "PT_HP_HSL_ANNOT"
+  | pt when pt = kPT_HP_STACK -> "PT_HP_STACK"
+  (* | 0x70000000 -> "PT_LOPROC" *)
+  | pt when pt = kPT_ARM_EXIDX -> "PT_ARM_EXIDX"
+  | pt when pt = kPT_IA_64_ARCHEXT -> "PT_IA_64_ARCHEXT"
+  | pt when pt = kPT_IA_64_UNWIND -> "PT_IA_64_UNWIND"
+  (* | 0x7fffffff -> "PT_HIPROC" *)
+  | pt -> Printf.sprintf "PT_UNKNOWN 0x%x" pt
 
 let flags_to_string flags =
   match flags with
@@ -109,7 +165,7 @@ let flags_to_string flags =
   | 5 -> "R+X"
   | 6 -> "RW"
   | 7 -> "RW+X"
-  | _ -> "UNKNOWN FLAG"
+  | f -> Printf.sprintf "FLAG 0x%x" f
 
 let is_empty phs = phs = []
 	   
@@ -150,7 +206,7 @@ let get_dynamic_program_header phs = get_header kPT_DYNAMIC phs
 let get_interpreter binary phs =
   match get_interpreter_header phs with
   | Some ph ->
-    Binary.string binary ~maxlen:(ph.p_filesz + ph.p_offset) ph.p_offset
+    Binary.string binary ~max:ph.p_filesz ph.p_offset
   | None -> ""
 
 type slide_sector = {start_sector: int; end_sector: int; slide: int;}
@@ -159,38 +215,64 @@ let is_in_sector offset sector =
   (* should this be offset <= sector.end_sector ? *)
   offset >= sector.start_sector && offset < sector.end_sector
 
+let is_contained_in s1 s2 =
+  s1.start_sector >= s2.start_sector
+  && s1.end_sector <= s2.end_sector
+
+let join s1 s2 =
+  let start_sector = min s1.start_sector s2.start_sector in
+  let end_sector = max s1.end_sector s2.end_sector in
+  assert (s1.slide = s2.slide);
+  let slide = s1.slide in
+  {start_sector; end_sector; slide}
+
 let print_slide_sector sector =
   Printf.printf "0x%x: 0x%x - 0x%x\n"
 		sector.slide sector.start_sector sector.end_sector
-		    
+
+let print_slide_sectors sectors =
+  List.iter (fun el -> print_slide_sector el) sectors
+                
 (* checks to see if the slides are equal; will this hold uniformly? *)
 module SlideSet =
   Set.Make(
       struct type t = slide_sector
 	     let compare =
-	       (fun a b -> Pervasives.compare a.slide b.slide) end)
+	       (fun a b -> Pervasives.compare a.slide b.slide)
+      end)
+
+module Map = 
+  Map.Make(struct
+              type t = int
+              let compare = compare
+            end)
 
 (* finds the vaddr masks *)
 let get_slide_sectors phs =
-  List.fold_left (fun acc ph ->
-		  if (ph.p_type = kPT_LOAD) then
-		    let slide = ph.p_vaddr - ph.p_offset in
-		    if (slide <> 0) then
-		      let start_sector = ph.p_vaddr in
-		      let end_sector = start_sector + ph.p_filesz in
-		      SlideSet.add {start_sector; end_sector; slide} acc
-		    else
-		      acc
-		  else
-		    acc
-		 ) SlideSet.empty phs |> SlideSet.elements
+  let map =
+  List.fold_left 
+    (fun acc ph ->
+     let slide = ph.p_vaddr - ph.p_offset in
+     if (slide <> 0) then
+       let start_sector = ph.p_vaddr in
+       let end_sector = start_sector + ph.p_filesz in (* this might need to be ph.p_memsz *)
+       let s1 = {start_sector; end_sector; slide} in
+       if (Map.mem slide acc) then
+         let s2 = Map.find slide acc in
+         if (is_contained_in s1 s2) then
+           acc
+         else
+           Map.add slide (join s1 s2) acc
+       else
+         Map.add slide s1 acc
+     else
+       acc
+    ) Map.empty phs 
+  in
+  Map.fold (fun k v acc -> v::acc) map []
 
-(* This also assumed the leading digit was always the vm addr offset; 
-but /usr/lib/libqgsttools_p.so.1.0.0 has demonstrated otherwise:
-binary offset: 30000 vm: 31000
-will have to approach this in sections; if the offset in question is contained in a vm "covered" area, then subtract the difference, otherwise don't... 
- *)
-
+(* checks if the offset is in the slide sector, 
+ and adjusts using the sectors slide if so *)
 let adjust sectors offset =
   List.fold_left (fun acc sector ->
 		  if (is_in_sector offset sector) then
@@ -237,7 +319,7 @@ let get_p_type p_type =
   | 6 -> PT_PHDR		
   | 7 -> PT_TLS		
   | 8 -> PT_NUM		
-  | 0x60000000 -> PT_LOOS		
+  | 0x60000000 -> kPT_LOOS
   | 0x6474e550 -> PT_GNU_EH_FRAME	
   | 0x6474e551 -> PT_GNU_STACK	
   | 0x6474e552 -> PT_GNU_RELRO	

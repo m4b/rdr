@@ -6,8 +6,8 @@ TODO:
 (*
 for testing
 
-#directory "/Users/matthewbarney/projects/binreader/_build/src/utils/";;
-#directory "/Users/matthewbarney/projects/binreader/_build/src/mach/";;
+#directory "/Users/matthewbarney/git/rdr/_build/src/utils/";;
+#directory "/Users/matthewbarney/git/rdr/_build/src/mach/";;
 #load "Binary.cmo";;
 #load "InputUtils.cmo";;
 #load "Version.cmo";;
@@ -72,35 +72,6 @@ let get_html_exports_header name fullname nexports =
 
 let html_footer = "  </TABLE>\n>];\n"
 
-let get_html_export_row symbol_name export libraries =
-  let size = try Goblin.Symbol.find_symbol_size export |> Printf.sprintf "%d" with Not_found -> "" in
-  (* i'm being lazy as shit and converting it back *)
-  match Mach.Exports.mach_export_data_to_export_info export with
-  | Regular info ->
-    Printf.sprintf "   <TR>
-    <TD PORT=\"%s\">%s</TD><TD>%s</TD><TD>0x%x</TD>
-   </TR>
-" symbol_name symbol_name size info.address
-  | Reexport info -> 
-    begin
-      match info.lib_symbol_name with
-      | Some str ->
-        Printf.sprintf "   <TR>
-    <TD PORT=\"%s\">%s</TD><TD>%s</TD><TD>%s <BR/>@ %s</TD>
-   </TR>
-" symbol_name symbol_name size str info.lib
-      | None -> 
-        Printf.sprintf "   <TR>
-    <TD PORT=\"%s\">%s</TD><TD>%s</TD><TD>@ %s</TD>
-   </TR>
-" symbol_name symbol_name size info.lib
-    end
-  | Stub info -> 
-    Printf.sprintf "   <TR>
-    <TD PORT=\"%s\">%s</TD><TD>%s</TD><TD>0x%x , 0x%x</TD>
-   </TR>
-" symbol_name symbol_name size info.stub_offset info.resolver_offset
-
 (* libs *)
 
 let get_html_libs_header name fullname nlibs = 
@@ -133,9 +104,9 @@ let get_html_imports_header name fullname nimports =
 " name fullname nimports
 
 let get_html_import_row name import = 
-  let is_lazy = Mach.Imports.is_lazy import in
-  let name = Mach.Imports.import_name import in
-  let lib = Mach.Imports.import_lib import in
+  let is_lazy = Goblin.Mach.Imports.is_lazy import in
+  let name = Goblin.Mach.Imports.import_name import in
+  let lib = Goblin.Mach.Imports.import_lib import in
   let color = if (is_lazy) then "#e0ffda" else "#ffffff" in
   Printf.sprintf "   <TR>
     <TD BGCOLOR=\"%s\" PORT=\"%s\">%s</TD><TD BGCOLOR=\"%s\">%s</TD>
@@ -143,8 +114,42 @@ let get_html_import_row name import =
 " color name name color lib
 (* end *)
 
+(*
+let get_html_export_row symbol_name export libraries =
+  (*   let size = try Goblin.Symbol.find_symbol_size export |> Printf.sprintf "%d" with Not_found -> "" in *)
+  (* i'm being lazy as shit and converting it back *)
+  (*   match Goblin.Mach.Exports.mach_export_data_to_export_info export with *)
+  match export with
+  | Regular info ->
+    Printf.sprintf "   <TR>
+    <TD PORT=\"%s\">%s</TD><TD>%s</TD><TD>0x%x</TD>
+   </TR>
+" symbol_name symbol_name size info.address
+  | Reexport info -> 
+    begin
+      match info.lib_symbol_name with
+      | Some str ->
+        Printf.sprintf "   <TR>
+    <TD PORT=\"%s\">%s</TD><TD>%s</TD><TD>%s <BR/>@ %s</TD>
+   </TR>
+" symbol_name symbol_name size str info.lib
+      | None -> 
+        Printf.sprintf "   <TR>
+    <TD PORT=\"%s\">%s</TD><TD>%s</TD><TD>@ %s</TD>
+   </TR>
+" symbol_name symbol_name size info.lib
+    end
+  | Stub info -> 
+    Printf.sprintf "   <TR>
+    <TD PORT=\"%s\">%s</TD><TD>%s</TD><TD>0x%x , 0x%x</TD>
+   </TR>
+" symbol_name symbol_name size info.stub_offset info.resolver_offset
+
+
+open Mach
+
 (* todo: add header and footer to a wrapper function? *)
-let mach_to_html_dot (binary:mach_binary) draw_imports draw_libs = 
+let mach_to_html_dot (binary:Mach.t) draw_imports draw_libs = 
   let b = Buffer.create @@ binary.nexports * 16 in
   let name = to_dot_name binary.name in
   let header = Printf.sprintf "digraph %s {\n" name in
@@ -160,9 +165,9 @@ node [shape=plaintext]\n";
     begin
       let nodename = Printf.sprintf "%s_libs" name in
       Buffer.add_string b @@ Printf.sprintf "{ rank=same; 0->%s [style=invis]}" nodename;
-      Buffer.add_string b @@ get_html_libs_header nodename binary.name binary.nlibs;
+      Buffer.add_string b @@ get_html_libs_header nodename binary.name binary.nlibraries;
       (* was a stupid idea to include the binary in the libraries... *)
-      Array.iteri (fun i lib -> if (i <> 0) then Buffer.add_string b @@ get_html_lib_row name (i - 1) lib) binary.libs;
+      Array.iteri (fun i lib -> if (i <> 0) then Buffer.add_string b @@ get_html_lib_row name (i - 1) lib) binary.libraries;
       Buffer.add_string b html_footer;
     end;
   (* end libs *)
@@ -170,9 +175,11 @@ node [shape=plaintext]\n";
   let nodename = Printf.sprintf "%s_exports" name in
   Buffer.add_string b @@ Printf.sprintf "{ rank=same; 1->%s [style=invis]}" nodename;
   Buffer.add_string b @@ get_html_exports_header nodename binary.name binary.nexports;
-  Array.iter (fun mach_export_data ->
-      let name = Goblin.Symbol.find_symbol_name mach_export_data in
-      Buffer.add_string b @@ get_html_export_row name mach_export_data binary.libs
+  List.iter (fun export ->
+      (*
+      let name = Goblin.Symbol.find_symbol_name mach_export_data in *)
+      let name = export.name in
+      Buffer.add_string b @@ get_html_export_row name export binary.nlibraries
     ) binary.exports;
   Buffer.add_string b html_footer;
   (* end exports *)
@@ -197,9 +204,12 @@ let graph_mach_binary ?draw_imports:(draw_imports=true) ?draw_libs:(draw_libs=tr
   Printf.fprintf oc "%s" call_graph;
   close_out oc;
   graph_with_dot file
+ *)
 
+(* ====================== *)
 (* lib dependency graph *)
 (* [binary, [libs]] *)
+(* ====================== *)
 
 (* todo add solid background color here *)
 let lib_header = "digraph lib_deps {

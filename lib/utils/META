@@ -1,0 +1,12 @@
+# OASIS_START
+# DO NOT EDIT (digest: e8a47bb4a2b8113d81482c5b08352e15)
+version = "1.1"
+description =
+"Lightweight, cross platform binary parsing and analysis library with no dependencies"
+archive(byte) = "utils.cma"
+archive(byte, plugin) = "utils.cma"
+archive(native) = "utils.cmxa"
+archive(native, plugin) = "utils.cmxs"
+exists_if = "utils.cma"
+# OASIS_STOP
+
